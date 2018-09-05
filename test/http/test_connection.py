@@ -1,25 +1,27 @@
 import pytest
 
-from stardog.http.client import Client
-from stardog.http.connection import Connection
-from stardog.http.admin import Admin
 from stardog.content_types import TURTLE
 from stardog.exceptions import StardogException
+from stardog.http.admin import Admin
+from stardog.http.client import Client
+from stardog.http.connection import Connection
+
 
 @pytest.fixture(scope="module")
 def conn():
-    return Connection('test', username='admin', password='admin')
+    with Connection('test', username='admin', password='admin') as conn:
+        yield conn
 
 @pytest.fixture(scope="module")
 def admin():
-    admin = Admin(username='admin', password='admin')
+    with Admin(username='admin', password='admin') as admin:
 
-    for db in admin.databases():
-        db.drop()
-    
-    admin.new_database('test', {'search.enabled': True, 'versioning.enabled': True})
-    
-    return admin
+        for db in admin.databases():
+            db.drop()
+        
+        admin.new_database('test', {'search.enabled': True, 'versioning.enabled': True})
+        
+        yield admin
 
 def test_docs(conn, admin):
     content = 'Only the Knowledge Graph can unify all data types and every data velocity into a single, coherent, unified whole.'
@@ -31,18 +33,30 @@ def test_docs(conn, admin):
     # add
     docs.add('doc', content)
     assert docs.size() == 1
+    assert conn.size() > 0
 
     # get
     doc = docs.get('doc')
     assert next(doc) == content
 
+    # stream
+    doc = docs.get('doc', stream=True, chunk_size=1)
+    assert ''.join(next(doc)) == content
+
     # delete
     docs.delete('doc')
     assert docs.size() == 0
 
-    # clear
-    docs.add('doc', content)
+    # add from file
+    with open('test/data/example.txt') as f:
+        docs.add('example', f)
+    
     assert docs.size() == 1
+    
+    doc = docs.get('example')
+    assert next(doc) == content
+
+    # clear
     docs.clear()
     assert docs.size() == 0
 
@@ -79,7 +93,26 @@ def test_transactions(conn, admin):
 
     # clear
     t = conn.begin()
-    conn.clear( t)
+    conn.clear(t)
+    conn.commit(t)
+
+    # add named graph
+    t = conn.begin()
+    conn.add(t, TURTLE, data, 'urn:graph')
+    conn.commit(t)
+
+    assert conn.size() == 1
+
+    # remove from default graph
+    t = conn.begin()
+    conn.remove(t, TURTLE, data)
+    conn.commit(t)
+
+    assert conn.size() == 1
+
+    # remove from named graph
+    t = conn.begin()
+    conn.remove(t, TURTLE, data, 'urn:graph')
     conn.commit(t)
 
     assert conn.size() == 0
@@ -97,7 +130,7 @@ def test_queries(conn, admin):
     assert len(q['results']['bindings']) == 2
 
     # params
-    q = conn.query('select * {?s ?p ?o}', offset=1, limit=1)
+    q = conn.query('select * {<urn:subj> ?p ?o}', offset=1, limit=1, timeout=1000, reasoning=True)
     assert len(q['results']['bindings']) == 1
 
     # bindings
@@ -165,7 +198,7 @@ def test_reasoning(conn, admin):
         assert len(r) == 0
     
     # explain inconsistency in transaction
-    # TODO server throws null pointer exception
+    # TODO server returns 404 Not Found!
     with pytest.raises(StardogException, match='Not Found!'):
         r = conn.explain_inconsistency(transaction=t)
         assert len(r) == 0
@@ -179,10 +212,6 @@ def test_reasoning(conn, admin):
 def test_icv(conn, admin):
     data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
 
-    t = conn.begin()
-    conn.add(t, TURTLE, data)
-    conn.commit(t)
-
     icv = conn.icv()
 
     # add/remove/clear
@@ -191,7 +220,7 @@ def test_icv(conn, admin):
     icv.clear()
 
     # check/violations/convert
-    assert icv.is_valid(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .') == True
+    assert icv.is_valid(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .') == False
     assert len(icv.explain_violations(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')) == 2
     assert '<tag:stardog:api:context:all>' in icv.convert(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
 
@@ -218,3 +247,35 @@ def test_vcs(conn, admin):
 
     # revert
     vcs.revert(first_revision, second_revision, 'reverting')
+
+
+def test_graphql(conn, admin):
+
+    with open('test/data/starwars.ttl') as f:
+        db = admin.new_database('graphql', {}, {'name': 'starwars.ttl', 'content': f, 'content-type': TURTLE})
+    
+    with Connection('graphql', username='admin', password='admin') as c:
+        gql = c.graphql()
+
+        # query
+        assert gql.query('{ Planet { system } }') == [{'system': 'Tatoo'}, {'system': 'Alderaan'}]
+
+        # variables
+        assert gql.query('query getHuman($id: Integer) { Human(id: $id) {name} }', variables={'id': 1000}) == [{'name': 'Luke Skywalker'}]
+
+        # schemas
+        with open('test/data/starwars.graphql') as f:
+            gql.add_schema('characters', f)
+        
+        assert len(gql.schemas()) == 1
+        assert 'type Human' in gql.schema('characters')
+
+        assert gql.query('{Human(id: 1000) {name friends {name}}}', variables={'@schema': 'characters'}) == [{'friends': [{'name': 'Han Solo'}, {'name': 'Leia Organa'}, {'name': 'C-3PO'}, {'name': 'R2-D2'}], 'name': 'Luke Skywalker'}]
+
+        gql.remove_schema('characters')
+        assert len(gql.schemas()) == 0
+
+        gql.clear_schemas()
+        assert len(gql.schemas()) == 0
+
+    db.drop()

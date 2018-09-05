@@ -1,23 +1,24 @@
 from stardog.content_types import SPARQL_JSON
 
+
 class VCS(object):
 
     def __init__(self, conn):
         self.client = conn.client
-    
-    def query(self, query, base_uri=None, limit=None, offset=None, timeout=None, reasoning=False, bindings=None, content_type=SPARQL_JSON):
+
+    def query(self, query, content_type=SPARQL_JSON, **kwargs):
         params = {
             'query': query,
-            'baseURI': base_uri,
-            'limit': limit,
-            'offset': offset,
-            'timeout': timeout,
-            'reasoning': reasoning
+            'baseURI': kwargs.get('base_uri'),
+            'limit': kwargs.get('limit'),
+            'offset': kwargs.get('offset'),
+            'timeout': kwargs.get('timeout'),
+            'reasoning': kwargs.get('reasoning')
         }
 
         # query bindings
-        bindings = bindings if bindings else {}
-        for k,v in bindings.iteritems():
+        bindings = kwargs.get('bindings', {})
+        for k, v in bindings.iteritems():
             params['${}'.format(k)] = v
 
         r = self.client.post(
@@ -32,7 +33,7 @@ class VCS(object):
         self.client.post(
             '/vcs/{}/commit_msg'.format(transaction)
         )
-    
+
     def create_tag(self, revision, name):
         self.client.post(
             '/vcs/tags/create',

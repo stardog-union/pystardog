@@ -1,15 +1,16 @@
 from stardog.content_types import TURTLE
 
+
 class VirtualGraph(object):
 
     def __init__(self, name, client):
         self.name = name
         self.client = client
-    
+
     @property
     def path(self):
         return '/admin/virtual_graphs/{}'.format(self.name)
-    
+
     def update(self, name, mappings, options):
         meta = {
             'name': name,
@@ -34,3 +35,6 @@ class VirtualGraph(object):
     def available(self):
         r = self.client.get(self.path + '/available')
         return bool(r.json()['available'])
+
+    def __repr__(self):
+        return self.name

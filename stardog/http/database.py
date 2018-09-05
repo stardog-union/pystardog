@@ -12,26 +12,26 @@ class Database(object):
 
         r = self.client.put(self.path + '/options', json=meta)
         return r.json()
-    
+
     def set_options(self, options):
         self.client.post(self.path + '/options', json=options)
 
     def optimize(self):
         self.client.put(self.path + '/optimize')
-    
+
     def repair(self):
         self.client.put(self.path + '/repair')
-    
+
     def online(self):
         self.client.put(self.path + '/online')
-    
+
     def offline(self):
         self.client.put(self.path + '/offline')
-    
+
     def copy(self, to):
         self.client.put(self.path + '/copy', params={'to': to})
         return Database(to, self.client)
-    
+
     def drop(self):
         self.client.delete(self.path)
 

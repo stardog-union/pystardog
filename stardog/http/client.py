@@ -1,7 +1,8 @@
-from requests import Session, Request
+from requests import Request, Session
 from requests_toolbelt.multipart import decoder
 
 from stardog.exceptions import StardogException
+
 
 class Client(object):
 
@@ -29,6 +30,9 @@ class Client(object):
 
     def delete(self, path, **kwargs):
         return self.__wrap(self.session.delete(self.url + path, **kwargs))
+
+    def close(self):
+        self.session.close()
 
     def __wrap(self, request):
         if not request.ok:

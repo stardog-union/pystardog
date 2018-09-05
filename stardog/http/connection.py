@@ -1,17 +1,20 @@
 import json
 from contextlib import contextmanager
+from distutils.util import strtobool
 
-from stardog.docs import Docs
-from stardog.client import Client
-from stardog.icv import ICV
-from stardog.vcs import VCS
 from stardog.content_types import SPARQL_JSON, TURTLE
+from stardog.http.client import Client
+from stardog.http.docs import Docs
+from stardog.http.graphql import GraphQL
+from stardog.http.icv import ICV
+from stardog.http.vcs import VCS
+
 
 class Connection(object):
 
     def __init__(self, database, endpoint=None, username=None, password=None):
         self.client = Client(endpoint, database, username, password)
-    
+
     def docs(self):
         return Docs(self)
 
@@ -20,6 +23,9 @@ class Connection(object):
 
     def versioning(self):
         return VCS(self)
+
+    def graphql(self):
+        return GraphQL(self)
 
     def begin(self):
         r = self.client.post('/transaction/begin')
@@ -30,7 +36,7 @@ class Connection(object):
 
     def commit(self, transaction):
         self.client.post('/transaction/commit/{}'.format(transaction))
-    
+
     def add(self, transaction, content_type, content, graph_uri=None):
         self.client.post(
             '/{}/add'.format(transaction),
@@ -38,7 +44,7 @@ class Connection(object):
             headers={'Content-Type': content_type},
             data=content
         )
-    
+
     def remove(self, transaction, content_type, content, graph_uri=None):
         self.client.post(
             '/{}/remove'.format(transaction),
@@ -46,7 +52,7 @@ class Connection(object):
             headers={'Content-Type': content_type},
             data=content
         )
-    
+
     def clear(self, transaction, graph_uri=None):
         self.client.post(
             '/{}/clear'.format(transaction),
@@ -56,31 +62,31 @@ class Connection(object):
     def size(self):
         r = self.client.get('/size')
         return long(r.text)
-    
+
     def export(self, content_type=TURTLE, stream=False, chunk_size=10240):
         with self.client.get('/export', headers={'Accept': content_type}, stream=stream) as r:
             yield r.iter_content(chunk_size=chunk_size) if stream else r.content
 
-    def query(self, query, transaction=None, base_uri=None, limit=None, offset=None, timeout=None, reasoning=False, bindings=None, content_type=SPARQL_JSON):
-        r = self.__query(query, 'query', transaction, base_uri, limit, offset, timeout, reasoning, bindings, content_type)
+    def query(self, query, transaction=None, content_type=SPARQL_JSON, **kwargs):
+        r = self.__query(query, 'query', transaction, content_type, **kwargs)
         return r.json() if content_type == SPARQL_JSON else r.content
 
-    def update(self, query, transaction=None, base_uri=None, limit=None, offset=None, timeout=None, reasoning=False, bindings=None):
-        self.__query(query, 'update', transaction, base_uri, limit, offset, timeout, reasoning, bindings)
+    def update(self, query, transaction=None, **kwargs):
+        self.__query(query, 'update', transaction, None, **kwargs)
 
-    def __query(self, query, method, transaction=None, base_uri=None, limit=None, offset=None, timeout=None, reasoning=False, bindings=None, content_type=None):
+    def __query(self, query, method, transaction=None, content_type=None, **kwargs):
         params = {
             'query': query,
-            'baseURI': base_uri,
-            'limit': limit,
-            'offset': offset,
-            'timeout': timeout,
-            'reasoning': reasoning
+            'baseURI': kwargs.get('base_uri'),
+            'limit': kwargs.get('limit'),
+            'offset': kwargs.get('offset'),
+            'timeout': kwargs.get('timeout'),
+            'reasoning': kwargs.get('reasoning')
         }
 
         # query bindings
-        bindings = bindings if bindings else {}
-        for k,v in bindings.iteritems():
+        bindings = kwargs.get('bindings', {})
+        for k, v in bindings.iteritems():
             params['${}'.format(k)] = v
 
         url = '/{}/{}'.format(transaction, method) if transaction else '/{}'.format(method)
@@ -110,7 +116,7 @@ class Connection(object):
             params={'graph-uri': graph_uri},
         )
 
-        return bool(r.text)
+        return bool(strtobool(r.text))
 
     def explain_inference(self, content_type, content, transaction=None):
         url = '/reasoning/{}/explain'.format(transaction) if transaction else '/reasoning/explain'
@@ -118,7 +124,7 @@ class Connection(object):
         r = self.client.post(
             url,
             data=content,
-            headers={'Content-Type': content_type},
+            headers={'Content-Type': content_type}
         )
 
         return r.json()['proofs']
@@ -132,3 +138,9 @@ class Connection(object):
         )
 
         return r.json()['proofs']
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, *args):
+        self.client.close()

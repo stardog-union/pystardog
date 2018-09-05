@@ -1,4 +1,5 @@
-from stardog.role import Role
+from stardog.http.role import Role
+
 
 class User(object):
 
@@ -12,28 +13,28 @@ class User(object):
 
     def is_enabled(self):
         r = self.client.get(self.path + '/enabled')
-        return r.json()['enabled']
+        return bool(r.json()['enabled'])
 
     def set_enabled(self, enabled):
         self.client.put(self.path + '/enabled', json={'enabled': enabled})
-    
+
     def is_superuser(self):
         r = self.client.get(self.path + '/superuser')
-        return r.json()['superuser']
+        return bool(r.json()['superuser'])
 
     def roles(self):
         r = self.client.get(self.path + '/roles')
         return map(lambda name: Role(name, self.client), r.json()['roles'])
 
     def add_role(self, role):
-        self.client.post(self.path + '/roles', json={'rolename': self.__rolename(role)})
-    
+        self.client.post(self.path + '/roles', json={'rolename': role})
+
     def set_roles(self, *roles):
-        self.client.put(self.path + '/roles', json={'roles': map(self.__rolename, roles)})
+        self.client.put(self.path + '/roles', json={'roles': roles})
 
     def remove_role(self, role):
-        self.client.delete(self.path + '/roles/' + self.__rolename(role))
-    
+        self.client.delete(self.path + '/roles/' + role)
+
     def delete(self):
         self.client.delete(self.path)
 
@@ -61,9 +62,6 @@ class User(object):
     def effective_permissions(self):
         r = self.client.get('/admin/permissions/effective/user/' + self.name)
         return r.json()['permissions']
-
-    def __rolename(self, role):
-        return role.name if isinstance(role, Role) else role
 
     def __repr__(self):
         return self.name

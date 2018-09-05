@@ -1,33 +1,37 @@
-import pytest
 import shutil
 
-from stardog.http.client import Client
-from stardog.connection import Connection
+import pytest
+
 from stardog.admin import Admin
+from stardog.connection import Connection
+from stardog.content import URL, File, Raw
 from stardog.content_types import TURTLE
 from stardog.exceptions import StardogException
-from stardog.content import Raw, File, URL
+from stardog.http.client import Client
+
 
 @pytest.fixture(scope="module")
 def conn():
-    return Connection('newtest', username='admin', password='admin')
+    with Connection('newtest', username='admin', password='admin') as conn:
+        yield conn
 
 @pytest.fixture(scope="module")
 def admin():
-    admin = Admin(username='admin', password='admin')
+    with Admin(username='admin', password='admin') as admin:
 
-    for db in admin.databases():
-        db.drop()
-    
-    admin.new_database('newtest', {'search.enabled': True, 'versioning.enabled': True})
-    
-    return admin
+        for db in admin.databases():
+            db.drop()
+        
+        admin.new_database('newtest', {'search.enabled': True, 'versioning.enabled': True})
+        
+        yield admin
 
 def test_transactions(conn, admin):
     data = '<urn:subj> <urn:pred> <urn:obj> .'
 
     # add
     conn.begin()
+    conn.clear()
     conn.add(Raw(data, TURTLE))
     conn.commit()
 
@@ -65,36 +69,39 @@ def test_transactions(conn, admin):
     assert conn.size() == 0
 
 def test_queries(conn, admin):
-    data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
-
     # add
     conn.begin()
-    conn.add(Raw(data, TURTLE))
+    conn.clear()
+    conn.add(File('test/data/starwars.ttl'))
     conn.commit()
 
     # select
-    q = conn.select('select * {?s ?p ?o}')
-    assert len(q['results']['bindings']) == 2
-
-    # params
-    q = conn.select('select * {?s ?p ?o}', offset=1, limit=1)
+    q = conn.select('select * {?s :name "Luke Skywalker"}')
     assert len(q['results']['bindings']) == 1
 
+    # params
+    q = conn.select('select * {?s a :Human}', offset=1, limit=10, timeout=1000)
+    assert len(q['results']['bindings']) == 4
+
+    # reasoning
+    q = conn.select('select * {?s a :Character}', reasoning=True)
+    assert len(q['results']['bindings']) == 7
+
     # bindings
-    q = conn.select('select * {?s ?p ?o}', bindings={'o': '<urn:obj>'})
+    q = conn.select('select * {?s :name ?o}', bindings={'o': '"Luke Skywalker"'})
     assert len(q['results']['bindings']) == 1
 
     # paths
-    q = conn.paths('paths start ?x = <urn:subj> end ?y = <urn:obj> via ?p')
+    q = conn.paths('paths start ?x = :luke end ?y = :leia via ?p')
     assert len(q['results']['bindings']) == 1
 
     # ask
-    q = conn.ask('ask {<urn:subj> <urn:pred> <urn:obj>}')
-    assert q == True
+    q = conn.ask('ask {:luke a :Droid}')
+    assert q == False
 
     # construct
-    q = conn.graph('construct {?s ?p ?o} where {?s ?p ?o}')
-    assert q.strip() == data
+    q = conn.graph('construct {:luke a ?o} where {:luke a ?o}')
+    assert q.strip() == '<http://api.stardog.com/luke> a <http://api.stardog.com/Human> .'
 
     # update
     q = conn.update('delete where {?s ?p ?o}')
@@ -106,10 +113,10 @@ def test_queries(conn, admin):
 
     # query in transaction
     conn.begin()
-    conn.add(Raw(data, TURTLE))
+    conn.add(File('test/data/starwars.ttl'))
 
-    q = conn.select('select * {?s ?p ?o}')
-    assert len(q['results']['bindings']) == 2
+    q = conn.select('select * {?s :name "Luke Skywalker"}')
+    assert len(q['results']['bindings']) == 1
 
     conn.commit()
 
@@ -130,7 +137,7 @@ def test_docs(conn, admin):
     assert docs.size() == 0
 
     # add
-    docs.add('doc', Raw(content))
+    docs.add('doc', File('test/data/example.txt'))
     assert docs.size() == 1
 
     # get
@@ -145,41 +152,33 @@ def test_docs(conn, admin):
     assert docs.size() == 0
 
     # clear
-    docs.add('doc', Raw(content))
+    docs.add('doc', File('test/data/example.txt'))
     assert docs.size() == 1
     docs.clear()
     assert docs.size() == 0
 
 def test_icv(conn, admin):
-    data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
-
-    # add
+    
     conn.begin()
-    conn.add(Raw(data, TURTLE))
+    conn.clear()
+    conn.add(File('test/data/icv-data.ttl'))
     conn.commit()
 
     icv = conn.icv()
-    constraint = Raw('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
-
-    # add/remove/clear
-    icv.add(constraint)
-    icv.remove(constraint)
-    icv.clear()
+    constraints = File('test/data/icv-constraints.ttl')
 
     # check/violations/convert
-    assert icv.is_valid(constraint) == True
-    assert len(icv.explain_violations(constraint)) == 2
-    assert '<tag:stardog:api:context:all>' in icv.convert(constraint)
+    assert icv.is_valid(constraints) == False
+    assert len(icv.explain_violations(constraints)) == 14
+    assert '<tag:stardog:api:context:all>' in icv.convert(constraints)
+
+    # add/remove/clear
+    icv.add(constraints)
+    icv.remove(constraints)
+    icv.clear()
 
 def test_vcs(conn, admin):
-    data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
-
     vcs = conn.versioning()
-
-    # commit
-    conn.begin()
-    conn.add(Raw(data, TURTLE))
-    vcs.commit('a versioned commit')
 
     # select
     q = vcs.select('select distinct ?v {?v a vcs:Version}')
@@ -210,3 +209,33 @@ def test_vcs(conn, admin):
 
     # revert
     vcs.revert(first_revision, second_revision, 'reverting')
+
+def test_graphql(conn, admin):
+
+    db = admin.new_database('graphql', {}, File('test/data/starwars.ttl'))
+    
+    with Connection('graphql', username='admin', password='admin') as c:
+        gql = c.graphql()
+
+        # query
+        assert gql.query('{ Planet { system } }') == [{'system': 'Tatoo'}, {'system': 'Alderaan'}]
+
+        # variables
+        assert gql.query('query getHuman($id: Integer) { Human(id: $id) {name} }', variables={'id': 1000}) == [{'name': 'Luke Skywalker'}]
+
+        # schemas
+        gql.add_schema('characters', content=File('test/data/starwars.graphql'))
+        
+        assert len(gql.schemas()) == 1
+        assert 'type Human' in gql.schema('characters')
+
+        assert gql.query('{Human(id: 1000) {name friends {name}}}', variables={'@schema': 'characters'}) == [{'friends': [{'name': 'Han Solo'}, {'name': 'Leia Organa'}, {'name': 'C-3PO'}, {'name': 'R2-D2'}], 'name': 'Luke Skywalker'}]
+
+        gql.remove_schema('characters')
+        assert len(gql.schemas()) == 0
+
+        gql.add_schema('characters', content=File('test/data/starwars.graphql'))
+        gql.clear_schemas()
+        assert len(gql.schemas()) == 0
+
+    db.drop()

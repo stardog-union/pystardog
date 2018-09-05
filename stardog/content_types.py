@@ -18,8 +18,8 @@ CSV = 'text/csv'
 TSV = 'text/tab-separated-values'
 
 # Filename extension
-FILENAME_EXTENSIONS = {
-    'ttl' : TURTLE,
+_FILENAME_EXTENSIONS = {
+    'ttl': TURTLE,
     'rdf': RDF_XML,
     'nt': NTRIPLES,
     'nq': NQUADS,
@@ -29,8 +29,9 @@ FILENAME_EXTENSIONS = {
     'jsonld': LD_JSON
 }
 
+
 def guess_rdf_format(fname):
     pos = fname.rfind('.')
     if pos >= 0:
         extension = fname[pos + 1:]
-        return FILENAME_EXTENSIONS.get(extension)
+        return _FILENAME_EXTENSIONS.get(extension)

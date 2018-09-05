@@ -1,7 +1,8 @@
 import pytest
 
-from stardog.content_types import TURTLE, RDF_XML
-from stardog.content import Raw, File, URL
+from stardog.content import URL, File, Raw
+from stardog.content_types import RDF_XML, TURTLE
+
 
 def test_content():
 

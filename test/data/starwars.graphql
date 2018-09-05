@@ -1,0 +1,13 @@
+schema {
+  query: QueryType
+}
+
+type QueryType {
+  Human(id: [Int]): Human
+}
+
+type Human {
+  id: Int!
+  name: String!
+  friends: [Human]
+}
