@@ -70,7 +70,7 @@ class Admin(object):
             options (dict)
                 Dictionary with database options (optional)
             contents (Content) or ((Content, str))
-                List of datasets to perform bulk-load with, optionaly with desired named graph (optional)
+                List of datasets to perform bulk-load with, optionally with desired named graph (optional)
 
         Returns
             (Database)
@@ -517,7 +517,6 @@ class User(object):
         See Also
             https://www.stardog.com/docs/#_permissions
         """
-
         self.user.add_permission(action, resource_type, resource)
 
     def remove_permission(self, action, resource_type, resource):
@@ -539,7 +538,6 @@ class User(object):
         See Also
             https://www.stardog.com/docs/#_permissions
         """
-
         self.user.remove_permission(action, resource_type, resource)
 
     def effective_permissions(self):
@@ -579,7 +577,6 @@ class Role(object):
             (list[User])
                 Users
         """
-
         return map(User, self.role.users())
 
     def delete(self, force=None):
@@ -590,7 +587,6 @@ class Role(object):
             force (bool)
                 Force deletion of role
         """
-
         self.role.delete(force)
 
     def permissions(self):
@@ -604,7 +600,6 @@ class Role(object):
         See Also
             https://www.stardog.com/docs/#_permissions
         """
-
         return self.role.permissions()
 
     def add_permission(self, action, resource_type, resource):
@@ -647,7 +642,6 @@ class Role(object):
         See Also
             https://www.stardog.com/docs/#_permissions
         """
-
         self.role.remove_permission(action, resource_type, resource)
 
 

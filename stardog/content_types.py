@@ -31,6 +31,17 @@ _FILENAME_EXTENSIONS = {
 
 
 def guess_rdf_format(fname):
+    """
+    Guess RDF content type from filename
+
+    Parameters
+        fname (str)
+            Filename
+
+    Returns
+        (str)
+            Content type or None
+    """
     pos = fname.rfind('.')
     if pos >= 0:
         extension = fname[pos + 1:]

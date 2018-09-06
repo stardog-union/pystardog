@@ -8,7 +8,7 @@ from stardog.http.connection import Connection as HTTPConnection
 
 class Connection(object):
     """
-    Database Connection
+    Database Connection.
     This is the entry point for all user-related operations on a Stardog database
     """
 
@@ -155,7 +155,6 @@ class Connection(object):
             # clear the whole database
             >> conn.clear()
         """
-
         self._assert_in_transaction()
         self.conn.clear(self.transaction, graph_uri)
 
@@ -465,7 +464,7 @@ class Docs(object):
                 Contents of the document
 
         Example
-            >> conn.docs().add('example', File('example.pdf'))
+            >> docs.add('example', File('example.pdf'))
         """
         with content.data() as data:
             self.docs.add(name, data)
@@ -496,13 +495,12 @@ class Docs(object):
 
         Example
             # no streaming
-            >> contents = conn.docs().get('example')
+            >> contents = docs.get('example')
 
             # streaming
-            >> with conn.docs().get('example', stream=True) as stream:
+            >> with docs.get('example', stream=True) as stream:
                 contents = ''.join(stream)
         """
-
         doc = self.docs.get(name, stream, chunk_size)
         return nextcontext(doc) if stream else next(doc)
 
@@ -538,9 +536,8 @@ class ICV(object):
                 Data to add
 
         Example
-            >> conn.icv().add(File('constraints.ttl'))
+            >> icv.add(File('constraints.ttl'))
         """
-
         with content.data() as data:
             self.icv.add(content.content_type, data)
 
@@ -553,9 +550,8 @@ class ICV(object):
                 Data to remove
 
         Example
-            >> conn.icv().remove(File('constraints.ttl'))
+            >> icv.remove(File('constraints.ttl'))
         """
-
         with content.data() as data:
             self.icv.remove(content.content_type, data)
 
@@ -580,9 +576,8 @@ class ICV(object):
                 Integrity constraint validity
 
         Example
-            >> conn.icv().is_valid(File('constraints.ttl'), graph_uri='urn:graph')
+            >> icv.is_valid(File('constraints.ttl'), graph_uri='urn:graph')
         """
-
         with content.data() as data:
             return self.icv.is_valid(content.content_type, data, self.conn.transaction, graph_uri)
 
@@ -601,7 +596,7 @@ class ICV(object):
                 Integrity constraint violations
 
         Example
-            >> conn.icv().explain_violations(File('constraints.ttl'), graph_uri='urn:graph')
+            >> icv.explain_violations(File('constraints.ttl'), graph_uri='urn:graph')
         """
 
         with content.data() as data:
@@ -622,7 +617,7 @@ class ICV(object):
                 SPARQL query
 
         Example
-            >> conn.icv().convert(File('constraints.ttl'), graph_uri='urn:graph')
+            >> icv.convert(File('constraints.ttl'), graph_uri='urn:graph')
         """
         with content.data() as data:
             return self.icv.convert(content.content_type, data, graph_uri)
@@ -782,7 +777,6 @@ class VCS(object):
             TransactionException
                 If currently not in a transaction
         """
-
         self.conn._assert_in_transaction()
         self.vcs.commit(self.conn.transaction, message)
 
