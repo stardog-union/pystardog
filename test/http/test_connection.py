@@ -9,19 +9,21 @@ from stardog.http.connection import Connection
 
 @pytest.fixture(scope="module")
 def conn():
-    with Connection('test', username='admin', password='admin') as conn:
+    with Connection('test') as conn:
         yield conn
+
 
 @pytest.fixture(scope="module")
 def admin():
-    with Admin(username='admin', password='admin') as admin:
+    with Admin() as admin:
 
         for db in admin.databases():
             db.drop()
-        
+
         admin.new_database('test', {'search.enabled': True, 'versioning.enabled': True})
-        
+
         yield admin
+
 
 def test_docs(conn, admin):
     content = 'Only the Knowledge Graph can unify all data types and every data velocity into a single, coherent, unified whole.'
@@ -50,15 +52,16 @@ def test_docs(conn, admin):
     # add from file
     with open('test/data/example.txt') as f:
         docs.add('example', f)
-    
+
     assert docs.size() == 1
-    
+
     doc = docs.get('example')
     assert next(doc) == content
 
     # clear
     docs.clear()
     assert docs.size() == 0
+
 
 def test_transactions(conn, admin):
     data = '<urn:subj> <urn:pred> <urn:obj> .'
@@ -117,6 +120,7 @@ def test_transactions(conn, admin):
 
     assert conn.size() == 0
 
+
 def test_queries(conn, admin):
     data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
 
@@ -173,6 +177,7 @@ def test_queries(conn, admin):
 
     conn.commit(t)
 
+
 def test_reasoning(conn, admin):
     data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
 
@@ -196,7 +201,7 @@ def test_reasoning(conn, admin):
     with pytest.raises(StardogException, match='There was an unexpected error on the server'):
         r = conn.explain_inference(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .', transaction=t)
         assert len(r) == 0
-    
+
     # explain inconsistency in transaction
     # TODO server returns 404 Not Found!
     with pytest.raises(StardogException, match='Not Found!'):
@@ -208,6 +213,7 @@ def test_reasoning(conn, admin):
     # explain inconsistency
     r = conn.explain_inconsistency()
     assert len(r) == 0
+
 
 def test_icv(conn, admin):
     data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
@@ -223,6 +229,7 @@ def test_icv(conn, admin):
     assert icv.is_valid(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .') == False
     assert len(icv.explain_violations(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')) == 2
     assert '<tag:stardog:api:context:all>' in icv.convert(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
+
 
 def test_vcs(conn, admin):
     data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
@@ -253,7 +260,7 @@ def test_graphql(conn, admin):
 
     with open('test/data/starwars.ttl') as f:
         db = admin.new_database('graphql', {}, {'name': 'starwars.ttl', 'content': f, 'content-type': TURTLE})
-    
+
     with Connection('graphql', username='admin', password='admin') as c:
         gql = c.graphql()
 
@@ -266,7 +273,7 @@ def test_graphql(conn, admin):
         # schemas
         with open('test/data/starwars.graphql') as f:
             gql.add_schema('characters', f)
-        
+
         assert len(gql.schemas()) == 1
         assert 'type Human' in gql.schema('characters')
 

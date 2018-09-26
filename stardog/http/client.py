@@ -7,17 +7,19 @@ from stardog.exceptions import StardogException
 class Client(object):
 
     DEFAULT_ENDPOINT = 'http://localhost:5820'
+    DEFAULT_USERNAME = 'admin'
+    DEFAULT_PASSWORD = 'admin'
 
     def __init__(self, endpoint=None, database=None, username=None, password=None):
         self.url = endpoint if endpoint else self.DEFAULT_ENDPOINT
+        self.username = username if username else self.DEFAULT_USERNAME
+        self.password = password if password else self.DEFAULT_PASSWORD
 
         if database:
             self.url = '{}/{}'.format(self.url, database)
 
         self.session = Session()
-
-        if username and password:
-            self.session.auth = (username, password)
+        self.session.auth = (self.username, self.password)
 
     def post(self, path, **kwargs):
         return self.__wrap(self.session.post(self.url + path, **kwargs))

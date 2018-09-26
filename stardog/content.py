@@ -24,7 +24,7 @@ class Raw(Content):
                 Content type (optional)
             name (str)
                 Object name (optional)
-        
+
         Example
             >> Raw(':luke a :Human', 'text/turtle', 'data.ttl')
             >> Raw(open('data.ttl', 'rb'), 'text/turtle', 'data.ttl')

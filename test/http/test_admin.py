@@ -6,24 +6,25 @@ from stardog.http.admin import Admin
 from stardog.http.client import Client
 from stardog.http.connection import Connection
 
-DEFAULT_USERS = ['admin', 'anonymous', 'root']
+DEFAULT_USERS = ['admin', 'anonymous']
 DEFAULT_ROLES = ['reader']
+
 
 @pytest.fixture(scope="module")
 def admin():
-    with Admin(username='admin', password='admin') as admin:
-        
+    with Admin() as admin:
+
         for db in admin.databases():
             db.drop()
 
         for user in admin.users():
             if user.name not in DEFAULT_USERS:
                 user.delete()
-        
+
         for role in admin.roles():
             if role.name not in DEFAULT_ROLES:
                 role.delete()
-        
+
         yield admin
 
 
@@ -63,7 +64,7 @@ def test_databases(admin):
     # bulk load
     with open('test/data/example.ttl', 'rb') as f:
         bl = admin.new_database('bulkload', {}, {'name': 'example.ttl', 'content': f, 'content-type': TURTLE, 'context': 'urn:a'})
-    
+
     with Connection('bulkload', username='admin', password='admin') as c:
         assert c.size() == 1
 
@@ -73,6 +74,7 @@ def test_databases(admin):
     bl.drop()
 
     assert len(admin.databases()) == 0
+
 
 def test_users(admin):
     assert len(admin.users()) == len(DEFAULT_USERS)
@@ -126,6 +128,7 @@ def test_users(admin):
 
     assert len(admin.users()) == len(DEFAULT_USERS)
 
+
 def test_roles(admin):
     assert len(admin.roles()) == len(DEFAULT_ROLES)
 
@@ -151,6 +154,7 @@ def test_roles(admin):
 
     assert len(admin.roles()) == len(DEFAULT_ROLES)
 
+
 def test_queries(admin):
     assert len(admin.queries()) == 0
 
@@ -159,6 +163,7 @@ def test_queries(admin):
 
     with pytest.raises(StardogException, match='UnknownQuery: Query not found: 1'):
         admin.kill_query(1)
+
 
 def test_virtual_graphs(admin):
 
@@ -178,20 +183,20 @@ def test_virtual_graphs(admin):
     vg = admin.virtual_graph('test')
 
     # TODO add VG to test server
-    with pytest.raises(StardogException, match='com.mysql.cj.jdbc.exceptions.CommunicationsException'):
+    with pytest.raises(StardogException, match='java.sql.SQLException'):
         admin.new_virtual_graph('vg', mappings, options)
 
-    with pytest.raises(StardogException, match='com.mysql.cj.jdbc.exceptions.CommunicationsException'):
+    with pytest.raises(StardogException, match='java.sql.SQLException'):
         vg.update('vg', mappings, options)
-    
+
     with pytest.raises(StardogException, match='Virtual Graph test Not Found!'):
         vg.available()
 
     with pytest.raises(StardogException, match='Virtual Graph test Not Found!'):
         vg.options()
-    
+
     with pytest.raises(StardogException, match='Virtual Graph test Not Found!'):
         vg.mappings()
-    
+
     with pytest.raises(StardogException, match='Virtual Graph test Not Found!'):
         vg.delete()

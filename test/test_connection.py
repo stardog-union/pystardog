@@ -12,19 +12,21 @@ from stardog.http.client import Client
 
 @pytest.fixture(scope="module")
 def conn():
-    with Connection('newtest', username='admin', password='admin') as conn:
+    with Connection('newtest') as conn:
         yield conn
+
 
 @pytest.fixture(scope="module")
 def admin():
-    with Admin(username='admin', password='admin') as admin:
+    with Admin() as admin:
 
         for db in admin.databases():
             db.drop()
-        
+
         admin.new_database('newtest', {'search.enabled': True, 'versioning.enabled': True})
-        
+
         yield admin
+
 
 def test_transactions(conn, admin):
     data = '<urn:subj> <urn:pred> <urn:obj> .'
@@ -67,6 +69,7 @@ def test_transactions(conn, admin):
     conn.commit()
 
     assert conn.size() == 0
+
 
 def test_queries(conn, admin):
     # add
@@ -129,6 +132,7 @@ def test_queries(conn, admin):
 
     conn.commit()
 
+
 def test_docs(conn, admin):
     content = 'Only the Knowledge Graph can unify all data types and every data velocity into a single, coherent, unified whole.'
 
@@ -157,8 +161,9 @@ def test_docs(conn, admin):
     docs.clear()
     assert docs.size() == 0
 
+
 def test_icv(conn, admin):
-    
+
     conn.begin()
     conn.clear()
     conn.add(File('test/data/icv-data.ttl'))
@@ -176,6 +181,7 @@ def test_icv(conn, admin):
     icv.add(constraints)
     icv.remove(constraints)
     icv.clear()
+
 
 def test_vcs(conn, admin):
     vcs = conn.versioning()
@@ -210,10 +216,11 @@ def test_vcs(conn, admin):
     # revert
     vcs.revert(first_revision, second_revision, 'reverting')
 
+
 def test_graphql(conn, admin):
 
     db = admin.new_database('graphql', {}, File('test/data/starwars.ttl'))
-    
+
     with Connection('graphql', username='admin', password='admin') as c:
         gql = c.graphql()
 
@@ -225,7 +232,7 @@ def test_graphql(conn, admin):
 
         # schemas
         gql.add_schema('characters', content=File('test/data/starwars.graphql'))
-        
+
         assert len(gql.schemas()) == 1
         assert 'type Human' in gql.schema('characters')
 

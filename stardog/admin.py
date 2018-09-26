@@ -648,7 +648,7 @@ class Role(object):
 class VirtualGraph(object):
     """
     Virtual Graph
-    
+
     See Also
         https://www.stardog.com/docs/#_structured_data
     """

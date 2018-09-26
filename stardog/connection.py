@@ -60,12 +60,17 @@ class Connection(object):
         """
         Begin a transaction
 
+        Returns
+            (str)
+                Transaction ID
+
         Raises
             TransactionException
                 If already in a transaction
         """
         self._assert_not_in_transaction()
         self.transaction = self.conn.begin()
+        return self.transaction
 
     def rollback(self):
         """
