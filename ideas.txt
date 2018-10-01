@@ -1,0 +1,6 @@
+
+
+https://github.com/stardog-union/stardog-examples/blob/develop/examples/api/main/src/com/complexible/stardog/examples/api/ConnectionAPIExample.java
+- Getter interface
+
+
