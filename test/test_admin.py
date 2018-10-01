@@ -63,8 +63,8 @@ def test_databases(admin):
 
     # bulk load
     contents = [
-        Raw('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE, 'bulkload.ttl'),
-        (File('test/data/example.ttl'), 'urn:context'),
+        Raw('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE, name='bulkload.ttl'),
+        (File('test/data/example.ttl.zip'), 'urn:context'),
         URL('https://www.w3.org/2000/10/rdf-tests/RDF-Model-Syntax_1.0/ms_4.1_1.rdf')
     ]
 

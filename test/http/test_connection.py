@@ -68,28 +68,28 @@ def test_transactions(conn, admin):
 
     # add
     t = conn.begin()
-    conn.add(t, TURTLE, data)
+    conn.add(t, data, TURTLE)
     conn.commit(t)
 
     assert conn.size() == 1
 
     # remove
     t = conn.begin()
-    conn.remove(t, TURTLE, data)
+    conn.remove(t, data, TURTLE)
     conn.commit(t)
 
     assert conn.size() == 0
 
     # rollback
     t = conn.begin()
-    conn.add(t, TURTLE, data)
+    conn.add(t, data, TURTLE)
     conn.rollback(t)
 
     assert conn.size() == 0
 
     # export
     t = conn.begin()
-    conn.add(t, TURTLE, data)
+    conn.add(t, data, TURTLE)
     conn.commit(t)
 
     assert data in next(conn.export())
@@ -101,21 +101,21 @@ def test_transactions(conn, admin):
 
     # add named graph
     t = conn.begin()
-    conn.add(t, TURTLE, data, 'urn:graph')
+    conn.add(t, data, TURTLE, graph_uri='urn:graph')
     conn.commit(t)
 
     assert conn.size() == 1
 
     # remove from default graph
     t = conn.begin()
-    conn.remove(t, TURTLE, data)
+    conn.remove(t, data, TURTLE)
     conn.commit(t)
 
     assert conn.size() == 1
 
     # remove from named graph
     t = conn.begin()
-    conn.remove(t, TURTLE, data, 'urn:graph')
+    conn.remove(t, data, TURTLE, graph_uri='urn:graph')
     conn.commit(t)
 
     assert conn.size() == 0
@@ -126,7 +126,7 @@ def test_queries(conn, admin):
 
     # add
     t = conn.begin()
-    conn.add(t, TURTLE, data)
+    conn.add(t, data, TURTLE)
     conn.commit(t)
 
     # query
@@ -155,7 +155,7 @@ def test_queries(conn, admin):
 
     # query in transaction
     t = conn.begin()
-    conn.add(t, TURTLE, data)
+    conn.add(t, data, TURTLE)
 
     q = conn.query('select * {?s ?p ?o}')
     assert len(q['results']['bindings']) == 0
@@ -183,23 +183,23 @@ def test_reasoning(conn, admin):
 
     # add
     t = conn.begin()
-    conn.add(t, TURTLE, data)
+    conn.add(t, data, TURTLE)
     conn.commit(t)
 
     # consistency
     assert conn.is_consistent() == True
 
     # explain inference
-    r = conn.explain_inference(TURTLE, '<urn:subj> <urn:pred> <urn:obj> .')
+    r = conn.explain_inference('<urn:subj> <urn:pred> <urn:obj> .', TURTLE)
     assert len(r) == 1
 
     # explain inference in transaction
     t = conn.begin()
-    conn.add(t, TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
+    conn.add(t, '<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
 
     # TODO server throws null pointer exception
     with pytest.raises(StardogException, match='There was an unexpected error on the server'):
-        r = conn.explain_inference(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .', transaction=t)
+        r = conn.explain_inference('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE, transaction=t)
         assert len(r) == 0
 
     # explain inconsistency in transaction
@@ -221,14 +221,14 @@ def test_icv(conn, admin):
     icv = conn.icv()
 
     # add/remove/clear
-    icv.add(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
-    icv.remove(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
+    icv.add('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
+    icv.remove('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
     icv.clear()
 
     # check/violations/convert
-    assert icv.is_valid(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .') == False
-    assert len(icv.explain_violations(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')) == 2
-    assert '<tag:stardog:api:context:all>' in icv.convert(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
+    assert icv.is_valid('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE) == False
+    assert len(icv.explain_violations('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)) == 2
+    assert '<tag:stardog:api:context:all>' in icv.convert('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
 
 
 def test_vcs(conn, admin):
@@ -238,7 +238,7 @@ def test_vcs(conn, admin):
 
     # commit
     t = conn.begin()
-    conn.add(t, TURTLE, data)
+    conn.add(t, data, TURTLE)
     vcs.commit(t, 'a versioned commit')
 
     # query
