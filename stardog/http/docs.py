@@ -6,7 +6,7 @@ class Docs(object):
 
     def size(self):
         r = self.client.get('/docs/size')
-        return long(r.text)
+        return int(r.text)
 
     def add(self, name, content):
         self.client.post('/docs', files={'upload': (name, content)})

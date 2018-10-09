@@ -1,13 +1,9 @@
-import shutil
-
 import pytest
 
 from stardog.admin import Admin
 from stardog.connection import Connection
 from stardog.content import URL, File, Raw
 from stardog.content_types import TURTLE
-from stardog.exceptions import StardogException
-from stardog.http.client import Client
 
 
 @pytest.fixture(scope="module")
@@ -58,10 +54,10 @@ def test_transactions(conn, admin):
     conn.add(URL('https://www.w3.org/2000/10/rdf-tests/RDF-Model-Syntax_1.0/ms_4.1_1.rdf'))
     conn.commit()
 
-    assert '<http://description.org/schema/attributedTo>' in conn.export()
+    assert b'<http://description.org/schema/attributedTo>' in conn.export()
 
     with conn.export(stream=True, chunk_size=1) as stream:
-        assert '<http://description.org/schema/attributedTo>' in ''.join(stream)
+        assert b'<http://description.org/schema/attributedTo>' in b''.join(stream)
 
     # clear
     conn.begin()
@@ -104,7 +100,7 @@ def test_queries(conn, admin):
 
     # construct
     q = conn.graph('construct {:luke a ?o} where {:luke a ?o}')
-    assert q.strip() == '<http://api.stardog.com/luke> a <http://api.stardog.com/Human> .'
+    assert q.strip() == b'<http://api.stardog.com/luke> a <http://api.stardog.com/Human> .'
 
     # update
     q = conn.update('delete where {?s ?p ?o}')
@@ -134,7 +130,7 @@ def test_queries(conn, admin):
 
 
 def test_docs(conn, admin):
-    content = 'Only the Knowledge Graph can unify all data types and every data velocity into a single, coherent, unified whole.'
+    content = b'Only the Knowledge Graph can unify all data types and every data velocity into a single, coherent, unified whole.'
 
     # docstore
     docs = conn.docs()
@@ -149,7 +145,7 @@ def test_docs(conn, admin):
     assert doc == content
 
     with docs.get('doc', stream=True, chunk_size=1) as doc:
-        assert ''.join(doc) == content
+        assert b''.join(doc) == content
 
     # delete
     docs.delete('doc')
@@ -200,7 +196,7 @@ def test_vcs(conn, admin):
 
     # construct
     q = vcs.graph('construct {?s ?p ?o} where {?s ?p ?o}')
-    assert '<tag:stardog:api:versioning:Version>' in q
+    assert b'<tag:stardog:api:versioning:Version>' in q
 
     # bindings
     q = vcs.select('select distinct ?v {?v a ?o}', bindings={'o': '<tag:stardog:api:versioning:Version>'})
