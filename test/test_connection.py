@@ -96,7 +96,7 @@ def test_queries(conn, admin):
 
     # ask
     q = conn.ask('ask {:luke a :Droid}')
-    assert q == False
+    assert not q
 
     # construct
     q = conn.graph('construct {:luke a ?o} where {:luke a ?o}')
@@ -169,7 +169,7 @@ def test_icv(conn, admin):
     constraints = File('test/data/icv-constraints.ttl')
 
     # check/violations/convert
-    assert icv.is_valid(constraints) == False
+    assert not icv.is_valid(constraints)
     assert len(icv.explain_violations(constraints)) == 14
     assert '<tag:stardog:api:context:all>' in icv.convert(constraints)
 
@@ -192,7 +192,7 @@ def test_vcs(conn, admin):
 
     # ask
     q = vcs.ask('ask {?v a vcs:Version}')
-    assert q == True
+    assert q
 
     # construct
     q = vcs.graph('construct {?s ?p ?o} where {?s ?p ?o}')

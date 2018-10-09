@@ -187,7 +187,7 @@ def test_reasoning(conn, admin):
     conn.commit(t)
 
     # consistency
-    assert conn.is_consistent() == True
+    assert conn.is_consistent()
 
     # explain inference
     r = conn.explain_inference(TURTLE, '<urn:subj> <urn:pred> <urn:obj> .')
@@ -224,7 +224,7 @@ def test_icv(conn, admin):
     icv.clear()
 
     # check/violations/convert
-    assert icv.is_valid(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .') == False
+    assert not icv.is_valid(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
     assert len(icv.explain_violations(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')) == 2
     assert '<tag:stardog:api:context:all>' in icv.convert(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
 
