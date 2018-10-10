@@ -18,7 +18,7 @@ class VCS(object):
 
         # query bindings
         bindings = kwargs.get('bindings', {})
-        for k, v in bindings.iteritems():
+        for k, v in bindings.items():
             params['${}'.format(k)] = v
 
         r = self.client.post(

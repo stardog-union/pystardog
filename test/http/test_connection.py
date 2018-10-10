@@ -26,7 +26,7 @@ def admin():
 
 
 def test_docs(conn, admin):
-    content = 'Only the Knowledge Graph can unify all data types and every data velocity into a single, coherent, unified whole.'
+    content = b'Only the Knowledge Graph can unify all data types and every data velocity into a single, coherent, unified whole.'
 
     # docstore
     docs = conn.docs()
@@ -43,7 +43,7 @@ def test_docs(conn, admin):
 
     # stream
     doc = docs.get('doc', stream=True, chunk_size=1)
-    assert ''.join(next(doc)) == content
+    assert b''.join(next(doc)) == content
 
     # delete
     docs.delete('doc')
@@ -64,7 +64,7 @@ def test_docs(conn, admin):
 
 
 def test_transactions(conn, admin):
-    data = '<urn:subj> <urn:pred> <urn:obj> .'
+    data = b'<urn:subj> <urn:pred> <urn:obj> .'
 
     # add
     t = conn.begin()
@@ -122,7 +122,7 @@ def test_transactions(conn, admin):
 
 
 def test_queries(conn, admin):
-    data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
+    data = b'<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
 
     # add
     t = conn.begin()
@@ -179,7 +179,7 @@ def test_queries(conn, admin):
 
 
 def test_reasoning(conn, admin):
-    data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
+    data = b'<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
 
     # add
     t = conn.begin()
@@ -187,7 +187,7 @@ def test_reasoning(conn, admin):
     conn.commit(t)
 
     # consistency
-    assert conn.is_consistent() == True
+    assert conn.is_consistent()
 
     # explain inference
     r = conn.explain_inference(TURTLE, '<urn:subj> <urn:pred> <urn:obj> .')
@@ -216,8 +216,6 @@ def test_reasoning(conn, admin):
 
 
 def test_icv(conn, admin):
-    data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
-
     icv = conn.icv()
 
     # add/remove/clear
@@ -226,13 +224,13 @@ def test_icv(conn, admin):
     icv.clear()
 
     # check/violations/convert
-    assert icv.is_valid(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .') == False
+    assert not icv.is_valid(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
     assert len(icv.explain_violations(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')) == 2
     assert '<tag:stardog:api:context:all>' in icv.convert(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
 
 
 def test_vcs(conn, admin):
-    data = '<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
+    data = b'<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
 
     vcs = conn.versioning()
 

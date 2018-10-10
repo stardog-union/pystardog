@@ -8,7 +8,7 @@ class Database(object):
 
     def get_options(self, *options):
         # transform into {'option': None} dict
-        meta = dict(map(lambda x: (x, None), options))
+        meta = dict([(x, None) for x in options])
 
         r = self.client.put(self.path + '/options', json=meta)
         return r.json()

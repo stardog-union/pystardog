@@ -58,7 +58,7 @@ class Admin(object):
             (list[Database])
                 List of Database objects
         """
-        return map(Database, self.admin.databases())
+        return list(map(Database, self.admin.databases()))
 
     def new_database(self, name, options=None, *contents):
         """
@@ -162,7 +162,7 @@ class Admin(object):
             (list[User])
                 User objects
         """
-        return map(User, self.admin.users())
+        return list(map(User, self.admin.users()))
 
     def new_user(self, username, password, superuser=False):
         """
@@ -204,7 +204,7 @@ class Admin(object):
             (list[Role])
                 Role objects
         """
-        return map(Role, self.admin.roles())
+        return list(map(Role, self.admin.roles()))
 
     def new_role(self, name):
         """
@@ -242,7 +242,7 @@ class Admin(object):
             (list[VirtualGraph])
                 Virtual Graph objects
         """
-        return map(VirtualGraph, self.admin.virtual_graphs())
+        return list(map(VirtualGraph, self.admin.virtual_graphs()))
 
     def new_virtual_graph(self, name, mappings, options):
         """
@@ -260,7 +260,7 @@ class Admin(object):
             >> admin.new_virtual_graph('users', File('mappings.ttl'), {'jdbc.driver': 'com.mysql.jdbc.Driver'})
         """
         with mappings.data() as data:
-            return VirtualGraph(self.admin.new_virtual_graph(name, data.read() if hasattr(data, 'read') else data, options))
+            return VirtualGraph(self.admin.new_virtual_graph(name, data.read().decode() if hasattr(data, 'read') else data, options))
 
     def validate(self):
         """
@@ -436,7 +436,7 @@ class User(object):
             (list[Role])
                 User roles
         """
-        return map(Role, self.user.roles())
+        return list(map(Role, self.user.roles()))
 
     def add_role(self, role):
         """
@@ -463,7 +463,7 @@ class User(object):
         Example
             >> user.set_roles('reader', admin.role('writer'))
         """
-        self.user.set_roles(*map(self.__rolename, roles))
+        self.user.set_roles(*list(map(self.__rolename, roles)))
 
     def remove_role(self, role):
         """
@@ -577,7 +577,7 @@ class Role(object):
             (list[User])
                 Users
         """
-        return map(User, self.role.users())
+        return list(map(User, self.role.users()))
 
     def delete(self, force=None):
         """
@@ -676,7 +676,7 @@ class VirtualGraph(object):
             >> vg.update('users', File('mappings.ttl'), {'jdbc.driver': 'com.mysql.jdbc.Driver'})
         """
         with mappings.data() as data:
-            self.vg.update(name, data.read() if hasattr(data, 'read') else data, options)
+            self.vg.update(name, data.read().decode() if hasattr(data, 'read') else data, options)
 
     def delete(self):
         """

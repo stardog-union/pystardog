@@ -1,4 +1,4 @@
-from requests import Request, Session
+from requests import Session
 from requests_toolbelt.multipart import decoder
 
 from stardog.exceptions import StardogException
