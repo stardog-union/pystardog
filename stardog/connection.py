@@ -349,7 +349,7 @@ class Connection(object):
             >> conn.ask('ask {:subj :pred :obj}', reasoning=True)
         """
         r = self.conn.query(query, self.transaction, BOOLEAN, **kwargs)
-        return bool(strtobool(r))
+        return bool(strtobool(r.decode()))
 
     def update(self, query, **kwargs):
         """
@@ -768,7 +768,7 @@ class VCS(object):
             >> vcs.ask('ask {?v a vcs:Version}')
         """
         r = self.vcs.query(query, BOOLEAN, **kwargs)
-        return bool(strtobool(r))
+        return bool(strtobool(r.decode()))
 
     def commit(self, message):
         """

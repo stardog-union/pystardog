@@ -20,7 +20,7 @@ class Admin(object):
 
     def databases(self):
         r = self.client.get('/admin/databases')
-        return map(self.database, r.json()['databases'])
+        return list(map(self.database, r.json()['databases']))
 
     def new_database(self, name, options=None, *files):
         fmetas = []
@@ -63,7 +63,7 @@ class Admin(object):
 
     def users(self):
         r = self.client.get('/admin/users')
-        return map(self.user, r.json()['users'])
+        return list(map(self.user, r.json()['users']))
 
     def new_user(self, username, password, superuser=False):
         meta = {
@@ -80,7 +80,7 @@ class Admin(object):
 
     def roles(self):
         r = self.client.get('/admin/roles')
-        return map(self.role, r.json()['roles'])
+        return list(map(self.role, r.json()['roles']))
 
     def new_role(self, name):
         self.client.post('/admin/roles', json={'rolename': name})
@@ -91,7 +91,7 @@ class Admin(object):
 
     def virtual_graphs(self):
         r = self.client.get('/admin/virtual_graphs')
-        return map(self.virtual_graph, r.json()['virtual_graphs'])
+        return list(map(self.virtual_graph, r.json()['virtual_graphs']))
 
     def new_virtual_graph(self, name, mappings, options):
         meta = {

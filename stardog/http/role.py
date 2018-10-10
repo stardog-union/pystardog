@@ -10,7 +10,7 @@ class Role(object):
         from stardog.http.user import User
 
         r = self.client.get(self.path + '/users')
-        return map(lambda name: User(name, self.client), r.json()['users'])
+        return [User(name, self.client) for name in r.json()['users']]
 
     def delete(self, force=None):
         self.client.delete(self.path, params={'force': force})

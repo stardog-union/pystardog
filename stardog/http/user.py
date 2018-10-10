@@ -24,7 +24,7 @@ class User(object):
 
     def roles(self):
         r = self.client.get(self.path + '/roles')
-        return map(lambda name: Role(name, self.client), r.json()['roles'])
+        return [Role(name, self.client) for name in r.json()['roles']]
 
     def add_role(self, role):
         self.client.post(self.path + '/roles', json={'rolename': role})

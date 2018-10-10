@@ -83,8 +83,8 @@ def test_users(admin):
     user = admin.new_user('username', 'password', False)
 
     assert len(admin.users()) == len(DEFAULT_USERS) + 1
-    assert user.is_superuser() == False
-    assert user.is_enabled() == True
+    assert not user.is_superuser()
+    assert user.is_enabled()
 
     # check if able to connect
     with Admin(username='username', password='password') as uadmin:
@@ -97,9 +97,9 @@ def test_users(admin):
 
     # disable/enable
     user.set_enabled(False)
-    assert user.is_enabled() == False
+    assert not user.is_enabled()
     user.set_enabled(True)
-    assert user.is_enabled() == True
+    assert user.is_enabled()
 
     # roles
     assert len(user.roles()) == 0

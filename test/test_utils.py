@@ -15,7 +15,7 @@ def test_content():
 
     f = File('test/data/example.ttl')
     with f.data() as c:
-        assert c.read() == '<urn:subj> <urn:pred> <urn:obj> .'
+        assert c.read() == b'<urn:subj> <urn:pred> <urn:obj> .'
         assert f.content_type == TURTLE
         assert f.content_encoding == None
         assert f.name == 'example.ttl'

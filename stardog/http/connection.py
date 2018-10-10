@@ -1,5 +1,3 @@
-import json
-from contextlib import contextmanager
 from distutils.util import strtobool
 
 from stardog.content_types import SPARQL_JSON, TURTLE
@@ -61,7 +59,7 @@ class Connection(object):
 
     def size(self):
         r = self.client.get('/size')
-        return long(r.text)
+        return int(r.text)
 
     def export(self, content_type=TURTLE, stream=False, chunk_size=10240):
         with self.client.get('/export', headers={'Accept': content_type}, stream=stream) as r:
@@ -86,7 +84,7 @@ class Connection(object):
 
         # query bindings
         bindings = kwargs.get('bindings', {})
-        for k, v in bindings.iteritems():
+        for k, v in bindings.items():
             params['${}'.format(k)] = v
 
         url = '/{}/{}'.format(transaction, method) if transaction else '/{}'.format(method)
