@@ -101,6 +101,7 @@ class Admin(object):
                     'name': content.name,
                     'content': data,
                     'content-type': content.content_type,
+                    'content-encoding': content.content_encoding,
                     'context': context
                 })
 

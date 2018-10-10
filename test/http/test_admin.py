@@ -62,8 +62,8 @@ def test_databases(admin):
     assert copy.get_options('search.enabled', 'spatial.enabled') == {'search.enabled': True, 'spatial.enabled': False}
 
     # bulk load
-    with open('test/data/example.ttl', 'rb') as f:
-        bl = admin.new_database('bulkload', {}, {'name': 'example.ttl', 'content': f, 'content-type': TURTLE, 'context': 'urn:a'})
+    with open('test/data/example.ttl.zip', 'rb') as f:
+        bl = admin.new_database('bulkload', {}, {'name': 'example.ttl.zip', 'content': f, 'content-type': TURTLE, 'content-encoding': 'zip', 'context': 'urn:a'})
 
     with Connection('bulkload', username='admin', password='admin') as c:
         assert c.size() == 1

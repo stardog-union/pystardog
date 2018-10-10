@@ -34,7 +34,7 @@ class Admin(object):
                 fmeta['context'] = f['context']
 
             fmetas.append(fmeta)
-            params.append((fname, (fname, f['content'], f['content-type'])))
+            params.append((fname, (fname, f['content'], f['content-type'], {'Content-Encoding': f.get('content-encoding')})))
 
         meta = {
             'dbname': name,

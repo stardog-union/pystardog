@@ -116,7 +116,7 @@ class Connection(object):
         self._assert_in_transaction()
 
         with content.data() as data:
-            self.conn.add(self.transaction, content.content_type, data, graph_uri)
+            self.conn.add(self.transaction, data, content.content_type, content.content_encoding, graph_uri)
 
     def remove(self, content, graph_uri=None):
         """
@@ -139,7 +139,7 @@ class Connection(object):
         self._assert_in_transaction()
 
         with content.data() as data:
-            self.conn.remove(self.transaction, content.content_type, data, graph_uri)
+            self.conn.remove(self.transaction, data, content.content_type, content.content_encoding, graph_uri)
 
     def clear(self, graph_uri=None):
         """
@@ -406,7 +406,7 @@ class Connection(object):
             >> conn.explain_inference(File('inferences.ttl'))
         """
         with content.data() as data:
-            return self.conn.explain_inference(content.content_type, data, self.transaction)
+            return self.conn.explain_inference(data, content.content_type, content.content_encoding, self.transaction)
 
     def explain_inconsistency(self, graph_uri=None):
         """
@@ -544,7 +544,7 @@ class ICV(object):
             >> icv.add(File('constraints.ttl'))
         """
         with content.data() as data:
-            self.icv.add(content.content_type, data)
+            self.icv.add(data, content.content_type, content.content_encoding)
 
     def remove(self, content):
         """
@@ -558,7 +558,7 @@ class ICV(object):
             >> icv.remove(File('constraints.ttl'))
         """
         with content.data() as data:
-            self.icv.remove(content.content_type, data)
+            self.icv.remove(data, content.content_type, content.content_encoding)
 
     def clear(self):
         """
@@ -584,7 +584,7 @@ class ICV(object):
             >> icv.is_valid(File('constraints.ttl'), graph_uri='urn:graph')
         """
         with content.data() as data:
-            return self.icv.is_valid(content.content_type, data, self.conn.transaction, graph_uri)
+            return self.icv.is_valid(data, content.content_type, content.content_encoding, self.conn.transaction, graph_uri)
 
     def explain_violations(self, content, graph_uri=None):
         """
@@ -605,7 +605,7 @@ class ICV(object):
         """
 
         with content.data() as data:
-            return self.icv.explain_violations(content.content_type, data, self.conn.transaction, graph_uri)
+            return self.icv.explain_violations(data, content.content_type, content.content_encoding, self.conn.transaction, graph_uri)
 
     def convert(self, content, graph_uri=None):
         """
@@ -625,7 +625,7 @@ class ICV(object):
             >> icv.convert(File('constraints.ttl'), graph_uri='urn:graph')
         """
         with content.data() as data:
-            return self.icv.convert(content.content_type, data, graph_uri)
+            return self.icv.convert(data, content.content_type, content.content_encoding, graph_uri)
 
 
 class VCS(object):

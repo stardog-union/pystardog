@@ -35,19 +35,19 @@ class Connection(object):
     def commit(self, transaction):
         self.client.post('/transaction/commit/{}'.format(transaction))
 
-    def add(self, transaction, content_type, content, graph_uri=None):
+    def add(self, transaction, content, content_type, content_encoding=None, graph_uri=None):
         self.client.post(
             '/{}/add'.format(transaction),
             params={'graph-uri': graph_uri},
-            headers={'Content-Type': content_type},
+            headers={'Content-Type': content_type, 'Content-Encoding': content_encoding},
             data=content
         )
 
-    def remove(self, transaction, content_type, content, graph_uri=None):
+    def remove(self, transaction, content, content_type, content_encoding=None, graph_uri=None):
         self.client.post(
             '/{}/remove'.format(transaction),
             params={'graph-uri': graph_uri},
-            headers={'Content-Type': content_type},
+            headers={'Content-Type': content_type, 'Content-Encoding': content_encoding},
             data=content
         )
 
@@ -116,13 +116,13 @@ class Connection(object):
 
         return bool(strtobool(r.text))
 
-    def explain_inference(self, content_type, content, transaction=None):
+    def explain_inference(self, content, content_type, content_encoding=None, transaction=None):
         url = '/reasoning/{}/explain'.format(transaction) if transaction else '/reasoning/explain'
 
         r = self.client.post(
             url,
             data=content,
-            headers={'Content-Type': content_type}
+            headers={'Content-Type': content_type, 'Content-Encoding': content_encoding},
         )
 
         return r.json()['proofs']

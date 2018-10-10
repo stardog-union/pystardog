@@ -37,7 +37,7 @@ def test_transactions(conn, admin):
 
     # remove
     conn.begin()
-    conn.remove(File('test/data/example.ttl'))
+    conn.remove(File('test/data/example.ttl.zip'))
     conn.commit()
 
     assert conn.size() == 0
