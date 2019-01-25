@@ -204,7 +204,7 @@ def test_reasoning(conn, admin):
 
     # explain inconsistency in transaction
     # TODO server returns 404 Not Found!
-    with pytest.raises(StardogException, match='Not Found!'):
+    with pytest.raises(StardogException, match='There was an unexpected error on the server'):
         r = conn.explain_inconsistency(transaction=t)
         assert len(r) == 0
 
