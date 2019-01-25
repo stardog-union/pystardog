@@ -224,9 +224,9 @@ def test_icv(conn, admin):
     icv.clear()
 
     # check/violations/convert
-    assert not icv.is_valid(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
-    assert len(icv.explain_violations(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')) == 2
-    assert '<tag:stardog:api:context:all>' in icv.convert(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
+    assert not icv.is_valid('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
+    assert len(icv.explain_violations('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)) == 2
+    assert '<tag:stardog:api:context:all>' in icv.convert('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
 
 
 def test_vcs(conn, admin):
