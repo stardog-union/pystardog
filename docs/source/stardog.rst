@@ -25,7 +25,7 @@ stardog.connection module
     :members:
     :undoc-members:
     :show-inheritance:
-    :special-members:
+    :special-members: __init__
 
 stardog.content module
 ----------------------

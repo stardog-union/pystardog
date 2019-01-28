@@ -1,3 +1,6 @@
+"""Administer a Stardog server.
+"""
+
 import contextlib2
 
 import stardog.content_types as content_types
@@ -5,90 +8,81 @@ import stardog.http.admin as http_admin
 
 
 class Admin(object):
-    """
-    Admin Connection.
-    This is the entry point for admin-related operations on a Stardog server
+    """Admin Connection.
 
-    See Also
-        https://www.stardog.com/docs/#_administering_stardog
+    This is the entry point for admin-related operations on a Stardog server.
+
+    See Also:
+      https://www.stardog.com/docs/#_administering_stardog
     """
 
     def __init__(self, endpoint=None, username=None, password=None):
-        """
-        Initialize an admin connection to a Stardog server
+        """Initializes an admin connection to a Stardog server.
 
-        Parameters
-            endpoint (str)
-                Url of the server endpoint. Defaults to `http://localhost:5820`
-            username (str)
-                Username to use in the connection (optional)
-            password (str)
-                Password to use in the connection (optional)
+        Args:
+          endpoint (str, optional): Url of the server endpoint.
+            Defaults to `http://localhost:5820`
+          username (str, optional): Username to use in the connection.
+            Defaults to `admin`
+          password (str, optional): Password to use in the connection.
+            Defaults to `admin`
 
-        Example
-            >> admin = Admin(endpoint='http://localhost:9999',
-                             username='admin', password='admin')
+        Examples:
+          >>> admin = Admin(endpoint='http://localhost:9999',
+                            username='admin', password='admin')
         """
         self.admin = http_admin.Admin(endpoint, username, password)
 
     def shutdown(self):
-        """
-        Shutdown the server
+        """Shuts down the server.
         """
         self.admin.shutdown()
 
     def database(self, name):
-        """
-        Retrieve an object representing a database
+        """Retrieves an object representing a database.
 
-        Arguments
-            name (str)
-                Database name
+        Args:
+          name (str): The database name
 
-        Returns
-            (Database)
-                Database object
+        Returns:
+          Database: The requested database
         """
         return Database(self.admin.database(name))
 
     def databases(self):
-        """
-        Retrieve all databases
+        """Retrieves all databases.
 
-        Returns
-            (list[Database])
-                List of Database objects
+        Returns:
+          list[Database]: A list of database objects
         """
         return list(map(Database, self.admin.databases()))
 
     def new_database(self, name, options=None, *contents):
-        """
-        Create a new database
+        """Creates a new database.
 
-        Parameters
-            name (str)
-                Database name
-            options (dict)
-                Dictionary with database options (optional)
-            contents (Content) or ((Content, str))
-                List of datasets to perform bulk-load with, optionally
-                with desired named graph (optional)
+        Args:
+          name (str): the database name
+          options (dict): Dictionary with database options (optional)
+          *contents (Content or (Content, str), optional): A list of datasets
+            to perform bulk-load with. Named graphs are made with tuples of
+            Content and the name.
 
-        Returns
-            (Database)
-                Database object
+        Returns:
+            Database: The database object
 
-        Example
-            # options
-            >> admin.new_database('db', {'search.enabled': True})
+        Examples:
+            Options
 
-            # bulk-load
-            >> admin.new_database('db', {},
-                                  File('example.ttl'), File('test.rdf'))
+            >>> admin.new_database('db', {'search.enabled': True})
 
-            # bulk-load to named graph
-            >> admin.new_database('db', {}, (File('test.rdf'), 'urn:context'))
+            bulk-load
 
+            >>> admin.new_database('db', {},
+                                   File('example.ttl'), File('test.rdf'))
+
+            bulk-load to named graph
+
+            >>> admin.new_database('db', {}, (File('test.rdf'), 'urn:context'))
         """
         files = []
 
@@ -113,160 +107,129 @@ class Admin(object):
             return Database(self.admin.new_database(name, options, *files))
 
     def query(self, id):
-        """
-        Get information about running query
+        """Gets information about a running query.
 
-        Parameters
-            id (str)
-                Query ID
+        Args:
+          id (str): Query ID
 
-        Returns
-            (dict)
-                Query information
+        Returns:
+            dict: Query information
         """
         return self.admin.query(id)
 
     def queries(self):
-        """
-        Get information about all running queries
+        """Gets information about all running queries.
 
-        Returns
-            (dict)
-                Query information
+        Returns:
+          dict: Query information
         """
         return self.admin.queries()
 
     def kill_query(self, id):
-        """
-        Kill running query
+        """Kills a running query.
 
-        Parameters
-            id (str)
-                Query ID
+        Args:
+          id (str): ID of the query to kill
         """
         self.admin.kill_query(id)
 
     def user(self, name):
-        """
-        Retrieve object representing an user
+        """Retrieves an object representing a user.
 
-        Parameters
-            name (str)
-                Username
+        Args:
+          name (str): The name of the user
 
-        Returns
-            (User)
-                User object
+        Returns:
+          User: The User object
         """
         return User(self.admin.user(name))
 
     def users(self):
-        """
-        Retrieve all users
+        """Retrieves all users.
 
-        Returns
-            (list[User])
-                User objects
+        Returns:
+          list[User]: A list of User objects
         """
         return list(map(User, self.admin.users()))
 
     def new_user(self, username, password, superuser=False):
-        """
-        Create new user
+        """Creates a new user.
 
-        Parameters
-            username (str)
-                Username
-            password (str)
-                Password
-            superuser (bool)
-                If user is a super duper user. Defaults to False
+        Args:
+          username (str): The username
+          password (str): The password
+          superuser (bool): Should the user be super? Defaults to false.
 
-        Returns
-            (User)
-                User object
+        Returns:
+          User: The new User object
         """
         return User(self.admin.new_user(username, password, superuser))
 
     def role(self, name):
-        """
-        Retrieve object representing role
+        """Retrieves an object representing a role.
 
-        Parameters
-            name (str)
-                Role name
+        Args:
+          name (str): The name of the Role
 
-        Returns
-            (Role)
-                Role object
+        Returns:
+          Role: The Role object
         """
         return Role(self.admin.role(name))
 
     def roles(self):
-        """
-        Retrieve all roles
+        """Retrieves all roles.
 
-        Returns
-            (list[Role])
-                Role objects
+        Returns:
+          list[Role]: A list of Role objects
         """
         return list(map(Role, self.admin.roles()))
 
     def new_role(self, name):
-        """
-        Create new role
+        """Creates a  new role.
 
-        Parameters
-            name (str)
-                Role name
+        Args:
+          name (str): The name of the new Role
 
-        Returns
-            (Role)
-                Role object
+        Returns:
+          Role: The new Role object
         """
         return Role(self.admin.new_role(name))
 
     def virtual_graph(self, name):
-        """
-        Retrieve Virtual Graph
+        """Retrieves a Virtual Graph.
 
-        Parameters
-            name (str)
-                Virtual Graph name
+        Args:
+          name (str): The name of the Virtual Graph to retrieve
 
-        Returns
-            (VirtualGraph)
-                Virtual Graph object
+        Returns:
+          VirtualGraph: The VirtualGraph object
         """
         return VirtualGraph(self.admin.virtual_graph(name))
 
     def virtual_graphs(self):
-        """
-        Retrieve all virtual graphs
+        """Retrieves all virtual graphs.
 
-        Returns
-            (list[VirtualGraph])
-                Virtual Graph objects
+        Returns:
+          list[VirtualGraph]: A list of VirtualGraph objects
         """
         return list(map(VirtualGraph, self.admin.virtual_graphs()))
 
     def new_virtual_graph(self, name, mappings, options):
-        """
-        Create new Virtual Graph
+        """Creates a new Virtual Graph.
 
-        Parameters
-            name (str)
-                Name
-            mappings (Content)
-                Mapping contents
-            options (dict)
-                Options
+        Args:
+          name (str): The name of the virtual graph
+          mappings (Content): New mapping contents
+          options (dict): Options for the new virtual graph
 
-        Example
-            >> admin.new_virtual_graph(
-                 'users', File('mappings.ttl'),
-                 {'jdbc.driver': 'com.mysql.jdbc.Driver'}
-               )
+        Returns:
+          VirtualGraph: the new VirtualGraph
+
+        Examples:
+            >>> admin.new_virtual_graph(
+                  'users', File('mappings.ttl'),
+                  {'jdbc.driver': 'com.mysql.jdbc.Driver'}
+                )
         """
         with mappings.data() as data:
             return VirtualGraph(
@@ -276,12 +239,10 @@ class Admin(object):
                     options))
 
     def validate(self):
-        """
-        Validate admin connection
+        """Validates an admin connection.
 
-        Returns
-            (bool)
-                Connection state
+        Returns:
+          bool: The connection state
         """
         return self.admin.validate()
 
@@ -293,273 +254,250 @@ class Admin(object):
 
 
 class Database(object):
-    """
-    Database
+    """Database Admin
 
-    See Also
-        https://www.stardog.com/docs/#_database_admin
+    See Also:
+      https://www.stardog.com/docs/#_database_admin
     """
 
     def __init__(self, db):
+        """Initializes a Database.
+
+        Use :meth:`stardog.admin.Admin.database`,
+        :meth:`stardog.admin.Admin.databases`, or
+        :meth:`stardog.admin.Admin.new_database` instead of
+        constructing manually.
+        """
         self.db = db
 
     @property
     def name(self):
+        """The name of the database.
+        """
         return self.db.name
 
     def get_options(self, *options):
-        """
-        Get database options
+        """Gets database options.
 
-        Parameters
-            options (str)
-                Database option names
+        Args:
+          *options (str): Database option names
 
-        Returns
-            (dict)
-                Database options
+        Returns:
+          dict: Database options
 
-        Example
-            >> db.get_options('search.enabled', 'spatial.enabled')
+        Examples
+          >>> db.get_options('search.enabled', 'spatial.enabled')
         """
         return self.db.get_options(*options)
 
     def set_options(self, options):
-        """
-        Set database options.
-        Database must be offline
+        """Sets database options.
 
-        Parameters
-            options (dict)
-                Database options
+        The database must be offline.
 
-        Example
-            >> db.set_options({'spatial.enabled': False})
+        Args:
+          options (dict): Database options
+
+        Examples
+            >>> db.set_options({'spatial.enabled': False})
         """
         self.db.set_options(options)
 
     def optimize(self):
-        """
-        Optimize database
+        """Optimizes a database.
         """
         self.db.optimize()
 
     def repair(self):
-        """
-        Repair database
-        Database must be offline
+        """Repairs a database.
+
+        The database must be offline.
         """
         self.db.repair()
 
     def online(self):
-        """
-        Set database to online state
+        """Sets a database to online state.
         """
         self.db.online()
 
     def offline(self):
-        """
-        Set database to offline state
+        """Sets a database to offline state.
         """
         self.db.offline()
 
     def copy(self, to):
-        """
-        Make a copy of this database under another name.
-        Database must be offline
+        """Makes a copy of this database under another name.
 
-        Parameters
-            to (str)
-                Name of the new database to be created
+        The database must be offline.
 
-        Returns
-            (Database)
-                Object representing the new database
+        Args:
+          to (str): Name of the new database to be created
+
+        Returns:
+          Database: The new Database
         """
         db = self.db.copy(to)
         return Database(db)
 
     def drop(self):
-        """
-        Drop the database
+        """Drops the database.
         """
         self.db.drop()
 
 
 class User(object):
-    """
-    User
+    """User
 
-    See Also
-        https://www.stardog.com/docs/#_security
+    See Also:
+      https://www.stardog.com/docs/#_security
     """
 
     def __init__(self, user):
+        """Initializes a User.
+
+        Use :meth:`stardog.admin.Admin.user`,
+        :meth:`stardog.admin.Admin.users`, or
+        :meth:`stardog.admin.Admin.new_user` instead of
+        constructing manually.
+        """
         self.user = user
 
     @property
     def name(self):
+        """str: The user name.
+        """
         return self.user.name
 
     def set_password(self, password):
-        """
-        Set new password
+        """Sets a new password.
 
-        Parameters
-            password (str)
-                Password
+        Args:
+          password (str)
         """
         self.user.set_password(password)
 
     def is_enabled(self):
-        """
-        Check if user is enabled
+        """Checks if the user is enabled.
 
-        Returns
-            (bool)
-                User activation state
+        Returns:
+          bool: User activation state
         """
         return self.user.is_enabled()
 
     def set_enabled(self, enabled):
-        """
-        Enable/disable user
+        """Enables or disables the user.
 
-        Parameters
-            enabled (bool)
-                User state
+        Args:
+          enabled (bool): Desired User state
         """
         self.user.set_enabled(enabled)
 
     def is_superuser(self):
-        """
-        Check if user is super duper user
+        """Checks if the user is a super user.
 
-        Returns
-            (bool)
-                Superuser state
+        Returns:
+          bool: Superuser state
         """
         return self.user.is_superuser()
 
     def roles(self):
-        """
-        Get all roles from this user
+        """Gets all the User's roles.
 
-        Returns
-            (list[Role])
-                User roles
+        Returns:
+          list[Role]
         """
         return list(map(Role, self.user.roles()))
 
     def add_role(self, role):
-        """
-        Add existing role to user
+        """Adds an existing role to the user.
 
-        Params
-            role (str or Role)
-                The role to add
+        Args:
+          role (str or Role): The role to add or its name
 
-        Example
-            >> user.add_role('reader')
-            >> user.add_role(admin.role('reader'))
+        Examples:
+            >>> user.add_role('reader')
+            >>> user.add_role(admin.role('reader'))
         """
         self.user.add_role(self.__rolename(role))
 
     def set_roles(self, *roles):
-        """
-        Set the roles of this user
+        """Sets the roles of the user.
 
-        Params
-            roles (str or Role)
-                The roles to add
+        Args:
+          *roles (str or Role): The roles to add the User to
 
-        Example
-            >> user.set_roles('reader', admin.role('writer'))
+        Examples
+            >>> user.set_roles('reader', admin.role('writer'))
         """
         self.user.set_roles(*list(map(self.__rolename, roles)))
 
     def remove_role(self, role):
-        """
-        Remove role from user
+        """Removes a role from the user.
 
-        Params
-            role (str or Role)
-                The role to add
+        Args:
+          role (str or Role): The role to remove or its name
 
-        Example
-            >> user.add_role('reader')
-            >> user.add_role(admin.role('reader'))
+        Examples
+            >>> user.remove_role('reader')
+            >>> user.remove_role(admin.role('reader'))
         """
         self.user.remove_role(self.__rolename(role))
 
     def delete(self):
-        """
-        Delete user
+        """Deletes the user.
         """
         self.user.delete()
 
     def permissions(self):
-        """
-        Get user permissions
+        """Gets the user permissions.
 
-        Returns
-            (dict)
-                User permissions
+        See Also:
+          https://www.stardog.com/docs/#_permissions
 
-        See Also
-            https://www.stardog.com/docs/#_permissions
+        Returns:
+          dict: User permissions
         """
         return self.user.permissions()
 
     def add_permission(self, action, resource_type, resource):
-        """
-        Add permission to user
+        """Add a permission to the user.
 
-        Parameters
-            action (str)
-                Action type (e.g., 'read', 'write')
-            resource_type (str)
-                Resource type (e.g., 'user', 'db')
-            resource (str)
-                Target resource (e.g., 'username', '*')
+        See Also:
+          https://www.stardog.com/docs/#_permissions
 
-        Example
-            >> user.add_permission('read', 'user', 'username')
-            >> user.add_permission('write', '*', '*')
+        Args:
+          action (str): Action type (e.g., 'read', 'write')
+          resource_type (str): Resource type (e.g., 'user', 'db')
+          resource (str): Target resource (e.g., 'username', '*')
 
-        See Also
-            https://www.stardog.com/docs/#_permissions
+        Examples
+            >>> user.add_permission('read', 'user', 'username')
+            >>> user.add_permission('write', '*', '*')
         """
         self.user.add_permission(action, resource_type, resource)
 
     def remove_permission(self, action, resource_type, resource):
-        """
-        Remove permission from user
+        """Removes a permission from the user.
 
-        Parameters
-            action (str)
-                Action type (e.g., 'read', 'write')
-            resource_type (str)
-                Resource type (e.g., 'user', 'db')
-            resource (str)
-                Target resource (e.g., 'username', '*')
+        See Also:
+          https://www.stardog.com/docs/#_permissions
 
-        Example
-            >> user.remove_permission('read', 'user', 'username')
-            >> user.remove_permission('write', '*', '*')
+        Args:
+          action (str): Action type (e.g., 'read', 'write')
+          resource_type (str): Resource type (e.g., 'user', 'db')
+          resource (str): Target resource (e.g., 'username', '*')
 
-        See Also
-            https://www.stardog.com/docs/#_permissions
+        Examples
+            >>> user.remove_permission('read', 'user', 'username')
+            >>> user.remove_permission('write', '*', '*')
         """
         self.user.remove_permission(action, resource_type, resource)
 
     def effective_permissions(self):
-        """
-        Get user's effective permissions
+        """Gets the user's effective permissions.
 
-        Returns
-            (dict)
-                User effective permissions
+        Returns:
+          dict: User effective permissions
         """
         return self.user.effective_permissions()
 
@@ -568,125 +506,124 @@ class User(object):
 
 
 class Role(object):
-    """
-    Role
+    """Role
 
-    See Also
+    See Also:
         https://www.stardog.com/docs/#_security
     """
 
     def __init__(self, role):
+        """Initializes a Role.
+
+        Use :meth:`stardog.admin.Admin.role`,
+        :meth:`stardog.admin.Admin.roles`, or
+        :meth:`stardog.admin.Admin.new_role` instead of
+        constructing manually.
+        """
         self.role = role
 
     @property
     def name(self):
+        """The name of the Role.
+        """
         return self.role.name
 
     def users(self):
-        """
-        List of users for this role
+        """Lists the users for this role.
 
-        Returns
-            (list[User])
-                Users
+        Returns:
+          list[User]
         """
         return list(map(User, self.role.users()))
 
     def delete(self, force=None):
-        """
-        Delete role
+        """Deletes the role.
 
-        Parameters
-            force (bool)
-                Force deletion of role
+        Args:
+          force (bool): Force deletion of the role
         """
         self.role.delete(force)
 
     def permissions(self):
-        """
-        Get role permissions
+        """Gets the role permissions.
 
-        Returns
-            (dict)
-                Role permissions
-
-        See Also
+        See Also:
             https://www.stardog.com/docs/#_permissions
+
+        Returns:
+          dict: Role permissions
         """
         return self.role.permissions()
 
     def add_permission(self, action, resource_type, resource):
-        """
-        Add permission to role
+        """Adds a permission to the role.
 
-        Parameters
-            action (str)
-                Action type (e.g., 'read', 'write')
-            resource_type (str)
-                Resource type (e.g., 'user', 'db')
-            resource (str)
-                Target resource (e.g., 'username', '*')
-
-        Example
-            >> role.add_permission('read', 'user', 'username')
-            >> role.add_permission('write', '*', '*')
-
-        See Also
+        See Also:
             https://www.stardog.com/docs/#_permissions
+
+        Args:
+          action (str): Action type (e.g., 'read', 'write')
+          resource_type (str): Resource type (e.g., 'user', 'db')
+          resource (str): Target resource (e.g., 'username', '*')
+
+        Examples:
+            >>> role.add_permission('read', 'user', 'username')
+            >>> role.add_permission('write', '*', '*')
         """
         self.role.add_permission(action, resource_type, resource)
 
     def remove_permission(self, action, resource_type, resource):
-        """
-        Remove permission from role
+        """Removes a permission from the role.
 
-        Parameters
-            action (str)
-                Action type (e.g., 'read', 'write')
-            resource_type (str)
-                Resource type (e.g., 'user', 'db')
-            resource (str)
-                Target resource (e.g., 'username', '*')
-
-        Example
-            >> role.remove_permission('read', 'user', 'username')
-            >> role.remove_permission('write', '*', '*')
-
-        See Also
+        See Also:
             https://www.stardog.com/docs/#_permissions
+
+        Args:
+          action (str): Action type (e.g., 'read', 'write')
+          resource_type (str): Resource type (e.g., 'user', 'db')
+          resource (str): Target resource (e.g., 'username', '*')
+
+        Examples:
+            >>> role.remove_permission('read', 'user', 'username')
+            >>> role.remove_permission('write', '*', '*')
         """
         self.role.remove_permission(action, resource_type, resource)
 
 
 class VirtualGraph(object):
-    """
-    Virtual Graph
+    """Virtual Graph
 
-    See Also
+    See Also:
         https://www.stardog.com/docs/#_structured_data
     """
 
     def __init__(self, vg):
+        """Initializes a virtual graph.
+
+        Use :meth:`stardog.admin.Admin.virtual_graph`,
+        :meth:`stardog.admin.Admin.virtual_graphs`, or
+        :meth:`stardog.admin.Admin.new_virtual_graph` instead of
+        constructing manually.
+        """
+
         self.vg = vg
 
     @property
     def name(self):
+        """The name of the virtual graph.
+        """
         return self.vg.name
 
     def update(self, name, mappings, options):
-        """
-        Update Virtual Graph
+        """Updates the Virtual Graph.
 
-        Parameters
-            name (str)
-                New name
-            mappings (Content)
-                New mapping contents
-            options (dict)
-                New options
+        Args:
+          name (str): The new name
+          mappings (Content): New mapping contents
+          options (dict): New options
 
-        Example
-            >> vg.update('users', File('mappings.ttl'),
+        Examples:
+            >>> vg.update('users', File('mappings.ttl'),
                          {'jdbc.driver': 'com.mysql.jdbc.Driver'})
         """
         with mappings.data() as data:
@@ -696,41 +633,34 @@ class VirtualGraph(object):
                 options)
 
     def delete(self):
-        """
-        Delete Virtual Graph
+        """Deletes the Virtual Graph.
         """
         self.vg.delete()
 
     def options(self):
-        """
-        Get Virtual Graph options
+        """Gets Virtual Graph options.
 
-        Returns
-            (dict)
-                Options
+        Returns:
+          dict: Options
         """
         return self.vg.options()
 
     def mappings(self, content_type=content_types.TURTLE):
-        """
-        Get Virtual Graph mappings
+        """Gets the Virtual Graph mappings.
 
-        Parameters
-            content_type (str)
-                Content type for results. Defaults to 'text/turtle'
+        Args:
+          content_type (str): Content type for results.
+            Defaults to 'text/turtle'
 
-        Returns
-            (str)
-                Mappings in given content type
+        Returns:
+          str: Mappings in given content type
         """
         return self.vg.mappings(content_type)
 
     def available(self):
-        """
-        Check if Virtual Graph is available
+        """Checks if the Virtual Graph is available.
 
-        Returns
-            (bool)
-                Availability state
+        Returns:
+          bool: Availability state
         """
         return self.vg.available()
