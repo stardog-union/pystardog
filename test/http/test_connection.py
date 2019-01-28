@@ -1,20 +1,20 @@
 import pytest
 
-from stardog.content_types import TURTLE
-from stardog.exceptions import StardogException
-from stardog.http.admin import Admin
-from stardog.http.connection import Connection
+import stardog.content_types as content_types
+import stardog.exceptions as exceptions
+import stardog.http.admin as http_admin
+import stardog.http.connection as http_connection
 
 
 @pytest.fixture(scope="module")
 def conn():
-    with Connection('test') as conn:
+    with http_connection.Connection('test') as conn:
         yield conn
 
 
 @pytest.fixture(scope="module")
 def admin():
-    with Admin() as admin:
+    with http_admin.Admin() as admin:
 
         for db in admin.databases():
             db.drop()
@@ -28,7 +28,7 @@ def admin():
 
 
 def test_docs(conn, admin):
-    content = (b'Only the Knowledge Graph can unify all data types and '
+    example = (b'Only the Knowledge Graph can unify all data types and '
                b'every data velocity into a single, coherent, unified whole.')
 
     # docstore
@@ -36,17 +36,17 @@ def test_docs(conn, admin):
     assert docs.size() == 0
 
     # add
-    docs.add('doc', content)
+    docs.add('doc', example)
     assert docs.size() == 1
     assert conn.size() > 0
 
     # get
     doc = docs.get('doc')
-    assert next(doc) == content
+    assert next(doc) == example
 
     # stream
     doc = docs.get('doc', stream=True, chunk_size=1)
-    assert b''.join(next(doc)) == content
+    assert b''.join(next(doc)) == example
 
     # delete
     docs.delete('doc')
@@ -59,7 +59,7 @@ def test_docs(conn, admin):
     assert docs.size() == 1
 
     doc = docs.get('example')
-    assert next(doc) == content
+    assert next(doc) == example
 
     # clear
     docs.clear()
@@ -71,28 +71,28 @@ def test_transactions(conn, admin):
 
     # add
     t = conn.begin()
-    conn.add(t, data, TURTLE)
+    conn.add(t, data, content_types.TURTLE)
     conn.commit(t)
 
     assert conn.size() == 1
 
     # remove
     t = conn.begin()
-    conn.remove(t, data, TURTLE)
+    conn.remove(t, data, content_types.TURTLE)
     conn.commit(t)
 
     assert conn.size() == 0
 
     # rollback
     t = conn.begin()
-    conn.add(t, data, TURTLE)
+    conn.add(t, data, content_types.TURTLE)
     conn.rollback(t)
 
     assert conn.size() == 0
 
     # export
     t = conn.begin()
-    conn.add(t, data, TURTLE)
+    conn.add(t, data, content_types.TURTLE)
     conn.commit(t)
 
     assert data in next(conn.export())
@@ -104,21 +104,21 @@ def test_transactions(conn, admin):
 
     # add named graph
     t = conn.begin()
-    conn.add(t, data, TURTLE, graph_uri='urn:graph')
+    conn.add(t, data, content_types.TURTLE, graph_uri='urn:graph')
     conn.commit(t)
 
     assert conn.size() == 1
 
     # remove from default graph
     t = conn.begin()
-    conn.remove(t, data, TURTLE)
+    conn.remove(t, data, content_types.TURTLE)
     conn.commit(t)
 
     assert conn.size() == 1
 
     # remove from named graph
     t = conn.begin()
-    conn.remove(t, data, TURTLE, graph_uri='urn:graph')
+    conn.remove(t, data, content_types.TURTLE, graph_uri='urn:graph')
     conn.commit(t)
 
     assert conn.size() == 0
@@ -129,7 +129,7 @@ def test_queries(conn, admin):
 
     # add
     t = conn.begin()
-    conn.add(t, data, TURTLE)
+    conn.add(t, data, content_types.TURTLE)
     conn.commit(t)
 
     # query
@@ -151,7 +151,8 @@ def test_queries(conn, admin):
 
     # construct
     q = conn.query(
-        'construct {?s ?p ?o} where {?s ?p ?o}', content_type=TURTLE)
+        'construct {?s ?p ?o} where {?s ?p ?o}',
+        content_type=content_types.TURTLE)
     assert q.strip() == data
 
     # update
@@ -164,7 +165,7 @@ def test_queries(conn, admin):
 
     # query in transaction
     t = conn.begin()
-    conn.add(t, data, TURTLE)
+    conn.add(t, data, content_types.TURTLE)
 
     q = conn.query('select * {?s ?p ?o}')
     assert len(q['results']['bindings']) == 0
@@ -192,32 +193,35 @@ def test_reasoning(conn, admin):
 
     # add
     t = conn.begin()
-    conn.add(t, data, TURTLE)
+    conn.add(t, data, content_types.TURTLE)
     conn.commit(t)
 
     # consistency
     assert conn.is_consistent()
 
     # explain inference
-    r = conn.explain_inference('<urn:subj> <urn:pred> <urn:obj> .', TURTLE)
+    r = conn.explain_inference('<urn:subj> <urn:pred> <urn:obj> .',
+                               content_types.TURTLE)
     assert len(r) == 1
 
     # explain inference in transaction
     t = conn.begin()
-    conn.add(t, '<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
+    conn.add(t, '<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE)
 
     # TODO server throws null pointer exception
     with pytest.raises(
-            StardogException,
+            exceptions.StardogException,
             match='There was an unexpected error on the server'):
         r = conn.explain_inference(
-            '<urn:subj> <urn:pred> <urn:obj3> .', TURTLE, transaction=t)
+            '<urn:subj> <urn:pred> <urn:obj3> .',
+            content_types.TURTLE,
+            transaction=t)
         assert len(r) == 0
 
     # explain inconsistency in transaction
     # TODO server returns 404 Not Found!
     with pytest.raises(
-            StardogException,
+            exceptions.StardogException,
             match='There was an unexpected error on the server'):
         r = conn.explain_inconsistency(transaction=t)
         assert len(r) == 0
@@ -233,17 +237,18 @@ def test_icv(conn, admin):
     icv = conn.icv()
 
     # add/remove/clear
-    icv.add('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
-    icv.remove('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
+    icv.add('<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE)
+    icv.remove('<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE)
     icv.clear()
 
     # check/violations/convert
-    assert not icv.is_valid('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
+    assert not icv.is_valid('<urn:subj> <urn:pred> <urn:obj3> .',
+                            content_types.TURTLE)
     assert len(
         icv.explain_violations('<urn:subj> <urn:pred> <urn:obj3> .',
-                               TURTLE)) == 2
+                               content_types.TURTLE)) == 2
     assert '<tag:stardog:api:context:all>' in icv.convert(
-        '<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
+        '<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE)
 
 
 def test_vcs(conn, admin):
@@ -253,7 +258,7 @@ def test_vcs(conn, admin):
 
     # commit
     t = conn.begin()
-    conn.add(t, data, TURTLE)
+    conn.add(t, data, content_types.TURTLE)
     vcs.commit(t, 'a versioned commit')
 
     # query
@@ -277,10 +282,11 @@ def test_graphql(conn, admin):
         db = admin.new_database('graphql', {}, {
             'name': 'starwars.ttl',
             'content': f,
-            'content-type': TURTLE
+            'content-type': content_types.TURTLE
         })
 
-    with Connection('graphql', username='admin', password='admin') as c:
+    with http_connection.Connection(
+            'graphql', username='admin', password='admin') as c:
         gql = c.graphql()
 
         # query

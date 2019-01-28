@@ -1,11 +1,11 @@
-from stardog.content_types import SPARQL_JSON
+import stardog.content_types as content_types
 
 
 class VCS(object):
     def __init__(self, conn):
         self.client = conn.client
 
-    def query(self, query, content_type=SPARQL_JSON, **kwargs):
+    def query(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
         params = {
             'query': query,
             'baseURI': kwargs.get('base_uri'),
@@ -26,7 +26,8 @@ class VCS(object):
             headers={'Accept': content_type},
         )
 
-        return r.json() if content_type == SPARQL_JSON else r.content
+        return r.json(
+        ) if content_type == content_types.SPARQL_JSON else r.content
 
     def commit(self, transaction, message):
         self.client.post('/vcs/{}/commit_msg'.format(transaction))

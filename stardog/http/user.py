@@ -1,4 +1,4 @@
-from stardog.http.role import Role
+import stardog.http.role as role
 
 
 class User(object):
@@ -23,7 +23,7 @@ class User(object):
 
     def roles(self):
         r = self.client.get(self.path + '/roles')
-        return [Role(name, self.client) for name in r.json()['roles']]
+        return [role.Role(name, self.client) for name in r.json()['roles']]
 
     def add_role(self, role):
         self.client.post(self.path + '/roles', json={'rolename': role})

@@ -1,28 +1,29 @@
-from distutils.util import strtobool
+import distutils.util
 
-from stardog.content_types import SPARQL_JSON, TURTLE
-from stardog.http.client import Client
-from stardog.http.docs import Docs
-from stardog.http.graphql import GraphQL
-from stardog.http.icv import ICV
-from stardog.http.vcs import VCS
+import stardog.content_types as content_types
+import stardog.http.client as http_client
+import stardog.http.docs as http_docs
+import stardog.http.graphql as http_graphql
+import stardog.http.icv as http_icv
+import stardog.http.vcs as http_vcs
 
 
 class Connection(object):
     def __init__(self, database, endpoint=None, username=None, password=None):
-        self.client = Client(endpoint, database, username, password)
+        self.client = http_client.Client(endpoint, database, username,
+                                         password)
 
     def docs(self):
-        return Docs(self)
+        return http_docs.Docs(self)
 
     def icv(self):
-        return ICV(self)
+        return http_icv.ICV(self)
 
     def versioning(self):
-        return VCS(self)
+        return http_vcs.VCS(self)
 
     def graphql(self):
-        return GraphQL(self)
+        return http_graphql.GraphQL(self)
 
     def begin(self):
         r = self.client.post('/transaction/begin')
@@ -72,7 +73,10 @@ class Connection(object):
         r = self.client.get('/size')
         return int(r.text)
 
-    def export(self, content_type=TURTLE, stream=False, chunk_size=10240):
+    def export(self,
+               content_type=content_types.TURTLE,
+               stream=False,
+               chunk_size=10240):
         with self.client.get(
                 '/export', headers={'Accept': content_type},
                 stream=stream) as r:
@@ -82,10 +86,11 @@ class Connection(object):
     def query(self,
               query,
               transaction=None,
-              content_type=SPARQL_JSON,
+              content_type=content_types.SPARQL_JSON,
               **kwargs):
         r = self.__query(query, 'query', transaction, content_type, **kwargs)
-        return r.json() if content_type == SPARQL_JSON else r.content
+        return r.json(
+        ) if content_type == content_types.SPARQL_JSON else r.content
 
     def update(self, query, transaction=None, **kwargs):
         self.__query(query, 'update', transaction, None, **kwargs)
@@ -135,7 +140,7 @@ class Connection(object):
             params={'graph-uri': graph_uri},
         )
 
-        return bool(strtobool(r.text))
+        return bool(distutils.util.strtobool(r.text))
 
     def explain_inference(self,
                           content,

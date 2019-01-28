@@ -1,9 +1,9 @@
-from contextlib import contextmanager
-from distutils.util import strtobool
+import contextlib
+import distutils.util
 
-from stardog.content_types import BOOLEAN, SPARQL_JSON, TURTLE
-from stardog.exceptions import TransactionException
-from stardog.http.connection import Connection as HTTPConnection
+import stardog.content_types as content_types
+import stardog.exceptions as exceptions
+import stardog.http.connection as http_connection
 
 
 class Connection(object):
@@ -32,7 +32,8 @@ class Connection(object):
             >> conn = Connection('db', endpoint='http://localhost:9999',
                                  username='admin', password='admin')
         """
-        self.conn = HTTPConnection(database, endpoint, username, password)
+        self.conn = http_connection.Connection(database, endpoint, username,
+                                               password)
         self.transaction = None
 
     def docs(self):
@@ -178,7 +179,10 @@ class Connection(object):
         """
         return self.conn.size()
 
-    def export(self, content_type=TURTLE, stream=False, chunk_size=10240):
+    def export(self,
+               content_type=content_types.TURTLE,
+               stream=False,
+               chunk_size=10240):
         """
         Export contents of database
 
@@ -225,7 +229,7 @@ class Connection(object):
         """
         return self.conn.explain(query, base_uri)
 
-    def select(self, query, content_type=SPARQL_JSON, **kwargs):
+    def select(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
         """
         Execute a SPARQL select query
 
@@ -265,7 +269,7 @@ class Connection(object):
         return self.conn.query(
             query, self.transaction, content_type=content_type, **kwargs)
 
-    def graph(self, query, content_type=TURTLE, **kwargs):
+    def graph(self, query, content_type=content_types.TURTLE, **kwargs):
         """
         Execute a SPARQL graph query
 
@@ -302,7 +306,7 @@ class Connection(object):
         """
         return self.conn.query(query, self.transaction, content_type, **kwargs)
 
-    def paths(self, query, content_type=SPARQL_JSON, **kwargs):
+    def paths(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
         """
         Execute a SPARQL paths query
 
@@ -366,8 +370,9 @@ class Connection(object):
         Example
             >> conn.ask('ask {:subj :pred :obj}', reasoning=True)
         """
-        r = self.conn.query(query, self.transaction, BOOLEAN, **kwargs)
-        return bool(strtobool(r.decode()))
+        r = self.conn.query(query, self.transaction, content_types.BOOLEAN,
+                            **kwargs)
+        return bool(distutils.util.strtobool(r.decode()))
 
     def update(self, query, **kwargs):
         """
@@ -447,11 +452,11 @@ class Connection(object):
 
     def _assert_not_in_transaction(self):
         if self.transaction:
-            raise TransactionException('Already in a transaction')
+            raise exceptions.TransactionException('Already in a transaction')
 
     def _assert_in_transaction(self):
         if not self.transaction:
-            raise TransactionException('Not in a transaction')
+            raise exceptions.TransactionException('Not in a transaction')
 
     def __enter__(self):
         return self
@@ -672,7 +677,7 @@ class VCS(object):
         self.vcs = conn.conn.versioning()
         self.conn = conn
 
-    def select(self, query, content_type=SPARQL_JSON, **kwargs):
+    def select(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
         """
         Execute a SPARQL select query over versioning history
 
@@ -713,7 +718,7 @@ class VCS(object):
         """
         return self.vcs.query(query, content_type, **kwargs)
 
-    def graph(self, query, content_type=TURTLE, **kwargs):
+    def graph(self, query, content_type=content_types.TURTLE, **kwargs):
         """
         Execute a SPARQL graph query over versioning history
 
@@ -746,7 +751,7 @@ class VCS(object):
         """
         return self.vcs.query(query, content_type, **kwargs)
 
-    def paths(self, query, content_type=SPARQL_JSON, **kwargs):
+    def paths(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
         """
         Execute a SPARQL paths query over versioning history
 
@@ -810,8 +815,8 @@ class VCS(object):
         Example
             >> vcs.ask('ask {?v a vcs:Version}')
         """
-        r = self.vcs.query(query, BOOLEAN, **kwargs)
-        return bool(strtobool(r.decode()))
+        r = self.vcs.query(query, content_types.BOOLEAN, **kwargs)
+        return bool(distutils.util.strtobool(r.decode()))
 
     def commit(self, message):
         """
@@ -975,6 +980,6 @@ class GraphQL(object):
         return self.gql.remove_schema(name)
 
 
-@contextmanager
+@contextlib.contextmanager
 def nextcontext(r):
     yield next(r)

@@ -1,21 +1,21 @@
 import json
 
-from stardog.http.client import Client
-from stardog.http.database import Database
-from stardog.http.role import Role
-from stardog.http.user import User
-from stardog.http.virtual_graphs import VirtualGraph
+import stardog.http.client as http_client
+import stardog.http.database as http_database
+import stardog.http.role as http_role
+import stardog.http.user as http_user
+import stardog.http.virtual_graphs as http_virtual_graphs
 
 
 class Admin(object):
     def __init__(self, endpoint=None, username=None, password=None):
-        self.client = Client(endpoint, None, username, password)
+        self.client = http_client.Client(endpoint, None, username, password)
 
     def shutdown(self):
         self.client.post('/admin/shutdown')
 
     def database(self, name):
-        return Database(name, self.client)
+        return http_database.Database(name, self.client)
 
     def databases(self):
         r = self.client.get('/admin/databases')
@@ -61,7 +61,7 @@ class Admin(object):
         self.client.delete('/admin/queries/{}'.format(id))
 
     def user(self, name):
-        return User(name, self.client)
+        return http_user.User(name, self.client)
 
     def users(self):
         r = self.client.get('/admin/users')
@@ -78,7 +78,7 @@ class Admin(object):
         return self.user(username)
 
     def role(self, name):
-        return Role(name, self.client)
+        return http_role.Role(name, self.client)
 
     def roles(self):
         r = self.client.get('/admin/roles')
@@ -89,7 +89,7 @@ class Admin(object):
         return self.role(name)
 
     def virtual_graph(self, name):
-        return VirtualGraph(name, self.client)
+        return http_virtual_graphs.VirtualGraph(name, self.client)
 
     def virtual_graphs(self):
         r = self.client.get('/admin/virtual_graphs')

@@ -1,4 +1,4 @@
-from stardog.exceptions import StardogException
+import stardog.exceptions as exceptions
 
 
 class GraphQL(object):
@@ -18,7 +18,7 @@ class GraphQL(object):
             return res['data']
 
         # graphql endpoint returns valid response with errors
-        raise StardogException(res)
+        raise exceptions.StardogException(res)
 
     def schemas(self):
         r = self.client.get('/graphql/schemas')

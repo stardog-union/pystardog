@@ -1,7 +1,7 @@
-from requests import Session
-from requests_toolbelt.multipart import decoder
+import requests
+import requests_toolbelt.multipart as multipart
 
-from stardog.exceptions import StardogException
+import stardog.exceptions as exceptions
 
 
 class Client(object):
@@ -22,7 +22,7 @@ class Client(object):
         if database:
             self.url = '{}/{}'.format(self.url, database)
 
-        self.session = Session()
+        self.session = requests.Session()
         self.session.auth = (self.username, self.password)
 
     def post(self, path, **kwargs):
@@ -48,11 +48,11 @@ class Client(object):
                 # sometimes errors come as strings
                 msg = {'message': request.text}
 
-            raise StardogException('[{}] {}: {}'.format(
+            raise exceptions.StardogException('[{}] {}: {}'.format(
                 request.status_code, msg.get('code', ''), msg.get(
                     'message', '')))
         return request
 
     def _multipart(self, response):
-        multipart = decoder.MultipartDecoder.from_response(response)
-        return [part.content for part in multipart.parts]
+        decoder = multipart.decoder.MultipartDecoder.from_response(response)
+        return [part.content for part in decoder.parts]

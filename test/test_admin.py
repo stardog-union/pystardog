@@ -1,10 +1,10 @@
 import pytest
 
-from stardog.admin import Admin
-from stardog.connection import Connection
-from stardog.content import URL, File, Raw
-from stardog.content_types import TURTLE
-from stardog.exceptions import StardogException
+import stardog.admin
+import stardog.connection as connection
+import stardog.content as content
+import stardog.content_types as content_types
+import stardog.exceptions as exceptions
 
 DEFAULT_USERS = ['admin', 'anonymous']
 DEFAULT_ROLES = ['reader']
@@ -12,7 +12,7 @@ DEFAULT_ROLES = ['reader']
 
 @pytest.fixture(scope="module")
 def admin():
-    with Admin() as admin:
+    with stardog.admin.Admin() as admin:
 
         for db in admin.databases():
             db.drop()
@@ -75,15 +75,19 @@ def test_databases(admin):
 
     # bulk load
     contents = [
-        Raw('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE, name='bulkload.ttl'),
-        (File('test/data/example.ttl.zip'), 'urn:context'),
-        URL('https://www.w3.org/2000/10/rdf-tests/'
-            'RDF-Model-Syntax_1.0/ms_4.1_1.rdf')
+        content.Raw(
+            '<urn:subj> <urn:pred> <urn:obj3> .',
+            content_types.TURTLE,
+            name='bulkload.ttl'),
+        (content.File('test/data/example.ttl.zip'), 'urn:context'),
+        content.URL('https://www.w3.org/2000/10/rdf-tests/'
+                    'RDF-Model-Syntax_1.0/ms_4.1_1.rdf')
     ]
 
     bl = admin.new_database('bulkload', {}, *contents)
 
-    with Connection('bulkload', username='admin', password='admin') as c:
+    with connection.Connection(
+            'bulkload', username='admin', password='admin') as c:
         q = c.select('select * where { graph <urn:context> {?s ?p ?o}}')
         assert len(q['results']['bindings']) == 1
         assert c.size() == 7
@@ -107,12 +111,14 @@ def test_users(admin):
     assert user.is_enabled()
 
     # check if able to connect
-    with Admin(username='username', password='password') as uadmin:
+    with stardog.admin.Admin(
+            username='username', password='password') as uadmin:
         uadmin.validate()
 
     # change password
     user.set_password('new_password')
-    with Admin(username='username', password='new_password') as uadmin:
+    with stardog.admin.Admin(
+            username='username', password='new_password') as uadmin:
         uadmin.validate()
 
     # disable/enable
@@ -204,11 +210,13 @@ def test_queries(admin):
     assert len(admin.queries()) == 0
 
     with pytest.raises(
-            StardogException, match='UnknownQuery: Query not found: 1'):
+            exceptions.StardogException,
+            match='UnknownQuery: Query not found: 1'):
         admin.query(1)
 
     with pytest.raises(
-            StardogException, match='UnknownQuery: Query not found: 1'):
+            exceptions.StardogException,
+            match='UnknownQuery: Query not found: 1'):
         admin.kill_query(1)
 
 
@@ -227,24 +235,31 @@ def test_virtual_graphs(admin):
     vg = admin.virtual_graph('test')
 
     # TODO add VG to test server
-    with pytest.raises(StardogException, match='java.sql.SQLException'):
-        admin.new_virtual_graph('vg', File('test/data/r2rml.ttl'), options)
-
-    with pytest.raises(StardogException, match='java.sql.SQLException'):
-        vg.update('vg', File('test/data/r2rml.ttl'), options)
+    with pytest.raises(
+            exceptions.StardogException, match='java.sql.SQLException'):
+        admin.new_virtual_graph('vg', content.File('test/data/r2rml.ttl'),
+                                options)
 
     with pytest.raises(
-            StardogException, match='Virtual Graph test Not Found!'):
+            exceptions.StardogException, match='java.sql.SQLException'):
+        vg.update('vg', content.File('test/data/r2rml.ttl'), options)
+
+    with pytest.raises(
+            exceptions.StardogException,
+            match='Virtual Graph test Not Found!'):
         vg.available()
 
     with pytest.raises(
-            StardogException, match='Virtual Graph test Not Found!'):
+            exceptions.StardogException,
+            match='Virtual Graph test Not Found!'):
         vg.options()
 
     with pytest.raises(
-            StardogException, match='Virtual Graph test Not Found!'):
+            exceptions.StardogException,
+            match='Virtual Graph test Not Found!'):
         vg.mappings()
 
     with pytest.raises(
-            StardogException, match='Virtual Graph test Not Found!'):
+            exceptions.StardogException,
+            match='Virtual Graph test Not Found!'):
         vg.delete()

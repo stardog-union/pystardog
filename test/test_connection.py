@@ -1,20 +1,20 @@
 import pytest
 
-from stardog.admin import Admin
-from stardog.connection import Connection
-from stardog.content import URL, File, Raw
-from stardog.content_types import TURTLE
+import stardog.admin
+import stardog.connection as connection
+import stardog.content as content
+import stardog.content_types as content_types
 
 
 @pytest.fixture(scope="module")
 def conn():
-    with Connection('newtest') as conn:
+    with connection.Connection('newtest') as conn:
         yield conn
 
 
 @pytest.fixture(scope="module")
 def admin():
-    with Admin() as admin:
+    with stardog.admin.Admin() as admin:
 
         for db in admin.databases():
             db.drop()
@@ -33,21 +33,21 @@ def test_transactions(conn, admin):
     # add
     conn.begin()
     conn.clear()
-    conn.add(Raw(data, TURTLE))
+    conn.add(content.Raw(data, content_types.TURTLE))
     conn.commit()
 
     assert conn.size() == 1
 
     # remove
     conn.begin()
-    conn.remove(File('test/data/example.ttl.zip'))
+    conn.remove(content.File('test/data/example.ttl.zip'))
     conn.commit()
 
     assert conn.size() == 0
 
     # rollback
     conn.begin()
-    conn.add(Raw(data, TURTLE))
+    conn.add(content.Raw(data, content_types.TURTLE))
     conn.rollback()
 
     assert conn.size() == 0
@@ -55,8 +55,8 @@ def test_transactions(conn, admin):
     # export
     conn.begin()
     conn.add(
-        URL('https://www.w3.org/2000/10/rdf-tests/'
-            'RDF-Model-Syntax_1.0/ms_4.1_1.rdf'))
+        content.URL('https://www.w3.org/2000/10/rdf-tests/'
+                    'RDF-Model-Syntax_1.0/ms_4.1_1.rdf'))
     conn.commit()
 
     assert b'<http://description.org/schema/attributedTo>' in conn.export()
@@ -77,7 +77,7 @@ def test_queries(conn, admin):
     # add
     conn.begin()
     conn.clear()
-    conn.add(File('test/data/starwars.ttl'))
+    conn.add(content.File('test/data/starwars.ttl'))
     conn.commit()
 
     # select
@@ -120,7 +120,7 @@ def test_queries(conn, admin):
 
     # query in transaction
     conn.begin()
-    conn.add(File('test/data/starwars.ttl'))
+    conn.add(content.File('test/data/starwars.ttl'))
 
     q = conn.select('select * {?s :name "Luke Skywalker"}')
     assert len(q['results']['bindings']) == 1
@@ -138,7 +138,7 @@ def test_queries(conn, admin):
 
 
 def test_docs(conn, admin):
-    content = (b'Only the Knowledge Graph can unify all data types and '
+    example = (b'Only the Knowledge Graph can unify all data types and '
                b'every data velocity into a single, coherent, unified whole.')
 
     # docstore
@@ -146,22 +146,22 @@ def test_docs(conn, admin):
     assert docs.size() == 0
 
     # add
-    docs.add('doc', File('test/data/example.txt'))
+    docs.add('doc', content.File('test/data/example.txt'))
     assert docs.size() == 1
 
     # get
     doc = docs.get('doc')
-    assert doc == content
+    assert doc == example
 
     with docs.get('doc', stream=True, chunk_size=1) as doc:
-        assert b''.join(doc) == content
+        assert b''.join(doc) == example
 
     # delete
     docs.delete('doc')
     assert docs.size() == 0
 
     # clear
-    docs.add('doc', File('test/data/example.txt'))
+    docs.add('doc', content.File('test/data/example.txt'))
     assert docs.size() == 1
     docs.clear()
     assert docs.size() == 0
@@ -171,11 +171,11 @@ def test_icv(conn, admin):
 
     conn.begin()
     conn.clear()
-    conn.add(File('test/data/icv-data.ttl'))
+    conn.add(content.File('test/data/icv-data.ttl'))
     conn.commit()
 
     icv = conn.icv()
-    constraints = File('test/data/icv-constraints.ttl')
+    constraints = content.File('test/data/icv-constraints.ttl')
 
     # check/violations/convert
     assert not icv.is_valid(constraints)
@@ -196,10 +196,8 @@ def test_vcs(conn, admin):
     assert len(q['results']['bindings']) > 0
 
     # paths
-    q = vcs.paths(
-        'paths start ?x = vcs:user:admin end '
-        '?y = <http://www.w3.org/ns/prov#Person> via ?p'
-    )
+    q = vcs.paths('paths start ?x = vcs:user:admin end '
+                  '?y = <http://www.w3.org/ns/prov#Person> via ?p')
     assert len(q['results']['bindings']) > 0
 
     # ask
@@ -229,9 +227,11 @@ def test_vcs(conn, admin):
 
 def test_graphql(conn, admin):
 
-    db = admin.new_database('graphql', {}, File('test/data/starwars.ttl'))
+    db = admin.new_database('graphql', {},
+                            content.File('test/data/starwars.ttl'))
 
-    with Connection('graphql', username='admin', password='admin') as c:
+    with connection.Connection(
+            'graphql', username='admin', password='admin') as c:
         gql = c.graphql()
 
         # query
@@ -250,7 +250,7 @@ def test_graphql(conn, admin):
 
         # schemas
         gql.add_schema(
-            'characters', content=File('test/data/starwars.graphql'))
+            'characters', content=content.File('test/data/starwars.graphql'))
 
         assert len(gql.schemas()) == 1
         assert 'type Human' in gql.schema('characters')
@@ -275,7 +275,7 @@ def test_graphql(conn, admin):
         assert len(gql.schemas()) == 0
 
         gql.add_schema(
-            'characters', content=File('test/data/starwars.graphql'))
+            'characters', content=content.File('test/data/starwars.graphql'))
         gql.clear_schemas()
         assert len(gql.schemas()) == 0
 

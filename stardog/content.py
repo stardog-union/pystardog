@@ -1,9 +1,9 @@
+import contextlib
 import os
-from contextlib import contextmanager
 
 import requests
 
-from stardog.content_types import guess_rdf_format
+import stardog.content_types as content_types
 
 
 class Content(object):
@@ -41,7 +41,7 @@ class Raw(Content):
         self.content_encoding = content_encoding
         self.name = name
 
-    @contextmanager
+    @contextlib.contextmanager
     def data(self):
         yield self.raw
 
@@ -75,12 +75,12 @@ class File(Content):
             >> File('data.doc', 'application/msword')
         """
         self.fname = fname
-        (c_enc, c_type) = guess_rdf_format(fname)
+        (c_enc, c_type) = content_types.guess_rdf_format(fname)
         self.content_type = content_type if content_type else c_type
         self.content_encoding = content_encoding if content_encoding else c_enc
         self.name = name if name else os.path.basename(fname)
 
-    @contextmanager
+    @contextlib.contextmanager
     def data(self):
         with open(self.fname, 'rb') as f:
             yield f
@@ -115,12 +115,12 @@ class URL(Content):
             >> Url('http://example.com/data.doc', 'application/msword')
         """
         self.url = url
-        (c_enc, c_type) = guess_rdf_format(url)
+        (c_enc, c_type) = content_types.guess_rdf_format(url)
         self.content_type = content_type if content_type else c_type
         self.content_encoding = content_encoding if content_encoding else c_enc
         self.name = name if name else os.path.basename(url)
 
-    @contextmanager
+    @contextlib.contextmanager
     def data(self):
         with requests.get(self.url, stream=True) as r:
             raw = r.raw

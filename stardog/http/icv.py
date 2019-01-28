@@ -1,4 +1,4 @@
-from distutils.util import strtobool
+import distutils.util
 
 
 class ICV(object):
@@ -57,7 +57,7 @@ class ICV(object):
             params={'graph-uri': graph_uri},
         )
 
-        return bool(strtobool(r.text))
+        return bool(distutils.util.strtobool(r.text))
 
     def explain_violations(self,
                            content,

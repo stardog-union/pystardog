@@ -1,9 +1,9 @@
 import pytest
 
-from stardog.content_types import TURTLE
-from stardog.exceptions import StardogException
-from stardog.http.admin import Admin
-from stardog.http.connection import Connection
+import stardog.content_types as content_types
+import stardog.exceptions as exceptions
+import stardog.http.admin as http_admin
+import stardog.http.connection as http_connection
 
 DEFAULT_USERS = ['admin', 'anonymous']
 DEFAULT_ROLES = ['reader']
@@ -11,7 +11,7 @@ DEFAULT_ROLES = ['reader']
 
 @pytest.fixture(scope="module")
 def admin():
-    with Admin() as admin:
+    with http_admin.Admin() as admin:
 
         for db in admin.databases():
             db.drop()
@@ -77,12 +77,13 @@ def test_databases(admin):
         bl = admin.new_database('bulkload', {}, {
             'name': 'example.ttl.zip',
             'content': f,
-            'content-type': TURTLE,
+            'content-type': content_types.TURTLE,
             'content-encoding': 'zip',
             'context': 'urn:a'
         })
 
-    with Connection('bulkload', username='admin', password='admin') as c:
+    with http_connection.Connection(
+            'bulkload', username='admin', password='admin') as c:
         assert c.size() == 1
 
     # clear
@@ -104,12 +105,13 @@ def test_users(admin):
     assert user.is_enabled()
 
     # check if able to connect
-    with Admin(username='username', password='password') as uadmin:
+    with http_admin.Admin(username='username', password='password') as uadmin:
         uadmin.validate()
 
     # change password
     user.set_password('new_password')
-    with Admin(username='username', password='new_password') as uadmin:
+    with http_admin.Admin(
+            username='username', password='new_password') as uadmin:
         uadmin.validate()
 
     # disable/enable
@@ -200,11 +202,13 @@ def test_queries(admin):
     assert len(admin.queries()) == 0
 
     with pytest.raises(
-            StardogException, match='UnknownQuery: Query not found: 1'):
+            exceptions.StardogException,
+            match='UnknownQuery: Query not found: 1'):
         admin.query(1)
 
     with pytest.raises(
-            StardogException, match='UnknownQuery: Query not found: 1'):
+            exceptions.StardogException,
+            match='UnknownQuery: Query not found: 1'):
         admin.kill_query(1)
 
 
@@ -226,24 +230,30 @@ def test_virtual_graphs(admin):
     vg = admin.virtual_graph('test')
 
     # TODO add VG to test server
-    with pytest.raises(StardogException, match='java.sql.SQLException'):
+    with pytest.raises(
+            exceptions.StardogException, match='java.sql.SQLException'):
         admin.new_virtual_graph('vg', mappings, options)
 
-    with pytest.raises(StardogException, match='java.sql.SQLException'):
+    with pytest.raises(
+            exceptions.StardogException, match='java.sql.SQLException'):
         vg.update('vg', mappings, options)
 
     with pytest.raises(
-            StardogException, match='Virtual Graph test Not Found!'):
+            exceptions.StardogException,
+            match='Virtual Graph test Not Found!'):
         vg.available()
 
     with pytest.raises(
-            StardogException, match='Virtual Graph test Not Found!'):
+            exceptions.StardogException,
+            match='Virtual Graph test Not Found!'):
         vg.options()
 
     with pytest.raises(
-            StardogException, match='Virtual Graph test Not Found!'):
+            exceptions.StardogException,
+            match='Virtual Graph test Not Found!'):
         vg.mappings()
 
     with pytest.raises(
-            StardogException, match='Virtual Graph test Not Found!'):
+            exceptions.StardogException,
+            match='Virtual Graph test Not Found!'):
         vg.delete()

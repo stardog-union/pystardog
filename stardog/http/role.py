@@ -1,3 +1,6 @@
+import stardog.http.user as http_user
+
+
 class Role(object):
     def __init__(self, name, client):
         self.name = name
@@ -5,10 +8,10 @@ class Role(object):
         self.path = '/admin/roles/{}'.format(name)
 
     def users(self):
-        from stardog.http.user import User
-
         r = self.client.get(self.path + '/users')
-        return [User(name, self.client) for name in r.json()['users']]
+        return [
+            http_user.User(name, self.client) for name in r.json()['users']
+        ]
 
     def delete(self, force=None):
         self.client.delete(self.path, params={'force': force})

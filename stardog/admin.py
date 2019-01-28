@@ -1,7 +1,7 @@
-from contextlib2 import ExitStack
+import contextlib2
 
-from stardog.content_types import TURTLE
-from stardog.http.admin import Admin as HTTPAdmin
+import stardog.content_types as content_types
+import stardog.http.admin as http_admin
 
 
 class Admin(object):
@@ -29,7 +29,7 @@ class Admin(object):
             >> admin = Admin(endpoint='http://localhost:9999',
                              username='admin', password='admin')
         """
-        self.admin = HTTPAdmin(endpoint, username, password)
+        self.admin = http_admin.Admin(endpoint, username, password)
 
     def shutdown(self):
         """
@@ -92,7 +92,7 @@ class Admin(object):
         """
         files = []
 
-        with ExitStack() as stack:
+        with contextlib2.ExitStack() as stack:
             for c in contents:
                 content = c[0] if isinstance(c, tuple) else c
                 context = c[1] if isinstance(c, tuple) else None
@@ -711,7 +711,7 @@ class VirtualGraph(object):
         """
         return self.vg.options()
 
-    def mappings(self, content_type=TURTLE):
+    def mappings(self, content_type=content_types.TURTLE):
         """
         Get Virtual Graph mappings
 
