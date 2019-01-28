@@ -2,7 +2,6 @@ from stardog.content_types import TURTLE
 
 
 class VirtualGraph(object):
-
     def __init__(self, name, client):
         self.name = name
         self.client = client
@@ -29,7 +28,8 @@ class VirtualGraph(object):
         return r.json()['options']
 
     def mappings(self, content_type=TURTLE):
-        r = self.client.get(self.path + '/mappings', headers={'Accept': content_type})
+        r = self.client.get(
+            self.path + '/mappings', headers={'Accept': content_type})
         return r.content
 
     def available(self):

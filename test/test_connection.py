@@ -19,7 +19,10 @@ def admin():
         for db in admin.databases():
             db.drop()
 
-        admin.new_database('newtest', {'search.enabled': True, 'versioning.enabled': True})
+        admin.new_database('newtest', {
+            'search.enabled': True,
+            'versioning.enabled': True
+        })
 
         yield admin
 
@@ -51,13 +54,16 @@ def test_transactions(conn, admin):
 
     # export
     conn.begin()
-    conn.add(URL('https://www.w3.org/2000/10/rdf-tests/RDF-Model-Syntax_1.0/ms_4.1_1.rdf'))
+    conn.add(
+        URL('https://www.w3.org/2000/10/rdf-tests/'
+            'RDF-Model-Syntax_1.0/ms_4.1_1.rdf'))
     conn.commit()
 
     assert b'<http://description.org/schema/attributedTo>' in conn.export()
 
     with conn.export(stream=True, chunk_size=1) as stream:
-        assert b'<http://description.org/schema/attributedTo>' in b''.join(stream)
+        assert b'<http://description.org/schema/attributedTo>' in b''.join(
+            stream)
 
     # clear
     conn.begin()
@@ -87,7 +93,8 @@ def test_queries(conn, admin):
     assert len(q['results']['bindings']) == 7
 
     # bindings
-    q = conn.select('select * {?s :name ?o}', bindings={'o': '"Luke Skywalker"'})
+    q = conn.select(
+        'select * {?s :name ?o}', bindings={'o': '"Luke Skywalker"'})
     assert len(q['results']['bindings']) == 1
 
     # paths
@@ -100,7 +107,8 @@ def test_queries(conn, admin):
 
     # construct
     q = conn.graph('construct {:luke a ?o} where {:luke a ?o}')
-    assert q.strip() == b'<http://api.stardog.com/luke> a <http://api.stardog.com/Human> .'
+    assert q.strip(
+    ) == b'<http://api.stardog.com/luke> a <http://api.stardog.com/Human> .'
 
     # update
     q = conn.update('delete where {?s ?p ?o}')
@@ -130,7 +138,8 @@ def test_queries(conn, admin):
 
 
 def test_docs(conn, admin):
-    content = b'Only the Knowledge Graph can unify all data types and every data velocity into a single, coherent, unified whole.'
+    content = (b'Only the Knowledge Graph can unify all data types and '
+               b'every data velocity into a single, coherent, unified whole.')
 
     # docstore
     docs = conn.docs()
@@ -187,7 +196,10 @@ def test_vcs(conn, admin):
     assert len(q['results']['bindings']) > 0
 
     # paths
-    q = vcs.paths('paths start ?x = vcs:user:admin end ?y = <http://www.w3.org/ns/prov#Person> via ?p')
+    q = vcs.paths(
+        'paths start ?x = vcs:user:admin end '
+        '?y = <http://www.w3.org/ns/prov#Person> via ?p'
+    )
     assert len(q['results']['bindings']) > 0
 
     # ask
@@ -199,7 +211,9 @@ def test_vcs(conn, admin):
     assert b'<tag:stardog:api:versioning:Version>' in q
 
     # bindings
-    q = vcs.select('select distinct ?v {?v a ?o}', bindings={'o': '<tag:stardog:api:versioning:Version>'})
+    q = vcs.select(
+        'select distinct ?v {?v a ?o}',
+        bindings={'o': '<tag:stardog:api:versioning:Version>'})
     assert len(q['results']['bindings']) > 0
 
     # tags
@@ -221,23 +235,47 @@ def test_graphql(conn, admin):
         gql = c.graphql()
 
         # query
-        assert gql.query('{ Planet { system } }') == [{'system': 'Tatoo'}, {'system': 'Alderaan'}]
+        assert gql.query('{ Planet { system } }') == [{
+            'system': 'Tatoo'
+        }, {
+            'system': 'Alderaan'
+        }]
 
         # variables
-        assert gql.query('query getHuman($id: Integer) { Human(id: $id) {name} }', variables={'id': 1000}) == [{'name': 'Luke Skywalker'}]
+        assert gql.query(
+            'query getHuman($id: Integer) { Human(id: $id) {name} }',
+            variables={'id': 1000}) == [{
+                'name': 'Luke Skywalker'
+            }]
 
         # schemas
-        gql.add_schema('characters', content=File('test/data/starwars.graphql'))
+        gql.add_schema(
+            'characters', content=File('test/data/starwars.graphql'))
 
         assert len(gql.schemas()) == 1
         assert 'type Human' in gql.schema('characters')
 
-        assert gql.query('{Human(id: 1000) {name friends {name}}}', variables={'@schema': 'characters'}) == [{'friends': [{'name': 'Han Solo'}, {'name': 'Leia Organa'}, {'name': 'C-3PO'}, {'name': 'R2-D2'}], 'name': 'Luke Skywalker'}]
+        assert gql.query(
+            '{Human(id: 1000) {name friends {name}}}',
+            variables={'@schema': 'characters'}) == [{
+                'friends': [{
+                    'name': 'Han Solo'
+                }, {
+                    'name': 'Leia Organa'
+                }, {
+                    'name': 'C-3PO'
+                }, {
+                    'name': 'R2-D2'
+                }],
+                'name':
+                'Luke Skywalker'
+            }]
 
         gql.remove_schema('characters')
         assert len(gql.schemas()) == 0
 
-        gql.add_schema('characters', content=File('test/data/starwars.graphql'))
+        gql.add_schema(
+            'characters', content=File('test/data/starwars.graphql'))
         gql.clear_schemas()
         assert len(gql.schemas()) == 0
 

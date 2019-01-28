@@ -1,6 +1,4 @@
-
 class Role(object):
-
     def __init__(self, name, client):
         self.name = name
         self.client = client
@@ -26,7 +24,8 @@ class Role(object):
             'resource': [resource]
         }
 
-        self.client.put('/admin/permissions/role/{}'.format(self.name), json=meta)
+        self.client.put(
+            '/admin/permissions/role/{}'.format(self.name), json=meta)
 
     def remove_permission(self, action, resource_type, resource):
         meta = {
@@ -35,7 +34,8 @@ class Role(object):
             'resource': [resource]
         }
 
-        self.client.post('/admin/permissions/role/{}/delete'.format(self.name), json=meta)
+        self.client.post(
+            '/admin/permissions/role/{}/delete'.format(self.name), json=meta)
 
     def __repr__(self):
         return self.name

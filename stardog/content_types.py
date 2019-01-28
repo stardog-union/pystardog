@@ -1,4 +1,3 @@
-
 # RDF
 TURTLE = 'text/turtle'
 RDF_XML = 'application/rdf+xml'
@@ -35,11 +34,7 @@ _RDF_EXTENSIONS = {
 }
 
 # Compression filename extensions and their content encodings
-_COMPRESSION_EXTENSIONS = {
-    'gz': 'gzip',
-    'zip': 'zip',
-    'bz2': 'bzip2'
-}
+_COMPRESSION_EXTENSIONS = {'gz': 'gzip', 'zip': 'zip', 'bz2': 'bzip2'}
 
 
 def guess_rdf_format(fname):

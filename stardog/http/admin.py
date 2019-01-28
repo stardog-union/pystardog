@@ -8,7 +8,6 @@ from stardog.http.virtual_graphs import VirtualGraph
 
 
 class Admin(object):
-
     def __init__(self, endpoint=None, username=None, password=None):
         self.client = Client(endpoint, None, username, password)
 
@@ -34,7 +33,10 @@ class Admin(object):
                 fmeta['context'] = f['context']
 
             fmetas.append(fmeta)
-            params.append((fname, (fname, f['content'], f['content-type'], {'Content-Encoding': f.get('content-encoding')})))
+            params.append((fname, (fname, f['content'], f['content-type'], {
+                'Content-Encoding':
+                f.get('content-encoding')
+            })))
 
         meta = {
             'dbname': name,

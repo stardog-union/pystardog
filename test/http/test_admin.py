@@ -3,7 +3,6 @@ import pytest
 from stardog.content_types import TURTLE
 from stardog.exceptions import StardogException
 from stardog.http.admin import Admin
-from stardog.http.client import Client
 from stardog.http.connection import Connection
 
 DEFAULT_USERS = ['admin', 'anonymous']
@@ -32,18 +31,27 @@ def test_databases(admin):
     assert len(admin.databases()) == 0
 
     # create database
-    db = admin.new_database('db', {'search.enabled': True, 'spatial.enabled': True})
+    db = admin.new_database('db', {
+        'search.enabled': True,
+        'spatial.enabled': True
+    })
 
     assert len(admin.databases()) == 1
     assert db.name == 'db'
-    assert db.get_options('search.enabled', 'spatial.enabled') == {'search.enabled': True, 'spatial.enabled': True}
+    assert db.get_options('search.enabled', 'spatial.enabled') == {
+        'search.enabled': True,
+        'spatial.enabled': True
+    }
 
     # change options
     db.offline()
     db.set_options({'spatial.enabled': False})
     db.online()
 
-    assert db.get_options('search.enabled', 'spatial.enabled') == {'search.enabled': True, 'spatial.enabled': False}
+    assert db.get_options('search.enabled', 'spatial.enabled') == {
+        'search.enabled': True,
+        'spatial.enabled': False
+    }
 
     # optimize
     db.optimize()
@@ -59,11 +67,20 @@ def test_databases(admin):
 
     assert len(admin.databases()) == 2
     assert copy.name == 'copy'
-    assert copy.get_options('search.enabled', 'spatial.enabled') == {'search.enabled': True, 'spatial.enabled': False}
+    assert copy.get_options('search.enabled', 'spatial.enabled') == {
+        'search.enabled': True,
+        'spatial.enabled': False
+    }
 
     # bulk load
     with open('test/data/example.ttl.zip', 'rb') as f:
-        bl = admin.new_database('bulkload', {}, {'name': 'example.ttl.zip', 'content': f, 'content-type': TURTLE, 'content-encoding': 'zip', 'context': 'urn:a'})
+        bl = admin.new_database('bulkload', {}, {
+            'name': 'example.ttl.zip',
+            'content': f,
+            'content-type': TURTLE,
+            'content-encoding': 'zip',
+            'context': 'urn:a'
+        })
 
     with Connection('bulkload', username='admin', password='admin') as c:
         assert c.size() == 1
@@ -114,14 +131,34 @@ def test_users(admin):
     assert len(user.roles()) == 0
 
     # permissions
-    assert user.permissions() == [{'action': 'READ', 'resource_type': 'user', 'resource': ['username']}]
-    assert user.effective_permissions() == [{'action': 'READ', 'resource_type': 'user', 'resource': ['username']}]
+    assert user.permissions() == [{
+        'action': 'READ',
+        'resource_type': 'user',
+        'resource': ['username']
+    }]
+    assert user.effective_permissions() == [{
+        'action': 'READ',
+        'resource_type': 'user',
+        'resource': ['username']
+    }]
 
     user.add_permission('WRITE', 'user', 'username')
-    assert user.permissions() == [{'action': 'READ', 'resource_type': 'user', 'resource': ['username']}, {'action': 'WRITE', 'resource_type': 'user', 'resource': ['username']}]
+    assert user.permissions() == [{
+        'action': 'READ',
+        'resource_type': 'user',
+        'resource': ['username']
+    }, {
+        'action': 'WRITE',
+        'resource_type': 'user',
+        'resource': ['username']
+    }]
 
     user.remove_permission('WRITE', 'user', 'username')
-    assert user.permissions() == [{'action': 'READ', 'resource_type': 'user', 'resource': ['username']}]
+    assert user.permissions() == [{
+        'action': 'READ',
+        'resource_type': 'user',
+        'resource': ['username']
+    }]
 
     # delete user
     user.delete()
@@ -144,7 +181,11 @@ def test_roles(admin):
     assert role.permissions() == []
 
     role.add_permission('WRITE', '*', '*')
-    assert role.permissions() == [{'action': 'WRITE', 'resource_type': '*', 'resource': ['*']}]
+    assert role.permissions() == [{
+        'action': 'WRITE',
+        'resource_type': '*',
+        'resource': ['*']
+    }]
 
     role.remove_permission('WRITE', '*', '*')
     assert role.permissions() == []
@@ -158,10 +199,12 @@ def test_roles(admin):
 def test_queries(admin):
     assert len(admin.queries()) == 0
 
-    with pytest.raises(StardogException, match='UnknownQuery: Query not found: 1'):
+    with pytest.raises(
+            StardogException, match='UnknownQuery: Query not found: 1'):
         admin.query(1)
 
-    with pytest.raises(StardogException, match='UnknownQuery: Query not found: 1'):
+    with pytest.raises(
+            StardogException, match='UnknownQuery: Query not found: 1'):
         admin.kill_query(1)
 
 
@@ -189,14 +232,18 @@ def test_virtual_graphs(admin):
     with pytest.raises(StardogException, match='java.sql.SQLException'):
         vg.update('vg', mappings, options)
 
-    with pytest.raises(StardogException, match='Virtual Graph test Not Found!'):
+    with pytest.raises(
+            StardogException, match='Virtual Graph test Not Found!'):
         vg.available()
 
-    with pytest.raises(StardogException, match='Virtual Graph test Not Found!'):
+    with pytest.raises(
+            StardogException, match='Virtual Graph test Not Found!'):
         vg.options()
 
-    with pytest.raises(StardogException, match='Virtual Graph test Not Found!'):
+    with pytest.raises(
+            StardogException, match='Virtual Graph test Not Found!'):
         vg.mappings()
 
-    with pytest.raises(StardogException, match='Virtual Graph test Not Found!'):
+    with pytest.raises(
+            StardogException, match='Virtual Graph test Not Found!'):
         vg.delete()

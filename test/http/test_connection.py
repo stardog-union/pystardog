@@ -3,7 +3,6 @@ import pytest
 from stardog.content_types import TURTLE
 from stardog.exceptions import StardogException
 from stardog.http.admin import Admin
-from stardog.http.client import Client
 from stardog.http.connection import Connection
 
 
@@ -20,13 +19,17 @@ def admin():
         for db in admin.databases():
             db.drop()
 
-        admin.new_database('test', {'search.enabled': True, 'versioning.enabled': True})
+        admin.new_database('test', {
+            'search.enabled': True,
+            'versioning.enabled': True
+        })
 
         yield admin
 
 
 def test_docs(conn, admin):
-    content = b'Only the Knowledge Graph can unify all data types and every data velocity into a single, coherent, unified whole.'
+    content = (b'Only the Knowledge Graph can unify all data types and '
+               b'every data velocity into a single, coherent, unified whole.')
 
     # docstore
     docs = conn.docs()
@@ -134,7 +137,12 @@ def test_queries(conn, admin):
     assert len(q['results']['bindings']) == 2
 
     # params
-    q = conn.query('select * {<urn:subj> ?p ?o}', offset=1, limit=1, timeout=1000, reasoning=True)
+    q = conn.query(
+        'select * {<urn:subj> ?p ?o}',
+        offset=1,
+        limit=1,
+        timeout=1000,
+        reasoning=True)
     assert len(q['results']['bindings']) == 1
 
     # bindings
@@ -142,7 +150,8 @@ def test_queries(conn, admin):
     assert len(q['results']['bindings']) == 1
 
     # construct
-    q = conn.query('construct {?s ?p ?o} where {?s ?p ?o}', content_type=TURTLE)
+    q = conn.query(
+        'construct {?s ?p ?o} where {?s ?p ?o}', content_type=TURTLE)
     assert q.strip() == data
 
     # update
@@ -198,13 +207,18 @@ def test_reasoning(conn, admin):
     conn.add(t, '<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
 
     # TODO server throws null pointer exception
-    with pytest.raises(StardogException, match='There was an unexpected error on the server'):
-        r = conn.explain_inference('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE, transaction=t)
+    with pytest.raises(
+            StardogException,
+            match='There was an unexpected error on the server'):
+        r = conn.explain_inference(
+            '<urn:subj> <urn:pred> <urn:obj3> .', TURTLE, transaction=t)
         assert len(r) == 0
 
     # explain inconsistency in transaction
     # TODO server returns 404 Not Found!
-    with pytest.raises(StardogException, match='There was an unexpected error on the server'):
+    with pytest.raises(
+            StardogException,
+            match='There was an unexpected error on the server'):
         r = conn.explain_inconsistency(transaction=t)
         assert len(r) == 0
 
@@ -225,8 +239,11 @@ def test_icv(conn, admin):
 
     # check/violations/convert
     assert not icv.is_valid('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
-    assert len(icv.explain_violations('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)) == 2
-    assert '<tag:stardog:api:context:all>' in icv.convert('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
+    assert len(
+        icv.explain_violations('<urn:subj> <urn:pred> <urn:obj3> .',
+                               TURTLE)) == 2
+    assert '<tag:stardog:api:context:all>' in icv.convert(
+        '<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
 
 
 def test_vcs(conn, admin):
@@ -257,16 +274,28 @@ def test_vcs(conn, admin):
 def test_graphql(conn, admin):
 
     with open('test/data/starwars.ttl') as f:
-        db = admin.new_database('graphql', {}, {'name': 'starwars.ttl', 'content': f, 'content-type': TURTLE})
+        db = admin.new_database('graphql', {}, {
+            'name': 'starwars.ttl',
+            'content': f,
+            'content-type': TURTLE
+        })
 
     with Connection('graphql', username='admin', password='admin') as c:
         gql = c.graphql()
 
         # query
-        assert gql.query('{ Planet { system } }') == [{'system': 'Tatoo'}, {'system': 'Alderaan'}]
+        assert gql.query('{ Planet { system } }') == [{
+            'system': 'Tatoo'
+        }, {
+            'system': 'Alderaan'
+        }]
 
         # variables
-        assert gql.query('query getHuman($id: Integer) { Human(id: $id) {name} }', variables={'id': 1000}) == [{'name': 'Luke Skywalker'}]
+        assert gql.query(
+            'query getHuman($id: Integer) { Human(id: $id) {name} }',
+            variables={'id': 1000}) == [{
+                'name': 'Luke Skywalker'
+            }]
 
         # schemas
         with open('test/data/starwars.graphql') as f:
@@ -275,7 +304,21 @@ def test_graphql(conn, admin):
         assert len(gql.schemas()) == 1
         assert 'type Human' in gql.schema('characters')
 
-        assert gql.query('{Human(id: 1000) {name friends {name}}}', variables={'@schema': 'characters'}) == [{'friends': [{'name': 'Han Solo'}, {'name': 'Leia Organa'}, {'name': 'C-3PO'}, {'name': 'R2-D2'}], 'name': 'Luke Skywalker'}]
+        assert gql.query(
+            '{Human(id: 1000) {name friends {name}}}',
+            variables={'@schema': 'characters'}) == [{
+                'friends': [{
+                    'name': 'Han Solo'
+                }, {
+                    'name': 'Leia Organa'
+                }, {
+                    'name': 'C-3PO'
+                }, {
+                    'name': 'R2-D2'
+                }],
+                'name':
+                'Luke Skywalker'
+            }]
 
         gql.remove_schema('characters')
         assert len(gql.schemas()) == 0
