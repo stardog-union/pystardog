@@ -1,7 +1,7 @@
-from requests import Session
-from requests_toolbelt.multipart import decoder
+import requests
+import requests_toolbelt.multipart as multipart
 
-from stardog.exceptions import StardogException
+import stardog.exceptions as exceptions
 
 
 class Client(object):
@@ -10,7 +10,11 @@ class Client(object):
     DEFAULT_USERNAME = 'admin'
     DEFAULT_PASSWORD = 'admin'
 
-    def __init__(self, endpoint=None, database=None, username=None, password=None):
+    def __init__(self,
+                 endpoint=None,
+                 database=None,
+                 username=None,
+                 password=None):
         self.url = endpoint if endpoint else self.DEFAULT_ENDPOINT
         self.username = username if username else self.DEFAULT_USERNAME
         self.password = password if password else self.DEFAULT_PASSWORD
@@ -18,7 +22,7 @@ class Client(object):
         if database:
             self.url = '{}/{}'.format(self.url, database)
 
-        self.session = Session()
+        self.session = requests.Session()
         self.session.auth = (self.username, self.password)
 
     def post(self, path, **kwargs):
@@ -44,9 +48,11 @@ class Client(object):
                 # sometimes errors come as strings
                 msg = {'message': request.text}
 
-            raise StardogException('[{}] {}: {}'.format(request.status_code, msg.get('code', ''), msg.get('message', '')))
+            raise exceptions.StardogException('[{}] {}: {}'.format(
+                request.status_code, msg.get('code', ''), msg.get(
+                    'message', '')))
         return request
 
     def _multipart(self, response):
-        multipart = decoder.MultipartDecoder.from_response(response)
-        return [part.content for part in multipart.parts]
+        decoder = multipart.decoder.MultipartDecoder.from_response(response)
+        return [part.content for part in decoder.parts]

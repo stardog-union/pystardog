@@ -1,4 +1,3 @@
-
 class StardogException(Exception):
     pass
 

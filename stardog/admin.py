@@ -1,7 +1,7 @@
-from contextlib2 import ExitStack
+import contextlib2
 
-from stardog.content_types import TURTLE
-from stardog.http.admin import Admin as HTTPAdmin
+import stardog.content_types as content_types
+import stardog.http.admin as http_admin
 
 
 class Admin(object):
@@ -26,9 +26,10 @@ class Admin(object):
                 Password to use in the connection (optional)
 
         Example
-            >> admin = Admin(endpoint='http://localhost:9999', username='admin', password='admin')
+            >> admin = Admin(endpoint='http://localhost:9999',
+                             username='admin', password='admin')
         """
-        self.admin = HTTPAdmin(endpoint, username, password)
+        self.admin = http_admin.Admin(endpoint, username, password)
 
     def shutdown(self):
         """
@@ -70,7 +71,8 @@ class Admin(object):
             options (dict)
                 Dictionary with database options (optional)
             contents (Content) or ((Content, str))
-                List of datasets to perform bulk-load with, optionally with desired named graph (optional)
+                List of datasets to perform bulk-load with, optionally
+                with desired named graph (optional)
 
         Returns
             (Database)
@@ -81,20 +83,23 @@ class Admin(object):
             >> admin.new_database('db', {'search.enabled': True})
 
             # bulk-load
-            >> admin.new_database('db', {}, File('example.ttl'), File('test.rdf'))
+            >> admin.new_database('db', {},
+                                  File('example.ttl'), File('test.rdf'))
 
             # bulk-load to named graph
             >> admin.new_database('db', {}, (File('test.rdf'), 'urn:context'))
+
         """
         files = []
 
-        with ExitStack() as stack:
+        with contextlib2.ExitStack() as stack:
             for c in contents:
                 content = c[0] if isinstance(c, tuple) else c
                 context = c[1] if isinstance(c, tuple) else None
 
-                # we will be opening references to many sources in a single call
-                # use a stack manager to make sure they all get properly closed at the end
+                # we will be opening references to many sources in a
+                # single call use a stack manager to make sure they
+                # all get properly closed at the end
                 data = stack.enter_context(content.data())
 
                 files.append({
@@ -258,10 +263,17 @@ class Admin(object):
                 Options
 
         Example
-            >> admin.new_virtual_graph('users', File('mappings.ttl'), {'jdbc.driver': 'com.mysql.jdbc.Driver'})
+            >> admin.new_virtual_graph(
+                 'users', File('mappings.ttl'),
+                 {'jdbc.driver': 'com.mysql.jdbc.Driver'}
+               )
         """
         with mappings.data() as data:
-            return VirtualGraph(self.admin.new_virtual_graph(name, data.read().decode() if hasattr(data, 'read') else data, options))
+            return VirtualGraph(
+                self.admin.new_virtual_graph(
+                    name,
+                    data.read().decode() if hasattr(data, 'read') else data,
+                    options))
 
     def validate(self):
         """
@@ -674,10 +686,14 @@ class VirtualGraph(object):
                 New options
 
         Example
-            >> vg.update('users', File('mappings.ttl'), {'jdbc.driver': 'com.mysql.jdbc.Driver'})
+            >> vg.update('users', File('mappings.ttl'),
+                         {'jdbc.driver': 'com.mysql.jdbc.Driver'})
         """
         with mappings.data() as data:
-            self.vg.update(name, data.read().decode() if hasattr(data, 'read') else data, options)
+            self.vg.update(
+                name,
+                data.read().decode() if hasattr(data, 'read') else data,
+                options)
 
     def delete(self):
         """
@@ -695,7 +711,7 @@ class VirtualGraph(object):
         """
         return self.vg.options()
 
-    def mappings(self, content_type=TURTLE):
+    def mappings(self, content_type=content_types.TURTLE):
         """
         Get Virtual Graph mappings
 

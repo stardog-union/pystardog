@@ -1,15 +1,17 @@
-from contextlib import contextmanager
-from distutils.util import strtobool
+import contextlib
+import distutils.util
 
-from stardog.content_types import BOOLEAN, SPARQL_JSON, TURTLE
-from stardog.exceptions import TransactionException
-from stardog.http.connection import Connection as HTTPConnection
+import stardog.content_types as content_types
+import stardog.exceptions as exceptions
+import stardog.http.connection as http_connection
 
 
 class Connection(object):
     """
     Database Connection.
-    This is the entry point for all user-related operations on a Stardog database
+
+    This is the entry point for all user-related operations on a
+    Stardog database
     """
 
     def __init__(self, database, endpoint=None, username=None, password=None):
@@ -27,9 +29,11 @@ class Connection(object):
                 Password to use in the connection (optional)
 
         Example
-            >> conn = Connection('db', endpoint='http://localhost:9999', username='admin', password='admin')
+            >> conn = Connection('db', endpoint='http://localhost:9999',
+                                 username='admin', password='admin')
         """
-        self.conn = HTTPConnection(database, endpoint, username, password)
+        self.conn = http_connection.Connection(database, endpoint, username,
+                                               password)
         self.transaction = None
 
     def docs(self):
@@ -116,7 +120,8 @@ class Connection(object):
         self._assert_in_transaction()
 
         with content.data() as data:
-            self.conn.add(self.transaction, data, content.content_type, content.content_encoding, graph_uri)
+            self.conn.add(self.transaction, data, content.content_type,
+                          content.content_encoding, graph_uri)
 
     def remove(self, content, graph_uri=None):
         """
@@ -139,7 +144,8 @@ class Connection(object):
         self._assert_in_transaction()
 
         with content.data() as data:
-            self.conn.remove(self.transaction, data, content.content_type, content.content_encoding, graph_uri)
+            self.conn.remove(self.transaction, data, content.content_type,
+                             content.content_encoding, graph_uri)
 
     def clear(self, graph_uri=None):
         """
@@ -173,7 +179,10 @@ class Connection(object):
         """
         return self.conn.size()
 
-    def export(self, content_type=TURTLE, stream=False, chunk_size=10240):
+    def export(self,
+               content_type=content_types.TURTLE,
+               stream=False,
+               chunk_size=10240):
         """
         Export contents of database
 
@@ -181,9 +190,11 @@ class Connection(object):
             content_type (str)
                 RDF content type. Defaults to 'text/turtle'
             stream (bool)
-                If results should come in chunks or as a whole. Defaults to False
+                If results should come in chunks or as a whole.
+                Defaults to False
             chunk_size (int)
-                Number of bytes to read per chunk when streaming. Defaults to 10240
+                Number of bytes to read per chunk when streaming.
+                Defaults to 10240
 
         Returns
             (str)
@@ -218,7 +229,7 @@ class Connection(object):
         """
         return self.conn.explain(query, base_uri)
 
-    def select(self, query, content_type=SPARQL_JSON, **kwargs):
+    def select(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
         """
         Execute a SPARQL select query
 
@@ -232,13 +243,15 @@ class Connection(object):
             offset (int)
                 Offset into the result set (optional)
             timeout (int)
-                Number of ms after which the query should timeout. 0 or less implies no timeout (optional)
+                Number of ms after which the query should timeout.
+                0 or less implies no timeout (optional)
             reasoning (bool)
                 Enable reasoning for the query (optional)
             bindings (dict)
                 Map between query variables and their values (optional)
             content_type (str)
-                Content type for results. Defaults to 'application/sparql-results+json'
+                Content type for results.
+                Defaults to 'application/sparql-results+json'
 
         Returns
             (dict)
@@ -247,14 +260,16 @@ class Connection(object):
                 Other content types
 
         Example
-            >> conn.select('select * {?s ?p ?o}', offset=100, limit=100, reasoning=True)
+            >> conn.select('select * {?s ?p ?o}',
+                           offset=100, limit=100, reasoning=True)
 
             # bindings
             >> conn.select('select * {?s ?p ?o}', bindings={'o': '<urn:a>'})
         """
-        return self.conn.query(query, self.transaction, content_type=content_type, **kwargs)
+        return self.conn.query(
+            query, self.transaction, content_type=content_type, **kwargs)
 
-    def graph(self, query, content_type=TURTLE, **kwargs):
+    def graph(self, query, content_type=content_types.TURTLE, **kwargs):
         """
         Execute a SPARQL graph query
 
@@ -268,7 +283,8 @@ class Connection(object):
             offset (int)
                 Offset into the result set (optional)
             timeout (int)
-                Number of ms after which the query should timeout. 0 or less implies no timeout (optional)
+                Number of ms after which the query should timeout.
+                0 or less implies no timeout (optional)
             reasoning (bool)
                 Enable reasoning for the query (optional)
             bindings (dict)
@@ -281,14 +297,16 @@ class Connection(object):
                 Results in format given by content_type
 
         Example
-            >> conn.graph('construct {?s ?p ?o} where {?s ?p ?o}', offset=100, limit=100, reasoning=True)
+            >> conn.graph('construct {?s ?p ?o} where {?s ?p ?o}',
+                          offset=100, limit=100, reasoning=True)
 
             # bindings
-            >> conn.graph('construct {?s ?p ?o} where {?s ?p ?o}', bindings={'o': '<urn:a>'})
+            >> conn.graph('construct {?s ?p ?o} where {?s ?p ?o}',
+                          bindings={'o': '<urn:a>'})
         """
         return self.conn.query(query, self.transaction, content_type, **kwargs)
 
-    def paths(self, query, content_type=SPARQL_JSON, **kwargs):
+    def paths(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
         """
         Execute a SPARQL paths query
 
@@ -302,13 +320,15 @@ class Connection(object):
             offset (int)
                 Offset into the result set (optional)
             timeout (int)
-                Number of ms after which the query should timeout. 0 or less implies no timeout (optional)
+                Number of ms after which the query should timeout.
+                0 or less implies no timeout (optional)
             reasoning (bool)
                 Enable reasoning for the query (optional)
             bindings (dict)
                 Map between query variables and their values (optional)
             content_type (str)
-                Content type for results. Defaults to 'application/sparql-results+json'
+                Content type for results.
+                Defaults to 'application/sparql-results+json'
 
         Returns
             (dict)
@@ -317,7 +337,8 @@ class Connection(object):
                 Other content types
 
         Example
-            >> conn.paths('paths start ?x = :subj end ?y = :obj via ?p', reasoning=True)
+            >> conn.paths('paths start ?x = :subj end ?y = :obj via ?p',
+                          reasoning=True)
         """
         return self.conn.query(query, self.transaction, content_type, **kwargs)
 
@@ -335,7 +356,8 @@ class Connection(object):
             offset (int)
                 Offset into the result set (optional)
             timeout (int)
-                Number of ms after which the query should timeout. 0 or less implies no timeout (optional)
+                Number of ms after which the query should timeout.
+                0 or less implies no timeout (optional)
             reasoning (bool)
                 Enable reasoning for the query (optional)
             bindings (dict)
@@ -348,8 +370,9 @@ class Connection(object):
         Example
             >> conn.ask('ask {:subj :pred :obj}', reasoning=True)
         """
-        r = self.conn.query(query, self.transaction, BOOLEAN, **kwargs)
-        return bool(strtobool(r.decode()))
+        r = self.conn.query(query, self.transaction, content_types.BOOLEAN,
+                            **kwargs)
+        return bool(distutils.util.strtobool(r.decode()))
 
     def update(self, query, **kwargs):
         """
@@ -365,7 +388,8 @@ class Connection(object):
             offset (int)
                 Offset into the result set (optional)
             timeout (int)
-                Number of ms after which the query should timeout. 0 or less implies no timeout (optional)
+                Number of ms after which the query should timeout.
+                0 or less implies no timeout (optional)
             reasoning (bool)
                 Enable reasoning for the query (optional)
             bindings (dict)
@@ -406,11 +430,13 @@ class Connection(object):
             >> conn.explain_inference(File('inferences.ttl'))
         """
         with content.data() as data:
-            return self.conn.explain_inference(data, content.content_type, content.content_encoding, self.transaction)
+            return self.conn.explain_inference(data, content.content_type,
+                                               content.content_encoding,
+                                               self.transaction)
 
     def explain_inconsistency(self, graph_uri=None):
         """
-        Return explanation on why database or a specific named graph is inconsistent
+        Explain why database or a specific named graph is inconsistent
 
         Parameters
             graph_uri (str)
@@ -419,16 +445,18 @@ class Connection(object):
         Returns
             (dict)
                 Explanation results
+
         """
-        return self.conn.explain_inconsistency(self.transaction, self.graph_uri)
+        return self.conn.explain_inconsistency(self.transaction,
+                                               self.graph_uri)
 
     def _assert_not_in_transaction(self):
         if self.transaction:
-            raise TransactionException('Already in a transaction')
+            raise exceptions.TransactionException('Already in a transaction')
 
     def _assert_in_transaction(self):
         if not self.transaction:
-            raise TransactionException('Not in a transaction')
+            raise exceptions.TransactionException('Not in a transaction')
 
     def __enter__(self):
         return self
@@ -488,9 +516,11 @@ class Docs(object):
             name (str)
                 Name of the document
             stream (bool)
-                If document should come in chunks or as a whole. Defaults to False
+                If document should come in chunks or as a whole.
+                Defaults to False
             chunk_size (int)
-                Number of bytes to read per chunk when streaming. Defaults to 10240
+                Number of bytes to read per chunk when streaming.
+                Defaults to 10240
 
         Returns
             (str)
@@ -558,7 +588,8 @@ class ICV(object):
             >> icv.remove(File('constraints.ttl'))
         """
         with content.data() as data:
-            self.icv.remove(data, content.content_type, content.content_encoding)
+            self.icv.remove(data, content.content_type,
+                            content.content_encoding)
 
     def clear(self):
         """
@@ -584,7 +615,9 @@ class ICV(object):
             >> icv.is_valid(File('constraints.ttl'), graph_uri='urn:graph')
         """
         with content.data() as data:
-            return self.icv.is_valid(data, content.content_type, content.content_encoding, self.conn.transaction, graph_uri)
+            return self.icv.is_valid(data, content.content_type,
+                                     content.content_encoding,
+                                     self.conn.transaction, graph_uri)
 
     def explain_violations(self, content, graph_uri=None):
         """
@@ -601,11 +634,14 @@ class ICV(object):
                 Integrity constraint violations
 
         Example
-            >> icv.explain_violations(File('constraints.ttl'), graph_uri='urn:graph')
+            >> icv.explain_violations(File('constraints.ttl'),
+                                      graph_uri='urn:graph')
         """
 
         with content.data() as data:
-            return self.icv.explain_violations(data, content.content_type, content.content_encoding, self.conn.transaction, graph_uri)
+            return self.icv.explain_violations(
+                data, content.content_type, content.content_encoding,
+                self.conn.transaction, graph_uri)
 
     def convert(self, content, graph_uri=None):
         """
@@ -625,7 +661,8 @@ class ICV(object):
             >> icv.convert(File('constraints.ttl'), graph_uri='urn:graph')
         """
         with content.data() as data:
-            return self.icv.convert(data, content.content_type, content.content_encoding, graph_uri)
+            return self.icv.convert(data, content.content_type,
+                                    content.content_encoding, graph_uri)
 
 
 class VCS(object):
@@ -640,7 +677,7 @@ class VCS(object):
         self.vcs = conn.conn.versioning()
         self.conn = conn
 
-    def select(self, query, content_type=SPARQL_JSON, **kwargs):
+    def select(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
         """
         Execute a SPARQL select query over versioning history
 
@@ -654,13 +691,15 @@ class VCS(object):
             offset (int)
                 Offset into the result set (optional)
             timeout (int)
-                Number of ms after which the query should timeout. 0 or less implies no timeout (optional)
+                Number of ms after which the query should timeout.
+                0 or less implies no timeout (optional)
             reasoning (bool)
                 Enable reasoning for the query (optional)
             bindings (dict)
                 Map between query variables and their values (optional)
             content_type (str)
-                Content type for results. Defaults to 'application/sparql-results+json'
+                Content type for results.
+                Defaults to 'application/sparql-results+json'
 
         Returns
             (dict)
@@ -669,14 +708,17 @@ class VCS(object):
                 Other content types
 
         Example
-            >> vcs.select('select distinct ?v {?v a vcs:Version}', offset=100, limit=100)
+            >> vcs.select('select distinct ?v {?v a vcs:Version}',
+                          offset=100, limit=100)
 
             # bindings
-            >> vcs.select('select distinct ?v {?v a ?o}', bindings={'o': '<tag:stardog:api:versioning:Version>'})
+            >> vcs.select(
+                 'select distinct ?v {?v a ?o}',
+                 bindings={'o': '<tag:stardog:api:versioning:Version>'})
         """
         return self.vcs.query(query, content_type, **kwargs)
 
-    def graph(self, query, content_type=TURTLE, **kwargs):
+    def graph(self, query, content_type=content_types.TURTLE, **kwargs):
         """
         Execute a SPARQL graph query over versioning history
 
@@ -690,7 +732,8 @@ class VCS(object):
             offset (int)
                 Offset into the result set (optional)
             timeout (int)
-                Number of ms after which the query should timeout. 0 or less implies no timeout (optional)
+                Number of ms after which the query should timeout.
+                0 or less implies no timeout (optional)
             reasoning (bool)
                 Enable reasoning for the query (optional)
             bindings (dict)
@@ -703,11 +746,12 @@ class VCS(object):
                 Results in format given by content_type
 
         Example
-            >> vcs.graph('construct {?s ?p ?o} where {?s ?p ?o}', offset=100, limit=100)
+            >> vcs.graph('construct {?s ?p ?o} where {?s ?p ?o}',
+                         offset=100, limit=100)
         """
         return self.vcs.query(query, content_type, **kwargs)
 
-    def paths(self, query, content_type=SPARQL_JSON, **kwargs):
+    def paths(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
         """
         Execute a SPARQL paths query over versioning history
 
@@ -721,13 +765,15 @@ class VCS(object):
             offset (int)
                 Offset into the result set (optional)
             timeout (int)
-                Number of ms after which the query should timeout. 0 or less implies no timeout (optional)
+                Number of ms after which the query should timeout.
+                0 or less implies no timeout (optional)
             reasoning (bool)
                 Enable reasoning for the query (optional)
             bindings (dict)
                 Map between query variables and their values (optional)
             content_type (str)
-                Content type for results. Defaults to 'application/sparql-results+json'
+                Content type for results.
+                Defaults to 'application/sparql-results+json'
 
         Returns
             (dict)
@@ -736,7 +782,8 @@ class VCS(object):
                 Other content types
 
         Example
-            >> vcs.paths('paths start ?x = vcs:user:admin end ?y = <http://www.w3.org/ns/prov#Person> via ?p')
+            >> vcs.paths('paths start ?x = vcs:user:admin end'
+                         ' ?y = <http://www.w3.org/ns/prov#Person> via ?p'))
         """
         return self.vcs.query(query, content_type, **kwargs)
 
@@ -754,7 +801,8 @@ class VCS(object):
             offset (int)
                 Offset into the result set (optional)
             timeout (int)
-                Number of ms after which the query should timeout. 0 or less implies no timeout (optional)
+                Number of ms after which the query should timeout.
+                0 or less implies no timeout (optional)
             reasoning (bool)
                 Enable reasoning for the query (optional)
             bindings (dict)
@@ -767,8 +815,8 @@ class VCS(object):
         Example
             >> vcs.ask('ask {?v a vcs:Version}')
         """
-        r = self.vcs.query(query, BOOLEAN, **kwargs)
-        return bool(strtobool(r.decode()))
+        r = self.vcs.query(query, content_types.BOOLEAN, **kwargs)
+        return bool(distutils.util.strtobool(r.decode()))
 
     def commit(self, message):
         """
@@ -796,7 +844,8 @@ class VCS(object):
                 Tag name
 
         Example
-            >> vcs.create_tag('02cf7ed8e511bb4d62421565b42fffcaf00f5012', 'v1.1')
+            >> vcs.create_tag('02cf7ed8e511bb4d62421565b42fffcaf00f5012',
+                              'v1.1')
         """
         self.vcs.create_tag(revision, name)
 
@@ -826,7 +875,9 @@ class VCS(object):
                 Revert message
 
         Example
-            >> vcs.revert('02cf7ed8e511bb4d62421565b42fffcaf00f5012', '3c48bed3c1f9cfb056b4b0a755961a54d814f496', 'Log message')
+            >> vcs.revert('02cf7ed8e511bb4d62421565b42fffcaf00f5012',
+                          '3c48bed3c1f9cfb056b4b0a755961a54d814f496',
+                          'Log message')
         """
         self.vcs.revert(to_revision, from_revision, message)
 
@@ -852,7 +903,9 @@ class GraphQL(object):
                 GraphQL query
             variables (dict)
                 GraphQL variables (optional)
-                Two special variables available: @reasoning to enable reasoning, @schema to define schemas
+                Two special variables available:
+                  @reasoning to enable reasoning,
+                  @schema to define schemas
 
         Returns
             (dict)
@@ -860,10 +913,13 @@ class GraphQL(object):
 
         Example
             # with schema and reasoning
-            >> gql.query('{ Person {name} }', variables={'@reasoning': True, '@schema': 'people'})
+            >> gql.query('{ Person {name} }',
+                         variables={'@reasoning': True, '@schema': 'people'})
 
             # with named variables
-            >> gql.query('query getPerson($id: Integer) { Person(id: $id) {name} }', variables={'id': 1000})
+            >> gql.query(
+                 'query getPerson($id: Integer) { Person(id: $id) {name} }',
+                 variables={'id': 1000})
         """
         return self.gql.query(query, variables)
 
@@ -924,6 +980,6 @@ class GraphQL(object):
         return self.gql.remove_schema(name)
 
 
-@contextmanager
+@contextlib.contextmanager
 def nextcontext(r):
     yield next(r)

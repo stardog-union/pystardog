@@ -1,8 +1,7 @@
-from stardog.http.role import Role
+import stardog.http.role as role
 
 
 class User(object):
-
     def __init__(self, name, client):
         self.name = name
         self.client = client
@@ -24,7 +23,7 @@ class User(object):
 
     def roles(self):
         r = self.client.get(self.path + '/roles')
-        return [Role(name, self.client) for name in r.json()['roles']]
+        return [role.Role(name, self.client) for name in r.json()['roles']]
 
     def add_role(self, role):
         self.client.post(self.path + '/roles', json={'rolename': role})
@@ -48,7 +47,8 @@ class User(object):
             'resource_type': resource_type,
             'resource': [resource]
         }
-        self.client.put('/admin/permissions/user/{}'.format(self.name), json=meta)
+        self.client.put(
+            '/admin/permissions/user/{}'.format(self.name), json=meta)
 
     def remove_permission(self, action, resource_type, resource):
         meta = {
@@ -57,7 +57,8 @@ class User(object):
             'resource': [resource]
         }
 
-        self.client.post('/admin/permissions/user/{}/delete'.format(self.name), json=meta)
+        self.client.post(
+            '/admin/permissions/user/{}/delete'.format(self.name), json=meta)
 
     def effective_permissions(self):
         r = self.client.get('/admin/permissions/effective/user/' + self.name)
