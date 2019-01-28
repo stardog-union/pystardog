@@ -204,7 +204,7 @@ def test_reasoning(conn, admin):
 
     # explain inconsistency in transaction
     # TODO server returns 404 Not Found!
-    with pytest.raises(StardogException, match='Not Found!'):
+    with pytest.raises(StardogException, match='There was an unexpected error on the server'):
         r = conn.explain_inconsistency(transaction=t)
         assert len(r) == 0
 
@@ -224,9 +224,9 @@ def test_icv(conn, admin):
     icv.clear()
 
     # check/violations/convert
-    assert not icv.is_valid(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
-    assert len(icv.explain_violations(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')) == 2
-    assert '<tag:stardog:api:context:all>' in icv.convert(TURTLE, '<urn:subj> <urn:pred> <urn:obj3> .')
+    assert not icv.is_valid('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
+    assert len(icv.explain_violations('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)) == 2
+    assert '<tag:stardog:api:context:all>' in icv.convert('<urn:subj> <urn:pred> <urn:obj3> .', TURTLE)
 
 
 def test_vcs(conn, admin):
