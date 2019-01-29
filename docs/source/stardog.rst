@@ -1,25 +1,8 @@
-stardog package
-===============
+Modules
+=======
 
-Subpackages
------------
-
-.. toctree::
-
-Submodules
-----------
-
-stardog.admin module
---------------------
-
-.. automodule:: stardog.admin
-    :members:
-    :undoc-members:
-    :show-inheritance:
-    :special-members: __init__
-
-stardog.connection module
--------------------------
+stardog.connection
+------------------
 
 .. automodule:: stardog.connection
     :members:
@@ -27,8 +10,17 @@ stardog.connection module
     :show-inheritance:
     :special-members: __init__
 
-stardog.content module
-----------------------
+stardog.admin
+-------------
+
+.. automodule:: stardog.admin
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :special-members: __init__
+
+stardog.content
+---------------
 
 .. automodule:: stardog.content
     :members:
@@ -36,18 +28,10 @@ stardog.content module
     :show-inheritance:
     :special-members: __init__
 
-stardog.exceptions module
--------------------------
+stardog.exceptions
+------------------
 
 .. automodule:: stardog.exceptions
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
-Module contents
----------------
-
-.. automodule:: stardog
     :members:
     :undoc-members:
     :show-inheritance:
