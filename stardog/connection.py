@@ -188,6 +188,8 @@ class Connection(object):
 
         Returns:
           str: If stream = False
+
+        Returns:
           gen: If stream = True
 
         Examples:
@@ -233,6 +235,8 @@ class Connection(object):
 
         Returns:
           dict: If content_type='application/sparql-results+json'
+
+        Returns:
           str: Other content types
 
         Examples:
@@ -293,8 +297,10 @@ class Connection(object):
               Defaults to 'application/sparql-results+json'
 
         Returns:
-          dict: If content_type='application/sparql-results+json'
-          str: Other content types
+          dict: if content_type='application/sparql-results+json'.
+
+        Returns:
+          str: other content types.
 
         Examples:
           >>> conn.paths('paths start ?x = :subj end ?y = :obj via ?p',
@@ -455,6 +461,8 @@ class Docs(object):
 
         Returns:
           str: If stream=False
+
+        Returns:
           gen: If stream=True
 
         Examples:
@@ -617,6 +625,8 @@ class VCS(object):
 
         Returns:
           dict: If content_type='application/sparql-results+json'
+
+        Returns:
           str: Other content types
 
         Examples:
@@ -674,6 +684,8 @@ class VCS(object):
 
         Returns:
           dict: If content_type='application/sparql-results+json'
+
+       Returns:
           str: Other content types
 
         Examples:
