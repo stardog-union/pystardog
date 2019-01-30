@@ -1,10 +1,10 @@
 import json
 
-import stardog.http.client as http_client
-import stardog.http.database as http_database
-import stardog.http.role as http_role
-import stardog.http.user as http_user
-import stardog.http.virtual_graphs as http_virtual_graphs
+from . import client as http_client
+from . import database as http_database
+from . import role as http_role
+from . import user as http_user
+from . import virtual_graphs as http_virtual_graphs
 
 
 class Admin(object):

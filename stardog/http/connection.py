@@ -1,11 +1,11 @@
 import distutils.util
 
-import stardog.content_types as content_types
-import stardog.http.client as http_client
-import stardog.http.docs as http_docs
-import stardog.http.graphql as http_graphql
-import stardog.http.icv as http_icv
-import stardog.http.vcs as http_vcs
+from .. import content_types as content_types
+from . import client as http_client
+from . import docs as http_docs
+from . import graphql as http_graphql
+from . import icv as http_icv
+from . import vcs as http_vcs
 
 
 class Connection(object):

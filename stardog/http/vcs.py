@@ -1,4 +1,4 @@
-import stardog.content_types as content_types
+from .. import content_types as content_types
 
 
 class VCS(object):
