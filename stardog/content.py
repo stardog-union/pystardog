@@ -1,3 +1,5 @@
+"""Content that can be loaded into Stardog.
+"""
 import contextlib
 import os
 
@@ -7,12 +9,13 @@ import stardog.content_types as content_types
 
 
 class Content(object):
+    """Content base class.
+    """
     pass
 
 
 class Raw(Content):
-    """
-    User-defined content
+    """User-defined content.
     """
 
     def __init__(self,
@@ -20,21 +23,18 @@ class Raw(Content):
                  content_type=None,
                  content_encoding=None,
                  name=None):
-        """
-        Parameters
-            content (obj)
-                Object representing the content (e.g., str, file)
-            content_type (str)
-                Content type (optional)
-            content_encoding (str)
-                Content encoding (optional)
-            name (str)
-                Object name (optional)
+        """Initializes a Raw object.
 
-        Example
-            >> Raw(':luke a :Human', 'text/turtle', name='data.ttl')
-            >> Raw(open('data.ttl.zip', 'rb'),
-                   'text/turtle', 'zip', 'data.ttl')
+        Args:
+          content (obj): Object representing the content (e.g., str, file)
+          content_type (str, optional): Content type
+          content_encoding (str, optional): Content encoding
+          name (str, optional): Object name
+
+        Examples:
+          >>> Raw(':luke a :Human', 'text/turtle', name='data.ttl')
+          >>> Raw(open('data.ttl.zip', 'rb'),
+                  'text/turtle', 'zip', 'data.ttl')
         """
         self.raw = content
         self.content_type = content_type
@@ -47,8 +47,7 @@ class Raw(Content):
 
 
 class File(Content):
-    """
-    File-based content
+    """File-based content.
     """
 
     def __init__(self,
@@ -56,23 +55,20 @@ class File(Content):
                  content_type=None,
                  content_encoding=None,
                  name=None):
-        """
-        Parameters
-            fname (str)
-                Filename
-            content_type (str)
-                Content type (optional).
-                It will be automatically detected from the filename
-            content_encoding (str)
-                Content encoding (optional).
-                It will be automatically detected from the filename
-            name (str)
-                Object name (optional).
-                It will be automatically detected from the filename
+        """Initializes a File object.
 
-        Example
-            >> File('data.ttl')
-            >> File('data.doc', 'application/msword')
+        Args:
+          fname (str): Filename
+          content_type (str, optional): Content type.
+            It will be automatically detected from the filename
+          content_encoding (str, optional): Content encoding.
+            It will be automatically detected from the filename
+          name (str, optional): Object name.
+            It will be automatically detected from the filename
+
+        Examples:
+          >>> File('data.ttl')
+          >>> File('data.doc', 'application/msword')
         """
         self.fname = fname
         (c_enc, c_type) = content_types.guess_rdf_format(fname)
@@ -87,8 +83,7 @@ class File(Content):
 
 
 class URL(Content):
-    """
-    Url-based content
+    """Url-based content.
     """
 
     def __init__(self,
@@ -96,23 +91,20 @@ class URL(Content):
                  content_type=None,
                  content_encoding=None,
                  name=None):
-        """
-        Parameters
-            url (str)
-                Url
-            content_type (str)
-                Content type (optional).
-                It will be automatically detected from the url
-            content_encoding (str)
-                Content encoding (optional).
-                It will be automatically detected from the filename
-            name (str)
-                Object name (optional).
-                It will be automatically detected from the url
+        """Initializes a URL object.
 
-        Example
-            >> Url('http://example.com/data.ttl')
-            >> Url('http://example.com/data.doc', 'application/msword')
+        Args:
+          url (str): Url
+          content_type (str, optional): Content type.
+              It will be automatically detected from the url
+          content_encoding (str, optional): Content encoding.
+              It will be automatically detected from the filename
+          name (str, optional): Object name.
+              It will be automatically detected from the url
+
+        Examples:
+          >>> Url('http://example.com/data.ttl')
+          >>> Url('http://example.com/data.doc', 'application/msword')
         """
         self.url = url
         (c_enc, c_type) = content_types.guess_rdf_format(url)

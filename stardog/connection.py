@@ -1,3 +1,6 @@
+"""Connect to Stardog databases.
+"""
+
 import contextlib
 import distutils.util
 
@@ -7,115 +10,112 @@ import stardog.http.connection as http_connection
 
 
 class Connection(object):
-    """
-    Database Connection.
+    """Database Connection.
 
     This is the entry point for all user-related operations on a
     Stardog database
     """
 
     def __init__(self, database, endpoint=None, username=None, password=None):
-        """
-        Initialize a connection to a Stardog database
+        """Initializes a connection to a Stardog database.
 
-        Parameters
-            database (str)
-                Name of the database
-            endpoint (str)
-                Url of the server endpoint. Defaults to `http://localhost:5820`
-            username (str)
-                Username to use in the connection (optional)
-            password (str)
-                Password to use in the connection (optional)
+        Args:
+          database (str): Name of the database
+          endpoint (str): Url of the server endpoint.
+            Defaults to `http://localhost:5820`
+          username (str, optional): Username to use in the connection
+          password (str, optional): Password to use in the connection
 
-        Example
-            >> conn = Connection('db', endpoint='http://localhost:9999',
-                                 username='admin', password='admin')
+        Examples:
+          >>> conn = Connection('db', endpoint='http://localhost:9999',
+                                username='admin', password='admin')
         """
         self.conn = http_connection.Connection(database, endpoint, username,
                                                password)
         self.transaction = None
 
     def docs(self):
-        """
-        BITES: Document Storage
+        """Makes a document storage object.
+
+        Returns:
+          Docs: A Docs object
         """
         return Docs(self)
 
     def icv(self):
-        """
-        Integrity Constraint Validation
+        """Makes an integrity constraint validation object.
+
+        Returns:
+          ICV: An ICV object
         """
         return ICV(self)
 
     def versioning(self):
-        """
-        Versioning
+        """Make a versioning object.
+
+        Returns:
+          VCS: A VCS object.
         """
         return VCS(self)
 
     def graphql(self):
-        """
-        GraphQL
+        """Makes a GraphQL object.
+
+        Returns:
+          GraphQL: A GraphQL object
         """
         return GraphQL(self)
 
     def begin(self):
-        """
-        Begin a transaction
+        """Begins a transaction.
 
-        Returns
-            (str)
-                Transaction ID
+        Returns:
+          str: Transaction ID
 
-        Raises
-            TransactionException
-                If already in a transaction
+        Raises:
+            stardog.exceptions.TransactionException
+              If already in a transaction
         """
         self._assert_not_in_transaction()
         self.transaction = self.conn.begin()
         return self.transaction
 
     def rollback(self):
-        """
-        Rollback current transaction
+        """Rolls back the current transaction.
 
-        Raises
-            TransactionException
-                If currently not in a transaction
+        Raises:
+            stardog.exceptions.TransactionException
+              If currently not in a transaction
+
         """
         self._assert_in_transaction()
         self.conn.rollback(self.transaction)
         self.transaction = None
 
     def commit(self):
-        """
-        Commit current transaction
+        """Commits the current transaction.
 
-        Raises
-            TransactionException
-                If currently not in a transaction
+        Raises:
+          stardog.exceptions.TransactionException
+            If currently not in a transaction
         """
         self._assert_in_transaction()
         self.conn.commit(self.transaction)
         self.transaction = None
 
     def add(self, content, graph_uri=None):
-        """
-        Add data to database
+        """Adds data to the database.
 
-        Parameters
-            content (Content)
-                Data to add
-            graph_uri (str)
-                Named graph into which to add the data (optional)
+        Args:
+          content (Content): Data to add
+          graph_uri (str, optional): Named graph into which to add the data
 
-        Raises
-            TransactionException
-                If currently not in a transaction
+        Raises:
+          stardog.exceptions.TransactionException
+            If not currently in a transaction
 
-        Example
-            >> conn.add(File('example.ttl'), graph_uri='urn:graph')
+        Examples:
+          >>> conn.add(File('example.ttl'), graph_uri='urn:graph')
         """
         self._assert_in_transaction()
 
@@ -124,21 +124,18 @@ class Connection(object):
                           content.content_encoding, graph_uri)
 
     def remove(self, content, graph_uri=None):
-        """
-        Remove data from database
+        """Removes data from the database.
 
-        Parameters
-            content (Content)
-                Data to add
-            graph_uri (str)
-                Named graph from which to remove the data (optional)
+        Args:
+          content (Content): Data to add
+          graph_uri (str): Named graph from which to remove the data (optional)
 
-        Raises
-            TransactionException
-                If currently not in a transaction
+        Raises:
+          stardog.exceptions.TransactionException
+            If currently not in a transaction
 
-        Example
-            >> conn.remove(File('example.ttl'), graph_uri='urn:graph')
+        Examples:
+          >>> conn.remove(File('example.ttl'), graph_uri='urn:graph')
         """
 
         self._assert_in_transaction()
@@ -148,34 +145,32 @@ class Connection(object):
                              content.content_encoding, graph_uri)
 
     def clear(self, graph_uri=None):
-        """
-        Remove all data from database or specific named graph
+        """Removes all data from the database or specific named graph.
 
-        Parameters
-            graph_uri (str)
-                Named graph from which to remove data (optional)
+        Args:
+          graph_uri (str, optional): Named graph from which to remove data
 
-        Raises
-            TransactionException
-                If currently not in a transaction
+        Raises:
+          stardog.exceptions.TransactionException
+            If currently not in a transaction
 
-        Example
-            # clear a specific named graph
-            >> conn.clear('urn:graph')
+        Examples:
+          clear a specific named graph
 
-            # clear the whole database
-            >> conn.clear()
+          >>> conn.clear('urn:graph')
+
+          clear the whole database
+
+          >>> conn.clear()
         """
         self._assert_in_transaction()
         self.conn.clear(self.transaction, graph_uri)
 
     def size(self):
-        """
-        Database size
+        """Database size.
 
-        Returns
-            (int)
-                Number of elements in database
+        Returns:
+          int: The number of elements in database
         """
         return self.conn.size()
 
@@ -183,251 +178,202 @@ class Connection(object):
                content_type=content_types.TURTLE,
                stream=False,
                chunk_size=10240):
-        """
-        Export contents of database
+        """Exports the contents of the database.
 
-        Parameters
-            content_type (str)
-                RDF content type. Defaults to 'text/turtle'
-            stream (bool)
-                If results should come in chunks or as a whole.
-                Defaults to False
-            chunk_size (int)
-                Number of bytes to read per chunk when streaming.
-                Defaults to 10240
+        Args:
+          content_type (str): RDF content type. Defaults to 'text/turtle'
+          stream (bool): Chunk results? Defaults to False
+          chunk_size (int): Number of bytes to read per chunk when streaming.
+            Defaults to 10240
 
-        Returns
-            (str)
-                If stream=False
-            (gen)
-                If stream=True
+        Returns:
+          str: If stream = False
 
-        Example
-            # no streaming
-            >> contents = conn.export()
+        Returns:
+          gen: If stream = True
 
-            # streaming
-            >> with conn.export(stream=True) as stream:
+        Examples:
+          no streaming
+
+          >>> contents = conn.export()
+
+          streaming
+
+          >>> with conn.export(stream=True) as stream:
                 contents = ''.join(stream)
         """
         db = self.conn.export(content_type, stream, chunk_size)
-        return nextcontext(db) if stream else next(db)
+        return _nextcontext(db) if stream else next(db)
 
     def explain(self, query, base_uri=None):
-        """
-        Explain evaluation of a SPARQL query
+        """Explains the evaluation of a SPARQL query.
 
-        Parameters
-            query (str)
-                SPARQL query
-            base_uri (str)
-                Base URI for the parsing of the query (optional)
+        Args:
+          query (str): SPARQL query
+          base_uri (str, optional): Base URI for the parsing of the query
 
-        Returns
-            (str)
-                Query explanation
+        Returns:
+         str: Query explanation
         """
         return self.conn.explain(query, base_uri)
 
     def select(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
-        """
-        Execute a SPARQL select query
+        """Executes a SPARQL select query.
 
-        Parameters
-            query (str)
-                SPARQL query
-            base_uri (str)
-                Base URI for the parsing of the query (optional)
-            limit (int)
-                Maximum number of results to return (optional)
-            offset (int)
-                Offset into the result set (optional)
-            timeout (int)
-                Number of ms after which the query should timeout.
-                0 or less implies no timeout (optional)
-            reasoning (bool)
-                Enable reasoning for the query (optional)
-            bindings (dict)
-                Map between query variables and their values (optional)
-            content_type (str)
-                Content type for results.
-                Defaults to 'application/sparql-results+json'
+        Args:
+          query (str): SPARQL query
+          base_uri (str, optional): Base URI for the parsing of the query
+          limit (int, optional): Maximum number of results to return
+          offset (int, optional): Offset into the result set
+          timeout (int, optional): Number of ms after which the query should
+            timeout. 0 or less implies no timeout
+          reasoning (bool, optional): Enable reasoning for the query
+          bindings (dict, optional): Map between query variables and their
+            values
+          content_type (str, optional): Content type for results.
+            Defaults to 'application/sparql-results+json'
 
-        Returns
-            (dict)
-                If content_type='application/sparql-results+json'
-            (str)
-                Other content types
+        Returns:
+          dict: If content_type='application/sparql-results+json'
 
-        Example
-            >> conn.select('select * {?s ?p ?o}',
-                           offset=100, limit=100, reasoning=True)
+        Returns:
+          str: Other content types
 
-            # bindings
-            >> conn.select('select * {?s ?p ?o}', bindings={'o': '<urn:a>'})
+        Examples:
+          >>> conn.select('select * {?s ?p ?o}',
+                          offset=100, limit=100, reasoning=True)
+
+          bindings
+
+          >>> conn.select('select * {?s ?p ?o}', bindings={'o': '<urn:a>'})
         """
         return self.conn.query(
             query, self.transaction, content_type=content_type, **kwargs)
 
     def graph(self, query, content_type=content_types.TURTLE, **kwargs):
-        """
-        Execute a SPARQL graph query
+        """Executes a SPARQL graph query.
 
-        Parameters
-            query (str)
-                SPARQL query
-            base_uri (str)
-                Base URI for the parsing of the query (optional)
-            limit (int)
-                Maximum number of results to return (optional)
-            offset (int)
-                Offset into the result set (optional)
-            timeout (int)
-                Number of ms after which the query should timeout.
-                0 or less implies no timeout (optional)
-            reasoning (bool)
-                Enable reasoning for the query (optional)
-            bindings (dict)
-                Map between query variables and their values (optional)
-            content_type (str)
-                Content type for results. Defaults to 'text/turtle'
+        Args:
+          query (str): SPARQL query
+          base_uri (str, optional): Base URI for the parsing of the query
+          limit (int, optional): Maximum number of results to return
+          offset (int, optional): Offset into the result set
+          timeout (int, optional): Number of ms after which the query should
+            timeout. 0 or less implies no timeout
+          reasoning (bool, optional): Enable reasoning for the query
+          bindings (dict, optional): Map between query variables and their
+            values
+          content_type (str): Content type for results.
+            Defaults to 'text/turtle'
 
-        Returns
-            (str)
-                Results in format given by content_type
+        Returns:
+          str: Results in format given by content_type
 
-        Example
-            >> conn.graph('construct {?s ?p ?o} where {?s ?p ?o}',
-                          offset=100, limit=100, reasoning=True)
+        Examples:
+          >>> conn.graph('construct {?s ?p ?o} where {?s ?p ?o}',
+                         offset=100, limit=100, reasoning=True)
 
-            # bindings
-            >> conn.graph('construct {?s ?p ?o} where {?s ?p ?o}',
-                          bindings={'o': '<urn:a>'})
+          bindings
+
+          >>> conn.graph('construct {?s ?p ?o} where {?s ?p ?o}',
+                         bindings={'o': '<urn:a>'})
         """
         return self.conn.query(query, self.transaction, content_type, **kwargs)
 
     def paths(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
-        """
-        Execute a SPARQL paths query
+        """Executes a SPARQL paths query.
 
-        Parameters
-            query (str)
-                SPARQL query
-            base_uri (str)
-                Base URI for the parsing of the query (optional)
-            limit (int)
-                Maximum number of results to return (optional)
-            offset (int)
-                Offset into the result set (optional)
-            timeout (int)
-                Number of ms after which the query should timeout.
-                0 or less implies no timeout (optional)
-            reasoning (bool)
-                Enable reasoning for the query (optional)
-            bindings (dict)
-                Map between query variables and their values (optional)
-            content_type (str)
-                Content type for results.
-                Defaults to 'application/sparql-results+json'
+        Args:
+          query (str): SPARQL query
+          base_uri (str, optional): Base URI for the parsing of the query
+          limit (int, optional): Maximum number of results to return
+          offset (int, optional): Offset into the result set
+          timeout (int, optional): Number of ms after which the query should
+            timeout. 0 or less implies no timeout
+          reasoning (bool, optional): Enable reasoning for the query
+          bindings (dict, optional): Map between query variables and their
+            values
+          content_type (str): Content type for results.
+              Defaults to 'application/sparql-results+json'
 
-        Returns
-            (dict)
-                If content_type='application/sparql-results+json'
-            (str)
-                Other content types
+        Returns:
+          dict: if content_type='application/sparql-results+json'.
 
-        Example
-            >> conn.paths('paths start ?x = :subj end ?y = :obj via ?p',
-                          reasoning=True)
+        Returns:
+          str: other content types.
+
+        Examples:
+          >>> conn.paths('paths start ?x = :subj end ?y = :obj via ?p',
+                         reasoning=True)
         """
         return self.conn.query(query, self.transaction, content_type, **kwargs)
 
     def ask(self, query, **kwargs):
-        """
-        Execute a SPARQL ask query
+        """Executes a SPARQL ask query.
 
-        Parameters
-            query (str)
-                SPARQL query
-            base_uri (str)
-                Base URI for the parsing of the query (optional)
-            limit (int)
-                Maximum number of results to return (optional)
-            offset (int)
-                Offset into the result set (optional)
-            timeout (int)
-                Number of ms after which the query should timeout.
-                0 or less implies no timeout (optional)
-            reasoning (bool)
-                Enable reasoning for the query (optional)
-            bindings (dict)
-                Map between query variables and their values (optional)
+        Args:
+          query (str): SPARQL query
+          base_uri (str, optional): Base URI for the parsing of the query
+          limit (int, optional): Maximum number of results to return
+          offset (int, optional): Offset into the result set
+          timeout (int, optional): Number of ms after which the query should
+            timeout. 0 or less implies no timeout
+          reasoning (bool, optional): Enable reasoning for the query
+          bindings (dict, optional): Map between query variables and their
+            values
 
-        Returns
-            (bool)
-                Result of ask query
+        Returns:
+          bool: Result of ask query
 
-        Example
-            >> conn.ask('ask {:subj :pred :obj}', reasoning=True)
+        Examples:
+          >>> conn.ask('ask {:subj :pred :obj}', reasoning=True)
         """
         r = self.conn.query(query, self.transaction, content_types.BOOLEAN,
                             **kwargs)
         return bool(distutils.util.strtobool(r.decode()))
 
     def update(self, query, **kwargs):
-        """
-        Execute a SPARQL update query
+        """Executes a SPARQL update query.
 
-        Parameters
-            query (str)
-                SPARQL query
-            base_uri (str)
-                Base URI for the parsing of the query (optional)
-            limit (int)
-                Maximum number of results to return (optional)
-            offset (int)
-                Offset into the result set (optional)
-            timeout (int)
-                Number of ms after which the query should timeout.
-                0 or less implies no timeout (optional)
-            reasoning (bool)
-                Enable reasoning for the query (optional)
-            bindings (dict)
-                Map between query variables and their values (optional)
+        Args:
+          query (str): SPARQL query
+          base_uri (str, optional): Base URI for the parsing of the query
+          limit (int, optional): Maximum number of results to return
+          offset (int, optional): Offset into the result set
+          timeout (int, optional): Number of ms after which the query should
+            timeout. 0 or less implies no timeout
+          reasoning (bool, optional): Enable reasoning for the query
+          bindings (dict, optional): Map between query variables and their
+            values
 
-        Example
-            >> conn.update('delete where {?s ?p ?o}')
+        Examples:
+          >>> conn.update('delete where {?s ?p ?o}')
         """
         self.conn.update(query, self.transaction, **kwargs)
 
     def is_consistent(self, graph_uri=None):
-        """
-        Check if database or specific named graph is consistent wrt its schema
+        """Checks if the database or named graph is consistent wrt its schema.
 
-        Parameters
-            graph_uri (str)
-                Named graph from which to check consistency (optional)
+        Args:
+          graph_uri (str, optional): Named graph from which to check
+            consistency
 
-        Returns
-            (bool)
-                Database consistency state
+        Returns:
+          bool: Database consistency state
         """
         return self.conn.is_consistent(graph_uri)
 
     def explain_inference(self, content):
-        """
-        Return explanation for the given inference results
+        """Explains the given inference results.
 
-        Parameters
-            content (Content)
-                Data from which to provide explanations
+        Args:
+          content (Content): Data from which to provide explanations
 
-        Returns
-            (dict)
-                Explanation results
+        Returns:
+          dict: Explanation results
 
-        Example
-            >> conn.explain_inference(File('inferences.ttl'))
+        Examples:
+          >>> conn.explain_inference(File('inferences.ttl'))
         """
         with content.data() as data:
             return self.conn.explain_inference(data, content.content_type,
@@ -435,17 +381,14 @@ class Connection(object):
                                                self.transaction)
 
     def explain_inconsistency(self, graph_uri=None):
-        """
-        Explain why database or a specific named graph is inconsistent
+        """Explains why the database or a named graph is inconsistent.
 
-        Parameters
-            graph_uri (str)
-                Named graph for which to explain inconsistency (optional)
+        Args:
+          graph_uri (str, optional): Named graph for which to explain
+            inconsistency
 
-        Returns
-            (dict)
-                Explanation results
-
+        Returns:
+          dict: Explanation results
         """
         return self.conn.explain_inconsistency(self.transaction,
                                                self.graph_uri)
@@ -466,153 +409,142 @@ class Connection(object):
 
 
 class Docs(object):
-    """
-    BITES: Document Storage
+    """BITES: Document Storage.
 
-    See Also
-        https://www.stardog.com/docs/#_unstructured_data
+    See Also:
+      https://www.stardog.com/docs/#_unstructured_data
     """
 
     def __init__(self, conn):
+        """Initializes a Docs.
+
+        Use :meth:`stardog.connection.Connection.docs`
+        instead of constructing manually.
+        """
         self.docs = conn.conn.docs()
 
     def size(self):
-        """
-        Document store size
+        """Calculates document store size.
 
-        Returns
-            (int)
-                Number of documents in the store
+        Returns:
+          int: Number of documents in the store
         """
         return self.docs.size()
 
     def add(self, name, content):
-        """
-        Add document to store
+        """Adds a document to the store.
 
-        Parameters
-            name (str)
-                Name of the document
-            content (Content)
-                Contents of the document
+        Args:
+          name (str): Name of the document
+          content (Content): Contents of the document
 
-        Example
-            >> docs.add('example', File('example.pdf'))
+        Examples:
+          >>> docs.add('example', File('example.pdf'))
         """
         with content.data() as data:
             self.docs.add(name, data)
 
     def clear(self):
-        """
-        Remove all documents from the store
+        """Removes all documents from the store.
         """
         self.docs.clear()
 
     def get(self, name, stream=False, chunk_size=10240):
-        """
-        Get document from the store
+        """Gets a document from the store.
 
-        Parameters
-            name (str)
-                Name of the document
-            stream (bool)
-                If document should come in chunks or as a whole.
-                Defaults to False
-            chunk_size (int)
-                Number of bytes to read per chunk when streaming.
-                Defaults to 10240
+        Args:
+          name (str): Name of the document
+          stream (bool): If document should come in chunks or as a whole.
+            Defaults to False
+          chunk_size (int): Number of bytes to read per chunk when streaming.
+            Defaults to 10240
 
-        Returns
-            (str)
-                If stream=False
-            (gen)
-                If stream=True
+        Returns:
+          str: If stream=False
 
-        Example
-            # no streaming
-            >> contents = docs.get('example')
+        Returns:
+          gen: If stream=True
 
-            # streaming
-            >> with docs.get('example', stream=True) as stream:
-                contents = ''.join(stream)
+        Examples:
+          no streaming
+
+          >>> contents = docs.get('example')
+
+          streaming
+
+          >>> with docs.get('example', stream=True) as stream:
+                            contents = ''.join(stream)
         """
         doc = self.docs.get(name, stream, chunk_size)
-        return nextcontext(doc) if stream else next(doc)
+        return _nextcontext(doc) if stream else next(doc)
 
     def delete(self, name):
-        """
-        Delete document from the store
+        """Deletes a document from the store.
 
-        Parameters
-            name (str)
-                Name of the document
+        Args:
+          name (str): Name of the document
         """
         self.docs.delete(name)
 
 
 class ICV(object):
-    """
-    Integrity Constraint Validation
+    """Integrity Constraint Validation.
 
-    See Also
-        https://www.stardog.com/docs/#_validating_constraints
+    See Also:
+      https://www.stardog.com/docs/#_validating_constraints
     """
 
     def __init__(self, conn):
+        """Initializes an ICV.
+
+        Use :meth:`stardog.connection.Connection.icv`
+        instead of constructing manually.
+        """
         self.conn = conn
         self.icv = conn.conn.icv()
 
     def add(self, content):
-        """
-        Add integrity constraints to database
+        """Adds integrity constraints to the database.
 
-        Parameters
-            content (Content)
-                Data to add
+        Args:
+          content (Content): Data to add
 
-        Example
-            >> icv.add(File('constraints.ttl'))
+        Examples:
+          >>> icv.add(File('constraints.ttl'))
         """
         with content.data() as data:
             self.icv.add(data, content.content_type, content.content_encoding)
 
     def remove(self, content):
-        """
-        Remove integrity constraints from database
+        """Removes integrity constraints from the database.
 
-        Parameters
-            content (Content)
-                Data to remove
+        Args:
+          content (Content): Data to remove
 
-        Example
-            >> icv.remove(File('constraints.ttl'))
+        Examples:
+          >>> icv.remove(File('constraints.ttl'))
         """
         with content.data() as data:
             self.icv.remove(data, content.content_type,
                             content.content_encoding)
 
     def clear(self):
-        """
-        Remove all integrity constraints from database
+        """Removes all integrity constraints from the database.
         """
         self.icv.clear()
 
     def is_valid(self, content, graph_uri=None):
-        """
-        Checks if given integrity constraints are valid
+        """Checks if given integrity constraints are valid.
 
-        Parameters
-            content (Content)
-                Data to check for validity
-            graph_uri (str)
-                Named graph from which to check validity from (optional)
+        Args:
+          content (Content): Data to check for validity
+          graph_uri (str, optional): Named graph to check for validity
 
-        Returns
-            (bool)
-                Integrity constraint validity
+        Returns:
+          bool: Integrity constraint validity
 
-        Example
-            >> icv.is_valid(File('constraints.ttl'), graph_uri='urn:graph')
+        Examples:
+          >>> icv.is_valid(File('constraints.ttl'), graph_uri='urn:graph')
         """
         with content.data() as data:
             return self.icv.is_valid(data, content.content_type,
@@ -620,22 +552,19 @@ class ICV(object):
                                      self.conn.transaction, graph_uri)
 
     def explain_violations(self, content, graph_uri=None):
-        """
-        Explain violations for the given integrity constraints
+        """Explains violations of the given integrity constraints.
 
-        Parameters
-            content (Content)
-                Data to check for violations
-            graph_uri (str)
-                Named graph from which to check for validations (optional)
+        Args:
+          content (Content): Data to check for violations
+          graph_uri (str, optional): Named graph from which to check for
+            validations
 
-        Returns
-            (dict)
-                Integrity constraint violations
+        Returns:
+          dict: Integrity constraint violations
 
-        Example
-            >> icv.explain_violations(File('constraints.ttl'),
-                                      graph_uri='urn:graph')
+        Examples:
+          >>> icv.explain_violations(File('constraints.ttl'),
+                                     graph_uri='urn:graph')
         """
 
         with content.data() as data:
@@ -644,21 +573,18 @@ class ICV(object):
                 self.conn.transaction, graph_uri)
 
     def convert(self, content, graph_uri=None):
-        """
-        Convert given integrity constraints to a SPARQL query
+        """Converts given integrity constraints to a SPARQL query.
 
-        Parameters
-            content (Content)
-                Integrity constraints
-            graph_uri (str)
-                Named graph from which to apply constraints (optional)
+        Args:
+          content (Content): Integrity constraints
+          graph_uri (str, optional): Named graph from which to apply
+            constraints
 
-        Returns
-            (str)
-                SPARQL query
+        Returns:
+          str: SPARQL query
 
-        Example
-            >> icv.convert(File('constraints.ttl'), graph_uri='urn:graph')
+        Examples:
+          >>> icv.convert(File('constraints.ttl'), graph_uri='urn:graph')
         """
         with content.data() as data:
             return self.icv.convert(data, content.content_type,
@@ -666,320 +592,274 @@ class ICV(object):
 
 
 class VCS(object):
-    """
-    Versioning
+    """Versioning
 
-    See Also
-        https://www.stardog.com/docs/#_versioning
+    See Also:
+      https://www.stardog.com/docs/#_versioning
     """
 
     def __init__(self, conn):
+        """Initializes a VCS.
+
+        Use :meth:`stardog.connection.Connection.versioning`
+        instead of constructing manually.
+        """
         self.vcs = conn.conn.versioning()
         self.conn = conn
 
     def select(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
-        """
-        Execute a SPARQL select query over versioning history
+        """Executes a SPARQL select query over versioning history.
 
-        Parameters
-            query (str)
-                SPARQL query
-            base_uri (str)
-                Base URI for the parsing of the query (optional)
-            limit (int)
-                Maximum number of results to return (optional)
-            offset (int)
-                Offset into the result set (optional)
-            timeout (int)
-                Number of ms after which the query should timeout.
-                0 or less implies no timeout (optional)
-            reasoning (bool)
-                Enable reasoning for the query (optional)
-            bindings (dict)
-                Map between query variables and their values (optional)
-            content_type (str)
-                Content type for results.
-                Defaults to 'application/sparql-results+json'
+        Args:
+          query (str): SPARQL query
+          base_uri (str, optional): Base URI for the parsing of the query
+          limit (int, optional): Maximum number of results to return
+          offset (int, optional): Offset into the result set
+          timeout (int, optional): Number of ms after which the query should
+            timeout. 0 or less implies no timeout
+          reasoning (bool, optional): Enable reasoning for the query
+          bindings (dict, optional): Map between query variables and their
+            values
+          content_type (str): Content type for results.
+            Defaults to 'application/sparql-results+json'
 
-        Returns
-            (dict)
-                If content_type='application/sparql-results+json'
-            (str)
-                Other content types
+        Returns:
+          dict: If content_type='application/sparql-results+json'
 
-        Example
-            >> vcs.select('select distinct ?v {?v a vcs:Version}',
-                          offset=100, limit=100)
+        Returns:
+          str: Other content types
 
-            # bindings
-            >> vcs.select(
-                 'select distinct ?v {?v a ?o}',
-                 bindings={'o': '<tag:stardog:api:versioning:Version>'})
+        Examples:
+          >>> vcs.select('select distinct ?v {?v a vcs:Version}',
+                         offset=100, limit=100)
+
+          bindings
+
+          >>> vcs.select(
+                'select distinct ?v {?v a ?o}',
+                bindings={'o': '<tag:stardog:api:versioning:Version>'})
         """
         return self.vcs.query(query, content_type, **kwargs)
 
     def graph(self, query, content_type=content_types.TURTLE, **kwargs):
-        """
-        Execute a SPARQL graph query over versioning history
+        """Executes a SPARQL graph query over versioning history.
 
-        Parameters
-            query (str)
-                SPARQL query
-            base_uri (str)
-                Base URI for the parsing of the query (optional)
-            limit (int)
-                Maximum number of results to return (optional)
-            offset (int)
-                Offset into the result set (optional)
-            timeout (int)
-                Number of ms after which the query should timeout.
-                0 or less implies no timeout (optional)
-            reasoning (bool)
-                Enable reasoning for the query (optional)
-            bindings (dict)
-                Map between query variables and their values (optional)
-            content_type (str)
-                Content type for results. Defaults to 'text/turtle'
+        Args:
+          query (str): SPARQL query
+          base_uri (str, optional): Base URI for the parsing of the query
+          limit (int, optional): Maximum number of results to return
+          offset (int, optional): Offset into the result set
+          timeout (int, optional): Number of ms after which the query should
+            timeout. 0 or less implies no timeout
+          reasoning (bool, optional): Enable reasoning for the query
+          bindings (dict, optional): Map between query variables and their
+            values
+          content_type (str): Content type for results.
+            Defaults to 'text/turtle'
 
-        Returns
-            (str)
-                Results in format given by content_type
+        Returns:
+          str: Results in format given by content_type
 
-        Example
-            >> vcs.graph('construct {?s ?p ?o} where {?s ?p ?o}',
-                         offset=100, limit=100)
+        Examples:
+          >>> vcs.graph('construct {?s ?p ?o} where {?s ?p ?o}',
+                        offset=100, limit=100)
         """
         return self.vcs.query(query, content_type, **kwargs)
 
     def paths(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
-        """
-        Execute a SPARQL paths query over versioning history
+        """Executes a SPARQL paths query over versioning history.
 
-        Parameters
-            query (str)
-                SPARQL query
-            base_uri (str)
-                Base URI for the parsing of the query (optional)
-            limit (int)
-                Maximum number of results to return (optional)
-            offset (int)
-                Offset into the result set (optional)
-            timeout (int)
-                Number of ms after which the query should timeout.
-                0 or less implies no timeout (optional)
-            reasoning (bool)
-                Enable reasoning for the query (optional)
-            bindings (dict)
-                Map between query variables and their values (optional)
-            content_type (str)
-                Content type for results.
-                Defaults to 'application/sparql-results+json'
+        Args:
+          query (str): SPARQL query
+          base_uri (str, optional): Base URI for the parsing of the query
+          limit (int, optional): Maximum number of results to return
+          offset (int, optional): Offset into the result set
+          timeout (int, optional): Number of ms after which the query should
+            timeout. 0 or less implies no timeout
+          reasoning (bool, optional): Enable reasoning for the query
+          bindings (dict, optional): Map between query variables and their
+            values
+          content_type (str): Content type for results.
+            Defaults to 'application/sparql-results+json'
 
-        Returns
-            (dict)
-                If content_type='application/sparql-results+json'
-            (str)
-                Other content types
+        Returns:
+          dict: If content_type='application/sparql-results+json'
 
-        Example
-            >> vcs.paths('paths start ?x = vcs:user:admin end'
-                         ' ?y = <http://www.w3.org/ns/prov#Person> via ?p'))
+       Returns:
+          str: Other content types
+
+        Examples:
+          >>> vcs.paths('paths start ?x = vcs:user:admin end'
+                        ' ?y = <http://www.w3.org/ns/prov#Person> via ?p'))
         """
         return self.vcs.query(query, content_type, **kwargs)
 
     def ask(self, query, **kwargs):
-        """
-        Execute a SPARQL ask query over versioning history
+        """Executes a SPARQL ask query over versioning history.
 
-        Parameters
-            query (str)
-                SPARQL query
-            base_uri (str)
-                Base URI for the parsing of the query (optional)
-            limit (int)
-                Maximum number of results to return (optional)
-            offset (int)
-                Offset into the result set (optional)
-            timeout (int)
-                Number of ms after which the query should timeout.
-                0 or less implies no timeout (optional)
-            reasoning (bool)
-                Enable reasoning for the query (optional)
-            bindings (dict)
-                Map between query variables and their values (optional)
+        Args:
+          query (str): SPARQL query
+          base_uri (str, optional): Base URI for the parsing of the query
+          limit (int, optional): Maximum number of results to return
+          offset (int, optional): Offset into the result set
+          timeout (int, optional): Number of ms after which the query should
+            timeout. 0 or less implies no timeout
+          reasoning (bool, optional): Enable reasoning for the query
+          bindings (dict, optional): Map between query variables and their
+            values
 
-        Returns
-            (bool)
-                Result of ask query
+        Returns:
+          bool: Result of ask query
 
-        Example
-            >> vcs.ask('ask {?v a vcs:Version}')
+        Examples:
+          >>> vcs.ask('ask {?v a vcs:Version}')
         """
         r = self.vcs.query(query, content_types.BOOLEAN, **kwargs)
         return bool(distutils.util.strtobool(r.decode()))
 
     def commit(self, message):
-        """
-        Commit current transaction into versioning
+        """Commits the current transaction into versioning.
 
-        Parameters
-            message (str)
-                Commit message
+        Args:
+          message (str): Commit message
 
-        Raises
-            TransactionException
-                If currently not in a transaction
+        Raises:
+          stardog.exceptions.TransactionException
+            If currently not in a transaction
         """
         self.conn._assert_in_transaction()
         self.vcs.commit(self.conn.transaction, message)
 
     def create_tag(self, revision, name):
-        """
-        Creates a new versioning tag
+        """Creates a new versioning tag.
 
-        Parameters
-            revision (str)
-                Revision ID
-            name (str)
-                Tag name
+        Args:
+          revision (str): Revision ID
+          name (str): Tag name
 
-        Example
-            >> vcs.create_tag('02cf7ed8e511bb4d62421565b42fffcaf00f5012',
-                              'v1.1')
+        Examples:
+          >>> vcs.create_tag('02cf7ed8e511bb4d62421565b42fffcaf00f5012',
+                             'v1.1')
         """
         self.vcs.create_tag(revision, name)
 
     def delete_tag(self, name):
-        """
-        Deletes a versioning tag
+        """Deletes a versioning tag.
 
-        Parameters
-            name (str)
-                Tag name
+        Args:
+          name (str): Tag name
 
-        Example
-            >> vcs.delete_tag('v1.1')
+        Examples:
+          >>> vcs.delete_tag('v1.1')
         """
         self.vcs.delete_tag(name)
 
     def revert(self, to_revision, from_revision, message):
-        """
-        Revert database to a specific revision
+        """Reverts the database to a specific revision.
 
-        Parameters
-            to_revision (str)
-                Begin revision ID
-            from_revision (str)
-                End revision ID
-            message (str)
-                Revert message
+        Args:
+          to_revision (str): Begin revision ID
+          from_revision (str): End revision ID
+          message (str): Revert message
 
-        Example
-            >> vcs.revert('02cf7ed8e511bb4d62421565b42fffcaf00f5012',
-                          '3c48bed3c1f9cfb056b4b0a755961a54d814f496',
-                          'Log message')
+        Examples:
+          >>> vcs.revert('02cf7ed8e511bb4d62421565b42fffcaf00f5012',
+                         '3c48bed3c1f9cfb056b4b0a755961a54d814f496',
+                         'Log message')
         """
         self.vcs.revert(to_revision, from_revision, message)
 
 
 class GraphQL(object):
-    """
-    GraphQL
+    """GraphQL
 
     See Also:
         https://www.stardog.com/docs/#_graphql_queries
+
     """
 
     def __init__(self, conn):
+        """Initializes a GraphQL.
+
+        Use :meth:`stardog.connection.Connection.graphql`
+        instead of constructing manually.
+        """
         self.gql = conn.conn.graphql()
         self.conn = conn
 
     def query(self, query, variables=None):
-        """
-        Execute GraphQL query
+        """Executes a GraphQL query.
 
-        Parameters
-            query (str)
-                GraphQL query
-            variables (dict)
-                GraphQL variables (optional)
-                Two special variables available:
-                  @reasoning to enable reasoning,
-                  @schema to define schemas
+        Args:
+          query (str): GraphQL query
+          variables (dict, optional): GraphQL variables.
+            Keys: '@reasoning' (bool) to enable reasoning,
+            '@schema' (str) to define schemas
 
-        Returns
-            (dict)
-                Query results
+        Returns:
+          dict: Query results
 
-        Example
-            # with schema and reasoning
-            >> gql.query('{ Person {name} }',
-                         variables={'@reasoning': True, '@schema': 'people'})
+        Examples:
+          with schema and reasoning
 
-            # with named variables
-            >> gql.query(
-                 'query getPerson($id: Integer) { Person(id: $id) {name} }',
-                 variables={'id': 1000})
+          >>> gql.query('{ Person {name} }',
+                        variables={'@reasoning': True, '@schema': 'people'})
+
+          with named variables
+
+          >>> gql.query(
+                'query getPerson($id: Integer) { Person(id: $id) {name} }',
+                variables={'id': 1000})
+
         """
         return self.gql.query(query, variables)
 
     def schemas(self):
-        """
-        Retrieve all available schemas
+        """Retrieves all available schemas.
 
-        Returns
-            (dict)
-                All schemas
+        Returns:
+          dict: All schemas
         """
         return self.gql.schemas()
 
     def clear_schemas(self):
-        """
-        Delete all schemas
+        """Deletes all schemas.
         """
         self.gql.clear_schemas()
 
     def add_schema(self, name, content):
-        """
-        Add schema to database
+        """Adds a schema to the database.
 
-        Parameters
-            name (str)
-                Name of the schema
-            content (Content)
-                Schema data
+        Args:
+          name (str): Name of the schema
+          content (Content): Schema data
 
-        Example
-            >> gql.add_schema('people', content=File('people.graphql'))
+        Examples:
+          >>> gql.add_schema('people', content=File('people.graphql'))
         """
         with content.data() as data:
             self.gql.add_schema(name, data)
 
     def schema(self, name):
-        """
-        Get schema information
+        """Gets schema information.
 
-        Parameters
-            name (str)
-                Name of the schema
+        Args:
+          name (str): Name of the schema
 
-        Returns
-            (dict)
-                GraphQL schema
+        Returns:
+          dict: GraphQL schema
         """
         return self.gql.schema(name)
 
     def remove_schema(self, name):
-        """
-        Remove schema from database
+        """Removes a schema from the database.
 
-        Parameters
-            name (str)
-                Name of the schema
+        Args:
+          name (str): Name of the schema
         """
         return self.gql.remove_schema(name)
 
 
 @contextlib.contextmanager
-def nextcontext(r):
+def _nextcontext(r):
     yield next(r)
