@@ -10,7 +10,7 @@ pystardog
    :maxdepth: 2
    :caption: Contents:
 
-   summary
+   README.md
    source/stardog
 
 Indices and tables

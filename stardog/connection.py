@@ -685,7 +685,7 @@ class VCS(object):
         Returns:
           dict: If content_type='application/sparql-results+json'
 
-       Returns:
+        Returns:
           str: Other content types
 
         Examples:
