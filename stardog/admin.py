@@ -3,8 +3,8 @@
 
 import contextlib2
 
-import stardog.content_types as content_types
-import stardog.http.admin as http_admin
+from . import content_types as content_types
+from .http import admin as http_admin
 
 
 class Admin(object):

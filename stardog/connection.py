@@ -4,9 +4,9 @@
 import contextlib
 import distutils.util
 
-import stardog.content_types as content_types
-import stardog.exceptions as exceptions
-import stardog.http.connection as http_connection
+from . import content_types as content_types
+from . import exceptions as exceptions
+from .http import connection as http_connection
 
 
 class Connection(object):

@@ -1,7 +1,7 @@
 import requests
 import requests_toolbelt.multipart as multipart
 
-import stardog.exceptions as exceptions
+from .. import exceptions as exceptions
 
 
 class Client(object):

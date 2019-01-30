@@ -1,4 +1,4 @@
-import stardog.exceptions as exceptions
+from .. import exceptions as exceptions
 
 
 class GraphQL(object):

@@ -1,4 +1,4 @@
-import stardog.http.role as role
+from . import role as role
 
 
 class User(object):

@@ -1,4 +1,4 @@
-import stardog.http.user as http_user
+from . import user as http_user
 
 
 class Role(object):
