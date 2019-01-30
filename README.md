@@ -24,7 +24,7 @@ pystardog is on PyPI so all you need is: `pip install pystardog`
 Documentation is readable at [Read the
 Docs](http://pystardog.readthedocs.io) or can be built using Sphinx:
 
-    pip install -r docs/requirements.txt
+    pip install -r requirements.txt
     cd docs
     make html
 
