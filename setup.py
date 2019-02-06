@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pystardog",
-    version="0.9.0",
+    version="0.9.1",
     author="Stardog Union",
     author_email="support@stardog.com",
     description="Use Stardog with Python!",
@@ -17,5 +17,10 @@ setuptools.setup(
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: Apache Software License",
         "Operating System :: OS Independent",
+    ],
+    install_requires=[
+        'requests',
+        'requests-toolbelt',
+        'contextlib2',
     ],
 )
