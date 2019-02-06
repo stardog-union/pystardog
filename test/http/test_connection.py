@@ -278,7 +278,7 @@ def test_vcs(conn, admin):
 
 def test_graphql(conn, admin):
 
-    with open('test/data/starwars.ttl') as f:
+    with open('test/data/starwars.ttl', 'rb') as f:
         db = admin.new_database('graphql', {}, {
             'name': 'starwars.ttl',
             'content': f,
@@ -304,7 +304,7 @@ def test_graphql(conn, admin):
             }]
 
         # schemas
-        with open('test/data/starwars.graphql') as f:
+        with open('test/data/starwars.graphql', 'rb') as f:
             gql.add_schema('characters', f)
 
         assert len(gql.schemas()) == 1
