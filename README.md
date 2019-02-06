@@ -37,19 +37,20 @@ Run the tests with: `python setup.py test`
 ```python
 import stardog
 
-admin = stardog.Admin(endpoint='http://localhost:5820',
-                      username='admin', password='admin')
+conn_details = {
+  'endpoint': 'http://localhost:5820',
+  'username': 'admin',
+  'password': 'admin'
+}
 
-db = admin.new_database('db')
+with stardog.Admin(**conn_details) as admin:
+  db = admin.new_database('db')
 
-with stardog.Connection('db', endpoint='http://localhost:5820',
-                        username='admin', password='admin') as conn:
+  with stardog.Connection('db', **conn_details) as conn:
+    conn.begin()
+    conn.add(stardog.content.File('./test/data/example.ttl'))
+    conn.commit()
+    results = conn.select('select * { ?a ?p ?o }')
 
-  conn.begin()
-  conn.add(stardog.content.File('./test/data/example.ttl'))
-  conn.commit()
-
-  results = conn.select('select * { ?a ?p ?o }')
-
-db.drop()
+  db.drop()
 ```
