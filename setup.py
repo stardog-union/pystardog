@@ -23,4 +23,6 @@ setuptools.setup(
         'requests-toolbelt',
         'contextlib2',
     ],
+    setup_requires=['pytest-runner'],
+    tests_require=['pytest'],
 )
