@@ -42,15 +42,14 @@ admin = stardog.Admin(endpoint='http://localhost:5820',
 
 db = admin.new_database('db')
 
-conn = stardog.Connection('db',
-                          endpoint='http://localhost:5820',
-                          username='admin', password='admin')
+with stardog.Connection('db', endpoint='http://localhost:5820',
+                        username='admin', password='admin') as conn:
 
-conn.begin()
-conn.add(stardog.content.File('./test/data/example.ttl'))
-conn.commit()
+  conn.begin()
+  conn.add(stardog.content.File('./test/data/example.ttl'))
+  conn.commit()
 
-conn.select('select * { ?a ?p ?o }')
+  results = conn.select('select * { ?a ?p ?o }')
 
 db.drop()
 ```
