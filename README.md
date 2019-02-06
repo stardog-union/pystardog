@@ -28,6 +28,10 @@ Docs](http://pystardog.readthedocs.io) or can be built using Sphinx:
     cd docs
     make html
 
+## Tests
+
+Run the tests with: `python setup.py test`
+
 ## Quick Example
 
 ```python
