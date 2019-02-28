@@ -66,8 +66,13 @@ class Connection(object):
         """
         return GraphQL(self)
 
-    def begin(self):
+    def begin(self, reasoning=False):
         """Begins a transaction.
+
+        Args:
+          reasoning (bool, optional): Enable reasoning for all queries
+            inside the transaction. If the transaction does not have reasoning
+            enabled, queries within will not be able to use reasoning.
 
         Returns:
           str: Transaction ID
@@ -77,7 +82,7 @@ class Connection(object):
               If already in a transaction
         """
         self._assert_not_in_transaction()
-        self.transaction = self.conn.begin()
+        self.transaction = self.conn.begin(reasoning)
         return self.transaction
 
     def rollback(self):
