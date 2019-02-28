@@ -66,7 +66,7 @@ class Connection(object):
         """
         return GraphQL(self)
 
-    def begin(self, reasoning=False):
+    def begin(self, **kwargs):
         """Begins a transaction.
 
         Args:
@@ -82,7 +82,7 @@ class Connection(object):
               If already in a transaction
         """
         self._assert_not_in_transaction()
-        self.transaction = self.conn.begin(reasoning)
+        self.transaction = self.conn.begin(**kwargs)
         return self.transaction
 
     def rollback(self):

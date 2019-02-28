@@ -25,9 +25,8 @@ class Connection(object):
     def graphql(self):
         return http_graphql.GraphQL(self)
 
-    def begin(self, reasoning=False):
-        params = {'reasoning': reasoning}
-        r = self.client.post('/transaction/begin', params=params)
+    def begin(self, **kwargs):
+        r = self.client.post('/transaction/begin', params=kwargs)
         return r.text
 
     def rollback(self, transaction):
