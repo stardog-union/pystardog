@@ -128,7 +128,7 @@ class Connection(object):
 
         Args:
           content (Content): Data to add
-          graph_uri (str): Named graph from which to remove the data (optional)
+          graph_uri (str, optional): Named graph from which to remove the data
 
         Raises:
           stardog.exceptions.TransactionException
