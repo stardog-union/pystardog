@@ -92,6 +92,30 @@ def test_queries(conn, admin):
     q = conn.select('select * {?s a :Character}', reasoning=True)
     assert len(q['results']['bindings']) == 7
 
+    # no results with reasoning turned off
+    q = conn.select('select * {?s a :Character}')
+    assert len(q['results']['bindings']) == 0
+
+    # the reasoning param on the query won't work in a transaction
+    # that doesn't have reasoning enabled (the default)
+    conn.begin()
+    q = conn.select('select * {?s a :Character}', reasoning=True)
+    assert len(q['results']['bindings']) == 0
+    conn.rollback()
+
+    # the query should return results if reasoning is on for the transaction
+    conn.begin(reasoning=True)
+    q = conn.select('select * {?s a :Character}', reasoning=True)
+    assert len(q['results']['bindings']) == 7
+    conn.rollback()
+
+    # reasoning does not need to be specified in the query when it is
+    # on in the transaction
+    conn.begin(reasoning=True)
+    q = conn.select('select * {?s a :Character}')
+    assert len(q['results']['bindings']) == 7
+    conn.rollback()
+
     # bindings
     q = conn.select(
         'select * {?s :name ?o}', bindings={'o': '"Luke Skywalker"'})

@@ -25,8 +25,8 @@ class Connection(object):
     def graphql(self):
         return http_graphql.GraphQL(self)
 
-    def begin(self):
-        r = self.client.post('/transaction/begin')
+    def begin(self, **kwargs):
+        r = self.client.post('/transaction/begin', params=kwargs)
         return r.text
 
     def rollback(self, transaction):
