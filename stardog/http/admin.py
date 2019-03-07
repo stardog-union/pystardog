@@ -49,6 +49,16 @@ class Admin(object):
         self.client.post('/admin/databases', files=params)
         return self.database(name)
 
+    def restore(self, from_path, *, name=None, force=False):
+        params = {
+            'from': from_path,
+            'force': force
+        }
+        if name:
+            params['name'] = name
+
+        self.client.put('/admin/restore', params=params)
+
     def query(self, id):
         r = self.client.get('/admin/queries/{}'.format(id))
         return r.json()

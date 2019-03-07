@@ -106,6 +106,27 @@ class Admin(object):
 
             return Database(self.admin.new_database(name, options, *files))
 
+    def restore(self, from_path, *, name=None, force=False):
+        """Restore a database.
+
+        Args:
+          from_path (str): the full path on the server to the backup
+          name (str, optional): the name of the database to
+            restore to if different from the backup
+          force (boolean, optional): a backup will not be restored over an
+            existing database of the same name; the force flag should be used
+            to overwrite the database
+
+        Examples:
+            >>> admin.restore("/data/stardog/.backup/db/2019-12-01")
+            >>> admin.restore("/data/stardog/.backup/db/2019-11-05",
+                              name="db2", force=True)
+
+        See Also:
+          https://www.stardog.com/docs/#_restore_a_database_from_a_backup
+        """
+        self.admin.restore(from_path, name=name, force=force)
+
     def query(self, id):
         """Gets information about a running query.
 
@@ -314,6 +335,18 @@ class Database(object):
         The database must be offline.
         """
         self.db.repair()
+
+    def backup(self, *, to=None):
+        """Backup a database.
+
+        Args:
+          to (string, optional): specify a path on the server to store
+            the backup
+
+        See Also:
+          https://www.stardog.com/docs/#_backup_a_database
+        """
+        self.db.backup(to=to)
 
     def online(self):
         """Sets a database to online state.

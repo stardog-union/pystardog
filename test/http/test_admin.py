@@ -1,4 +1,6 @@
 import pytest
+import datetime
+import os
 
 import stardog.content_types as content_types
 import stardog.exceptions as exceptions
@@ -92,6 +94,61 @@ def test_databases(admin):
     bl.drop()
 
     assert len(admin.databases()) == 0
+
+
+def test_backup_and_restore(admin):
+    def check_db_for_contents(dbname, size):
+        with http_connection.Connection(
+                dbname, username='admin', password='admin') as c:
+            assert c.size() == size
+
+    # determine the path to the backups
+    now = datetime.datetime.now()
+    date = now.strftime('%Y-%m-%d')
+    stardog_home = os.getenv('STARDOG_HOME', '/data/stardog')
+    restore_from = os.path.join(
+        f"{stardog_home}", '.backup', 'backup_db', f"{date}")
+
+    # make a db with test data loaded
+
+    with open('test/data/starwars.ttl', 'rb') as f:
+        db = admin.new_database(
+            'backup_db', {}, {
+                'name': 'starwars.ttl',
+                'content': f,
+                'content-type': content_types.TURTLE
+            })
+
+    db.backup()
+    db.drop()
+
+    # data is back after restore
+    admin.restore(from_path=restore_from)
+    check_db_for_contents('backup_db', 87)
+
+    # error if attempting to restore over an existing db without force
+    with pytest.raises(
+            exceptions.StardogException,
+            match='DatabaseExists: Database already exists'):
+        admin.restore(from_path=restore_from)
+
+    # restore to a new db
+    admin.restore(from_path=restore_from, name='backup_db2')
+    check_db_for_contents('backup_db2', 87)
+
+    # force to overwrite existing
+    db.drop()
+    db = admin.new_database('backup_db')
+    check_db_for_contents('backup_db', 0)
+    admin.restore(from_path=restore_from, force=True)
+    check_db_for_contents('backup_db', 87)
+
+    # the backup location can be specified
+    db.backup(to=os.path.join(stardog_home, 'backuptest'))
+
+    # clean up
+    db.drop()
+    admin.database('backup_db2').drop()
 
 
 def test_users(admin):
