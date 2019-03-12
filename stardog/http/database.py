@@ -20,6 +20,10 @@ class Database(object):
     def repair(self):
         self.client.put(self.path + '/repair')
 
+    def backup(self, *, to=None):
+        params = {'to': to} if to else {}
+        self.client.put(self.path + '/backup', params=params)
+
     def online(self):
         self.client.put(self.path + '/online')
 
