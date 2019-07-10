@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pystardog",
-    version="0.9.3",
+    version="0.9.4",
     author="Stardog Union",
     author_email="support@stardog.com",
     description="Use Stardog with Python!",
@@ -19,9 +19,9 @@ setuptools.setup(
         "Operating System :: OS Independent",
     ],
     install_requires=[
-        'requests',
-        'requests-toolbelt',
-        'contextlib2',
+        'requests>=2.22.0',
+        'requests-toolbelt>=0.9.1',
+        'contextlib2>=0.5.5',
     ],
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
