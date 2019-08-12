@@ -63,17 +63,6 @@ def test_databases(admin):
     db.repair()
     db.online()
 
-    # copy to new database
-    db.offline()
-    copy = db.copy('copy')
-
-    assert len(admin.databases()) == 2
-    assert copy.name == 'copy'
-    assert copy.get_options('search.enabled', 'spatial.enabled') == {
-        'search.enabled': True,
-        'spatial.enabled': False
-    }
-
     # bulk load
     with open('test/data/example.ttl.zip', 'rb') as f:
         bl = admin.new_database('bulkload', {}, {
@@ -89,7 +78,6 @@ def test_databases(admin):
         assert c.size() == 1
 
     # clear
-    copy.drop()
     db.drop()
     bl.drop()
 

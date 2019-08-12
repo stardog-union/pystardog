@@ -20,8 +20,7 @@ def admin():
             db.drop()
 
         admin.new_database('test', {
-            'search.enabled': True,
-            'versioning.enabled': True
+            'search.enabled': True
         })
 
         yield admin
@@ -249,31 +248,6 @@ def test_icv(conn, admin):
                                content_types.TURTLE)) == 2
     assert '<tag:stardog:api:context:all>' in icv.convert(
         '<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE)
-
-
-def test_vcs(conn, admin):
-    data = b'<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .'
-
-    vcs = conn.versioning()
-
-    # commit
-    t = conn.begin()
-    conn.add(t, data, content_types.TURTLE)
-    vcs.commit(t, 'a versioned commit')
-
-    # query
-    q = vcs.query('select distinct ?v {?v a vcs:Version}')
-    assert len(q['results']['bindings']) > 0
-
-    # tags
-    first_revision = q['results']['bindings'][0]['v']['value']
-    second_revision = q['results']['bindings'][1]['v']['value']
-
-    vcs.create_tag(first_revision, 'v.1')
-    vcs.delete_tag('v.1')
-
-    # revert
-    vcs.revert(first_revision, second_revision, 'reverting')
 
 
 def test_graphql(conn, admin):

@@ -20,8 +20,7 @@ def admin():
             db.drop()
 
         admin.new_database('newtest', {
-            'search.enabled': True,
-            'versioning.enabled': True
+            'search.enabled': True
         })
 
         yield admin
@@ -210,43 +209,6 @@ def test_icv(conn, admin):
     icv.add(constraints)
     icv.remove(constraints)
     icv.clear()
-
-
-def test_vcs(conn, admin):
-    vcs = conn.versioning()
-
-    # select
-    q = vcs.select('select distinct ?v {?v a vcs:Version}')
-    assert len(q['results']['bindings']) > 0
-
-    # paths
-    q = vcs.paths('paths start ?x = vcs:user:admin end '
-                  '?y = <http://www.w3.org/ns/prov#Person> via ?p')
-    assert len(q['results']['bindings']) > 0
-
-    # ask
-    q = vcs.ask('ask {?v a vcs:Version}')
-    assert q
-
-    # construct
-    q = vcs.graph('construct {?s ?p ?o} where {?s ?p ?o}')
-    assert b'<tag:stardog:api:versioning:Version>' in q
-
-    # bindings
-    q = vcs.select(
-        'select distinct ?v {?v a ?o}',
-        bindings={'o': '<tag:stardog:api:versioning:Version>'})
-    assert len(q['results']['bindings']) > 0
-
-    # tags
-    first_revision = q['results']['bindings'][0]['v']['value']
-    second_revision = q['results']['bindings'][1]['v']['value']
-
-    vcs.create_tag(first_revision, 'v.1')
-    vcs.delete_tag('v.1')
-
-    # revert
-    vcs.revert(first_revision, second_revision, 'reverting')
 
 
 def test_graphql(conn, admin):

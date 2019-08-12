@@ -5,7 +5,6 @@ from . import client as http_client
 from . import docs as http_docs
 from . import graphql as http_graphql
 from . import icv as http_icv
-from . import vcs as http_vcs
 
 
 class Connection(object):
@@ -18,9 +17,6 @@ class Connection(object):
 
     def icv(self):
         return http_icv.ICV(self)
-
-    def versioning(self):
-        return http_vcs.VCS(self)
 
     def graphql(self):
         return http_graphql.GraphQL(self)
