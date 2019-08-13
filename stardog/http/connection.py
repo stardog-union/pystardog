@@ -65,8 +65,8 @@ class Connection(object):
         self.client.post(
             '/{}/clear'.format(transaction), params={'graph-uri': graph_uri})
 
-    def size(self):
-        r = self.client.get('/size')
+    def size(self, exact=False):
+        r = self.client.get('/size', params={'exact': exact})
         return int(r.text)
 
     def export(self,

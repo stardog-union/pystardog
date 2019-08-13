@@ -163,13 +163,16 @@ class Connection(object):
         self._assert_in_transaction()
         self.conn.clear(self.transaction, graph_uri)
 
-    def size(self):
+    def size(self, exact=False):
         """Database size.
+
+        Args:
+          exact (bool, optional): Calculate the size exactly. Defaults to False
 
         Returns:
           int: The number of elements in database
         """
-        return self.conn.size()
+        return self.conn.size(exact=exact)
 
     def export(self,
                content_type=content_types.TURTLE,
