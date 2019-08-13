@@ -37,7 +37,7 @@ def test_docs(conn, admin):
     # add
     docs.add('doc', example)
     assert docs.size() == 1
-    assert conn.size() > 0
+    assert conn.size(exact=True) > 0
 
     # get
     doc = docs.get('doc')
@@ -73,21 +73,21 @@ def test_transactions(conn, admin):
     conn.add(t, data, content_types.TURTLE)
     conn.commit(t)
 
-    assert conn.size() == 1
+    assert conn.size(exact=True) == 1
 
     # remove
     t = conn.begin()
     conn.remove(t, data, content_types.TURTLE)
     conn.commit(t)
 
-    assert conn.size() == 0
+    assert conn.size(exact=True) == 0
 
     # rollback
     t = conn.begin()
     conn.add(t, data, content_types.TURTLE)
     conn.rollback(t)
 
-    assert conn.size() == 0
+    assert conn.size(exact=True) == 0
 
     # export
     t = conn.begin()
@@ -106,21 +106,21 @@ def test_transactions(conn, admin):
     conn.add(t, data, content_types.TURTLE, graph_uri='urn:graph')
     conn.commit(t)
 
-    assert conn.size() == 1
+    assert conn.size(exact=True) == 1
 
     # remove from default graph
     t = conn.begin()
     conn.remove(t, data, content_types.TURTLE)
     conn.commit(t)
 
-    assert conn.size() == 1
+    assert conn.size(exact=True) == 1
 
     # remove from named graph
     t = conn.begin()
     conn.remove(t, data, content_types.TURTLE, graph_uri='urn:graph')
     conn.commit(t)
 
-    assert conn.size() == 0
+    assert conn.size(exact=True) == 0
 
 
 def test_queries(conn, admin):
@@ -156,7 +156,7 @@ def test_queries(conn, admin):
 
     # update
     q = conn.update('delete where {?s ?p ?o}')
-    assert conn.size() == 0
+    assert conn.size(exact=True) == 0
 
     # explain
     q = conn.explain('select * {?s ?p ?o}')
@@ -201,16 +201,14 @@ def test_reasoning(conn, admin):
     # explain inference
     r = conn.explain_inference('<urn:subj> <urn:pred> <urn:obj> .',
                                content_types.TURTLE)
-    assert len(r) == 1
+    assert ('status', 'ASSERTED') in r[0].items()
 
     # explain inference in transaction
     t = conn.begin()
     conn.add(t, '<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE)
 
-    # TODO server throws null pointer exception
     with pytest.raises(
-            exceptions.StardogException,
-            match='There was an unexpected error on the server'):
+            exceptions.StardogException):
         r = conn.explain_inference(
             '<urn:subj> <urn:pred> <urn:obj3> .',
             content_types.TURTLE,
@@ -218,10 +216,8 @@ def test_reasoning(conn, admin):
         assert len(r) == 0
 
     # explain inconsistency in transaction
-    # TODO server returns 404 Not Found!
     with pytest.raises(
-            exceptions.StardogException,
-            match='There was an unexpected error on the server'):
+            exceptions.StardogException):
         r = conn.explain_inconsistency(transaction=t)
         assert len(r) == 0
 
@@ -234,20 +230,35 @@ def test_reasoning(conn, admin):
 
 def test_icv(conn, admin):
     icv = conn.icv()
+    constraint = ':Manager rdfs:subClassOf :Employee .'
 
     # add/remove/clear
-    icv.add('<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE)
-    icv.remove('<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE)
+    icv.add(constraint, content_types.TURTLE)
+    icv.remove(constraint, content_types.TURTLE)
     icv.clear()
 
-    # check/violations/convert
-    assert not icv.is_valid('<urn:subj> <urn:pred> <urn:obj3> .',
-                            content_types.TURTLE)
-    assert len(
-        icv.explain_violations('<urn:subj> <urn:pred> <urn:obj3> .',
-                               content_types.TURTLE)) == 2
-    assert '<tag:stardog:api:context:all>' in icv.convert(
-        '<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE)
+    # nothing in the db yet so it should be valid
+    assert icv.is_valid(constraint, content_types.TURTLE)
+
+    # insert a triple that violates the constraint
+    transaction = conn.begin()
+    conn.add(transaction, ':Alice a :Manager .', content_types.TURTLE)
+    conn.commit(transaction)
+
+    assert not icv.is_valid(constraint, content_types.TURTLE)
+
+    assert len(icv.explain_violations(constraint,
+                                      content_types.TURTLE)) == 2
+
+    # make Alice an employee so the constraint is satisfied
+    transaction = conn.begin()
+    conn.add(transaction, ':Alice a :Employee .', content_types.TURTLE)
+    conn.commit(transaction)
+
+    assert icv.is_valid(constraint, content_types.TURTLE)
+
+    assert 'SELECT DISTINCT' in icv.convert(
+        constraint, content_types.TURTLE)
 
 
 def test_graphql(conn, admin):

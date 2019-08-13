@@ -203,7 +203,7 @@ def test_icv(conn, admin):
     # check/violations/convert
     assert not icv.is_valid(constraints)
     assert len(icv.explain_violations(constraints)) == 14
-    assert '<tag:stardog:api:context:all>' in icv.convert(constraints)
+    assert 'SELECT DISTINCT' in icv.convert(constraints)
 
     # add/remove/clear
     icv.add(constraints)
