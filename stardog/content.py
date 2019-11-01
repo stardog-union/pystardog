@@ -103,8 +103,8 @@ class URL(Content):
               It will be automatically detected from the url
 
         Examples:
-          >>> Url('http://example.com/data.ttl')
-          >>> Url('http://example.com/data.doc', 'application/msword')
+          >>> URL('http://example.com/data.ttl')
+          >>> URL('http://example.com/data.doc', 'application/msword')
         """
         self.url = url
         (c_enc, c_type) = content_types.guess_rdf_format(url)
@@ -115,10 +115,4 @@ class URL(Content):
     @contextlib.contextmanager
     def data(self):
         with requests.get(self.url, stream=True) as r:
-            raw = r.raw
-            # HTTPResponse, given by r.raw, is a proper file-like
-            # object, except missing a 'mode' property This property
-            # is needed by requests lib to stream it back in a
-            # request, so we give it the expected mode, 'rb'
-            raw.mode = 'rb'
-            yield raw
+            yield r.content

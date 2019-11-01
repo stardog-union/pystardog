@@ -26,6 +26,6 @@ def test_content():
     u = content.URL('https://www.w3.org/2000/10/rdf-tests/'
                     'RDF-Model-Syntax_1.0/ms_4.1_1.rdf')
     with u.data() as c:
-        assert c.read() == open('test/data/ms_4.1_1.rdf', 'rb').read()
+        assert c == open('test/data/ms_4.1_1.rdf', 'rb').read()
         assert u.content_type == content_types.RDF_XML
         assert u.name == 'ms_4.1_1.rdf'
