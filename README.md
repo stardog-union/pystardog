@@ -54,3 +54,8 @@ with stardog.Admin(**conn_details) as admin:
 
   db.drop()
 ```
+
+## Interactive Tutorial
+
+There is a Jupyter notebook and instructions in the `notebooks`
+directory of this repository.
