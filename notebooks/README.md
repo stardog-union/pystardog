@@ -49,7 +49,8 @@ Place these two files in the `notebooks` directory.
 
 ## 4. Open the Jupyter notebook
 
-    ```bash
-    cd <path to pystardog repo>/notebooks
-    jupyter notebook
-    ```
+From within the `notebooks` directory in this repository:
+
+```bash
+jupyter notebook
+```
