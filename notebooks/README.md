@@ -47,10 +47,9 @@ Place these two files in the `notebooks` directory.
 
 [Data](https://github.com/stardog-union/stardog-tutorials/raw/master/music/music.ttl.gz)
 
-## 3. Open the Jupyter notebook tutorial
-
-While in the `notebooks` directory run this command to launch the notebook:
+## 4. Open the Jupyter notebook
 
     ```bash
+    cd <path to pystardog repo>/notebooks
     jupyter notebook
     ```
