@@ -54,3 +54,5 @@ From within the `notebooks` directory in this repository:
 ```bash
 jupyter notebook
 ```
+
+Click the tutorial.ipynb entry to open it.
