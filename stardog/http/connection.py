@@ -8,9 +8,10 @@ from . import icv as http_icv
 
 
 class Connection(object):
-    def __init__(self, database, endpoint=None, username=None, password=None):
+    def __init__(self, database, endpoint=None, username=None, password=None,
+                 pool_size=None):
         self.client = http_client.Client(endpoint, database, username,
-                                         password)
+                                         password, pool_size)
 
     def docs(self):
         return http_docs.Docs(self)

@@ -16,7 +16,8 @@ class Connection(object):
     Stardog database
     """
 
-    def __init__(self, database, endpoint=None, username=None, password=None):
+    def __init__(self, database, endpoint=None, username=None, password=None,
+                 pool_size=None):
         """Initializes a connection to a Stardog database.
 
         Args:
@@ -25,13 +26,15 @@ class Connection(object):
             Defaults to `http://localhost:5820`
           username (str, optional): Username to use in the connection
           password (str, optional): Password to use in the connection
+          pool_size(int, optional): Maximum number of connections to save in
+            the pool. Defaults to 10.
 
         Examples:
           >>> conn = Connection('db', endpoint='http://localhost:9999',
                                 username='admin', password='admin')
         """
         self.conn = http_connection.Connection(database, endpoint, username,
-                                               password)
+                                               password, pool_size)
         self.transaction = None
 
     def docs(self):
