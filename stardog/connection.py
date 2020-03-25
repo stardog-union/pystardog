@@ -13,7 +13,11 @@ class Connection(object):
     """Database Connection.
 
     This is the entry point for all user-related operations on a
-    Stardog database
+    Stardog database.
+
+    A Session object from the requests library is used to communicate
+    with the Stardog server which provides a connection pool and HTTP
+    keep-alive.
     """
 
     def __init__(self, database, endpoint=None, username=None, password=None,
