@@ -5,9 +5,9 @@ Python wrapper for communicating with the Stardog HTTP server.
 ## What is it?
 
 This framework wraps all the functionality of a client for the Stardog
-DBMS, and provides access to a full set of functions such as executing
-SPARQL queries, administrative tasks on Stardog, and the use of the
-Reasoning API.
+Knowledge Graph, and provides access to a full set of functions such
+as executing SPARQL queries, administrative tasks on Stardog, and the
+use of the Reasoning API.
 
 The implementation uses the HTTP protocol, since most of Stardog
 functionality is available using this protocol. For more information,
