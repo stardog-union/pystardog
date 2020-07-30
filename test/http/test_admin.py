@@ -26,6 +26,9 @@ def admin():
             if role.name not in DEFAULT_ROLES:
                 role.delete()
 
+        for stored_query in admin.stored_queries():
+            stored_query.delete()
+
         yield admin
 
 
@@ -117,7 +120,7 @@ def test_backup_and_restore(admin):
     # error if attempting to restore over an existing db without force
     with pytest.raises(
             exceptions.StardogException,
-            match='DatabaseExists: Database already exists'):
+            match='Database already exists'):
         admin.restore(from_path=restore_from)
 
     # restore to a new db
@@ -248,12 +251,12 @@ def test_queries(admin):
 
     with pytest.raises(
             exceptions.StardogException,
-            match='UnknownQuery: Query not found: 1'):
+            match='Query not found: 1'):
         admin.query(1)
 
     with pytest.raises(
             exceptions.StardogException,
-            match='UnknownQuery: Query not found: 1'):
+            match='Query not found: 1'):
         admin.kill_query(1)
 
 

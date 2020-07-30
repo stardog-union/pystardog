@@ -63,7 +63,7 @@ class Admin(object):
         Args:
           name (str): the database name
           options (dict): Dictionary with database options (optional)
-          *contents (Content or (Content, str), optional): A list of datasets
+          *contents (Content or (Content, str), optional): Datasets
             to perform bulk-load with. Named graphs are made with tuples of
             Content and the name.
 
@@ -153,6 +153,49 @@ class Admin(object):
           id (str): ID of the query to kill
         """
         self.admin.kill_query(id)
+
+    def stored_query(self, name):
+        """Retrieves a Stored Query.
+
+        Args:
+          name (str): The name of the Stored Query to retrieve
+
+        Returns:
+          StoredQuery: The StoredQuery object
+        """
+        return StoredQuery(self.admin.stored_query(name))
+
+    def stored_queries(self):
+        """Retrieves all stored queries.
+
+        Returns:
+          list[StoredQuery]: A list of StoredQuery objects
+        """
+        return list(map(StoredQuery, self.admin.stored_queries()))
+
+    def new_stored_query(self, name, query, options=None):
+        """Creates a new Stored Query.
+
+        Args:
+          name (str): The name of the stored query
+          query (str): The query text
+          options (dict, optional): Additional options
+
+        Returns:
+          StoredQuery: the new StoredQuery
+
+        Examples:
+            >>> admin.new_stored_query('all triples',
+                  'select * where { ?s ?p ?o . }',
+                  { 'database': 'mydb' }
+                )
+        """
+        return StoredQuery(self.admin.new_stored_query(name, query, options))
+
+    def clear_stored_queries(self):
+        """Remove all stored queries on the server.
+        """
+        self.admin.clear_stored_queries()
 
     def user(self, name):
         """Retrieves an object representing a user.
@@ -376,6 +419,86 @@ class Database(object):
         """Drops the database.
         """
         self.db.drop()
+
+
+class StoredQuery(object):
+    """Stored Query
+
+    See Also:
+        https://www.stardog.com/docs/#_list_stored_queries
+        https://www.stardog.com/docs/#_managing_stored_queries
+    """
+
+    def __init__(self, stored_query):
+        """Initializes a stored query.
+
+        Use :meth:`stardog.admin.Admin.stored_query`,
+        :meth:`stardog.admin.Admin.stored_queries`, or
+        :meth:`stardog.admin.Admin.new_stored_query` instead of
+        constructing manually.
+        """
+
+        self.stored_query = stored_query
+
+    @property
+    def name(self):
+        """The name of the stored query.
+        """
+        return self.stored_query.name
+
+    @property
+    def description(self):
+        """The description of the stored query.
+        """
+        return self.stored_query.description
+
+    @property
+    def creator(self):
+        """The creator of the stored query.
+        """
+        return self.stored_query.creator
+
+    @property
+    def database(self):
+        """The database the stored query applies to.
+        """
+        return self.stored_query.database
+
+    @property
+    def query(self):
+        """The text of the stored query.
+        """
+        return self.stored_query.query
+
+    @property
+    def shared(self):
+        """The value of the shared property.
+        """
+        return self.stored_query.shared
+
+    @property
+    def reasoning(self):
+        """The value of the reasoning property.
+        """
+        return self.stored_query.reasoning
+
+    def update(self, **options):
+        """Updates the Stored Query.
+
+        Args:
+          **options (str): Named arguments to update.
+
+        Examples:
+            Update description
+
+            >>> stored_query.update(description='this query finds all the relevant...')
+        """
+        self.stored_query.update(**options)
+
+    def delete(self):
+        """Deletes the Stored Query.
+        """
+        self.stored_query.delete()
 
 
 class User(object):
