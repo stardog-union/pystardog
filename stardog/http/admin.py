@@ -5,6 +5,7 @@ from . import database as http_database
 from . import role as http_role
 from . import user as http_user
 from . import virtual_graphs as http_virtual_graphs
+from . import stored_queries as http_stored_queries
 
 
 class Admin(object):
@@ -66,6 +67,29 @@ class Admin(object):
     def queries(self):
         r = self.client.get('/admin/queries')
         return r.json()['queries']
+
+    def stored_query(self, name):
+        return http_stored_queries.StoredQuery(name, self.client)
+
+    def stored_queries(self):
+        r = self.client.get('/admin/queries/stored', headers={'Accept': 'application/json'})
+        query_names = [q['name'] for q in r.json()['queries']]
+        return list(map(self.stored_query, query_names))
+
+    def new_stored_query(self, name, query, options=None):
+        if options is None: options = {}
+        meta = {
+            'name': name,
+            'query': query,
+            'creator': self.client.username
+        }
+        meta.update(options)
+
+        self.client.post('/admin/queries/stored', json=meta)
+        return self.stored_query(name)
+
+    def clear_stored_queries(self):
+        self.client.delete('/admin/queries/stored')
 
     def kill_query(self, id):
         self.client.delete('/admin/queries/{}'.format(id))
