@@ -72,9 +72,11 @@ class Connection(object):
     def export(self,
                content_type=content_types.TURTLE,
                stream=False,
-               chunk_size=10240):
+               chunk_size=10240,
+               graph_uri=None):
         with self.client.get(
                 '/export', headers={'Accept': content_type},
+                params={'graph-uri': graph_uri},
                 stream=stream) as r:
             yield r.iter_content(
                 chunk_size=chunk_size) if stream else r.content

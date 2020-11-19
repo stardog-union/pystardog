@@ -177,7 +177,8 @@ class Connection(object):
     def export(self,
                content_type=content_types.TURTLE,
                stream=False,
-               chunk_size=10240):
+               chunk_size=10240,
+               graph_uri=None):
         """Exports the contents of the database.
 
         Args:
@@ -185,6 +186,7 @@ class Connection(object):
           stream (bool): Chunk results? Defaults to False
           chunk_size (int): Number of bytes to read per chunk when streaming.
             Defaults to 10240
+          graph_uri (str, optional): Named graph to export
 
         Returns:
           str: If stream = False
@@ -202,7 +204,7 @@ class Connection(object):
           >>> with conn.export(stream=True) as stream:
                 contents = ''.join(stream)
         """
-        db = self.conn.export(content_type, stream, chunk_size)
+        db = self.conn.export(content_type, stream, chunk_size, graph_uri)
         return _nextcontext(db) if stream else next(db)
 
     def explain(self, query, base_uri=None):
