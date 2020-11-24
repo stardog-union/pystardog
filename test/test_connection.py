@@ -72,6 +72,26 @@ def test_transactions(conn, admin):
     assert conn.size() == 0
 
 
+def test_export(conn, admin):
+    conn.begin()
+    # add to default graph
+    conn.add(content.Raw('<urn:default_subj> <urn:default_pred> <urn:default_obj> .'))
+    # add to a named graph
+    conn.add(
+        content.Raw('<urn:named_subj> <urn:named_pred> <urn:named_obj> .'),
+        '<urn:named_graph>'
+    )
+    conn.commit()
+
+    default_export = conn.export()
+    named_export = conn.export(graph_uri='<urn:named_graph>')
+
+    assert b'default_obj' in default_export
+    assert b'named_obj' not in default_export
+    assert b'named_obj' in named_export
+    assert b'default_obj' not in named_export
+
+
 def test_queries(conn, admin):
     # add
     conn.begin()
