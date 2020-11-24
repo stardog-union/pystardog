@@ -496,6 +496,111 @@ class Admin(object):
         r = self.client.get('/admin/cluster')
         return r.json()
 
+    def cache(self, name):
+        """Retrieve an object representing a cached dataset.
+
+        Returns:
+          Cache: The requested cache
+        """
+        return Cache(name, self.client)
+
+    def cache_status(self, *names):
+        """Retrieves the status of one or more cached graphs or queries.
+
+        Args:
+          *names: (str): Names of the cached graphs or queries
+        Returns:
+          list[str]: List of statuses
+        """
+        return self.client.post('/admin/cache/status', json=names).json()
+
+    def cached_queries(self):
+        """Retrieves all cached queries.
+
+        Returns:
+          list[Cache]: A list of Cache objects
+        """
+        r = self.client.get('/admin/cache/queries')
+        return list(map(lambda name: Cache(name, self.client), r.json()))
+
+    def cached_graphs(self):
+        """Retrieves all cached graphs.
+
+        Returns:
+          list[Cache]: A list of Cache objects
+        """
+        r = self.client.get('/admin/cache/graphs')
+        return list(map(lambda name: Cache(name, self.client), r.json()))
+
+    def new_cached_query(self, name, target, query, database=None, refresh_script=None):
+        """Creates a new cached query.
+
+        Args:
+          name (str): The name (URI) of the cached query
+          target (str): The name (URI) of the cache target
+          query (str): The query to cache
+          database (str, optional): The name of the database
+          refresh_script (str, optional): A SPARQL insert query to run
+            when refreshing the cache
+
+        Returns:
+          Cache: The new Cache
+        """
+        return Cache.__new_cache(
+            self.client, name, target, database, refresh_script, query=query
+        )
+
+    def new_cached_graph(self, name, target, graph, database=None, refresh_script=None):
+        """Creates a new cached graph.
+
+        Args:
+          name (str): The name (URI) of the cached query
+          target (str): The name (URI) of the cache target
+          graph (str): The name of the graph to cache
+          database (str): The name of the database
+          refresh_script
+
+        Returns:
+          Cache: The new Cache"""
+        return Cache.__new_cache(
+            self.client, name, target, database, refresh_script, graph=graph
+        )
+
+    def cache_targets(self):
+        """Retrieves all cache targets.
+
+        Returns:
+          list[CacheTarget]: A list of CacheTarget objects
+        """
+        r = self.client.get('/admin/cache/target')
+        return list(
+            map(lambda target: CacheTarget(target['name'], self.client), r.json())
+        )
+
+    def new_cache_target(self, name, hostname, port, username, password):
+        """Creates a new cache target.
+
+        Args:
+          name (str): The name of the cache target
+          hostname (str): The hostname of the cache target server
+          port (int): The port of the cache target server
+          username (int): The username for the cache target
+          password (int): The password for the cache target
+
+        Returns:
+          CacheTarget: The new CacheTarget
+        """
+        params = {
+            'name': name,
+            'hostname': hostname,
+            'port': port,
+            'username': username,
+            'password': password,
+            'useExistingDb': False
+        }
+        self.client.post('/admin/cache/target', json=params)
+        return CacheTarget(name, self.client)
+
     def __enter__(self):
         return self
 
@@ -1223,6 +1328,121 @@ class DataSource(object):
 
         r = self.client.get(self.path + '/options')
         return r.json()['options']
+
+    def __repr__(self):
+        return self.name
+
+class Cache(object):
+    """Cached data
+
+    A cached dataset from a query or named/virtual graph.
+
+    See Also:
+        https://www.stardog.com/docs/#_cache_management
+    """
+    @classmethod
+    def __new_cache(
+            cls,
+            client,
+            name,
+            target,
+            database=None,
+            refresh_script=None,
+            query=None,
+            graph=None):
+        params = {
+            'name': name,
+            'target': target,
+            'database': database,
+            'refreshScript': refresh_cript,
+            'query': query,
+            'graph': graph,
+        }
+        client.post('/admin/cache', json=params)
+        return Cache(name, client)
+
+    def __init__(self, name, client):
+        """Initializes a new cached dataset from a query or named/virtual graph.
+
+        Use :meth:`stardog.admin.Admin.new_cached_graph` or
+        :meth:`stardog.admin.Admin.new_cached_query` instead of
+        constructing manually.
+        """
+        self.name = name
+        self.client = client
+        self.status()  # raises exception if cache doesn't exist on the server
+
+    def drop(self):
+        """Drops the cache."""
+        self.delete('/admin/cache/{}'.format(self.name))
+
+    def refresh(self):
+        """Refreshes the cache."""
+        self.client.post('/admin/cache/refresh/{}'.format(self.name))
+
+    def status(self):
+        """Retrieves the status of the cache."""
+        r = self.client.post('/admin/cache/status', json=[self.name])
+        return r.json()
+
+    def __repr__(self):
+        return self.name
+
+
+class CacheTarget(object):
+    """Cache Target Server
+    """
+    def __init__(self, name, client):
+        """Initializes a cache target.
+
+        Use :meth:`stardog.admin.Admin.new_cache_target` instead of
+        constructing manually.
+        """
+        self.cache_target_name = name
+        self.path = '/admin/cache/target/{}'.format(name)
+        self.client = client
+        self.details = {}
+        self.refresh = self.__refresh()
+
+    def __refresh():
+        target = []
+        r = self.client.get('/admin/cache/target')
+        self.targets = r.json()
+        target = next((t for t in r.json() if t['name'] == self.name), {})
+        self.details.update(target)
+
+    @property
+    def name(self):
+        """The name (URI) of the cache target."""
+        return self.cache_target_name
+
+    @property
+    def hostname(self):
+        """The hostname of the cache target."""
+        return self.details['hostname']
+
+    @property
+    def port(self):
+        """The port of the cache target."""
+        return self.details['port']
+
+    @property
+    def username(self):
+        """The username of the cache target."""
+        return self.details['username']
+
+    @property
+    def password(self):
+        """The password of the cache target."""
+        return self.details['password']
+
+    def orphan(self):
+        """Orphans the cache target but do not destroy its contents."""
+        self.client.delete(self.path + '/orphan')
+
+    def remove(self):
+        """Removes the cache target and destroy its contents."""
+        self.client.delete(self.path)
 
     def __repr__(self):
         return self.name
