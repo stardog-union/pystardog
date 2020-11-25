@@ -2,16 +2,12 @@ import distutils.util
 
 from .. import content_types as content_types
 from . import client as http_client
-from . import graphql as http_graphql
 
 
 class Connection(object):
     def __init__(self, database, endpoint=None, username=None, password=None):
         self.client = http_client.Client(endpoint, database, username,
                                          password)
-
-    def graphql(self):
-        return http_graphql.GraphQL(self)
 
     def begin(self, **kwargs):
         r = self.client.post('/transaction/begin', params=kwargs)

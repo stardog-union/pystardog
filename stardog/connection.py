@@ -659,8 +659,8 @@ class GraphQL(object):
         Use :meth:`stardog.connection.Connection.graphql`
         instead of constructing manually.
         """
-        self.gql = conn.conn.graphql()
         self.conn = conn
+        self.client = conn.client
 
     def query(self, query, variables=None):
         """Executes a GraphQL query.
@@ -687,7 +687,19 @@ class GraphQL(object):
                 variables={'id': 1000})
 
         """
-        return self.gql.query(query, variables)
+        r = self.client.post(
+            '/graphql',
+            json={
+                'query': query,
+                'variables': variables if variables else {}
+            })
+
+        res = r.json()
+        if 'data' in res:
+            return res['data']
+
+        # graphql endpoint returns valid response with errors
+        raise exceptions.StardogException(res)
 
     def schemas(self):
         """Retrieves all available schemas.
@@ -695,12 +707,13 @@ class GraphQL(object):
         Returns:
           dict: All schemas
         """
-        return self.gql.schemas()
+        r = self.client.get('/graphql/schemas')
+        return r.json()['schemas']
 
     def clear_schemas(self):
         """Deletes all schemas.
         """
-        self.gql.clear_schemas()
+        self.client.delete('/graphql/schemas')
 
     def add_schema(self, name, content):
         """Adds a schema to the database.
@@ -713,7 +726,7 @@ class GraphQL(object):
           >>> gql.add_schema('people', content=File('people.graphql'))
         """
         with content.data() as data:
-            self.gql.add_schema(name, data)
+            self.client.put('/graphql/schemas/{}'.format(name), data=data)
 
     def schema(self, name):
         """Gets schema information.
@@ -724,7 +737,8 @@ class GraphQL(object):
         Returns:
           dict: GraphQL schema
         """
-        return self.gql.schema(name)
+        r = self.client.get('/graphql/schemas/{}'.format(name))
+        return r.text
 
     def remove_schema(self, name):
         """Removes a schema from the database.
@@ -732,7 +746,7 @@ class GraphQL(object):
         Args:
           name (str): Name of the schema
         """
-        return self.gql.remove_schema(name)
+        self.client.delete('/graphql/schemas/{}'.format(name))
 
 
 @contextlib.contextmanager
