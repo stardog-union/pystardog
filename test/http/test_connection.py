@@ -27,45 +27,6 @@ def admin():
         yield admin
 
 
-def test_docs(conn, admin):
-    example = (b'Only the Knowledge Graph can unify all data types and '
-               b'every data velocity into a single, coherent, unified whole.')
-
-    # docstore
-    docs = conn.docs()
-    assert docs.size() == 0
-
-    # add
-    docs.add('doc', example)
-    assert docs.size() == 1
-    assert conn.size(exact=True) > 0
-
-    # get
-    doc = docs.get('doc')
-    assert next(doc) == example
-
-    # stream
-    doc = docs.get('doc', stream=True, chunk_size=1)
-    assert b''.join(next(doc)) == example
-
-    # delete
-    docs.delete('doc')
-    assert docs.size() == 0
-
-    # add from file
-    with open('test/data/example.txt') as f:
-        docs.add('example', f)
-
-    assert docs.size() == 1
-
-    doc = docs.get('example')
-    assert next(doc) == example
-
-    # clear
-    docs.clear()
-    assert docs.size() == 0
-
-
 def test_transactions(conn, admin):
     data = b'<urn:subj> <urn:pred> <urn:obj> .'
 
