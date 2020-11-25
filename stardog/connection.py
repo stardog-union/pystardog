@@ -395,7 +395,7 @@ class Connection(object):
           dict: Explanation results
         """
         return self.conn.explain_inconsistency(self.transaction,
-                                               self.graph_uri)
+                                               graph_uri)
 
     def _assert_not_in_transaction(self):
         if self.transaction:
