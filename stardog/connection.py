@@ -7,6 +7,7 @@ import distutils.util
 from . import content_types as content_types
 from . import exceptions as exceptions
 from .http import connection as http_connection
+from .http import client
 
 
 class Connection(object):
@@ -32,6 +33,7 @@ class Connection(object):
         """
         self.conn = http_connection.Connection(database, endpoint, username,
                                                password)
+        self.client = client.Client(endpoint, database, username, password)
         self.transaction = None
 
     def docs(self):
@@ -40,7 +42,7 @@ class Connection(object):
         Returns:
           Docs: A Docs object
         """
-        return Docs(self)
+        return Docs(self.client)
 
     def icv(self):
         """Makes an integrity constraint validation object.
@@ -417,13 +419,13 @@ class Docs(object):
       https://www.stardog.com/docs/#_unstructured_data
     """
 
-    def __init__(self, conn):
+    def __init__(self, client):
         """Initializes a Docs.
 
         Use :meth:`stardog.connection.Connection.docs`
         instead of constructing manually.
         """
-        self.docs = conn.conn.docs()
+        self.client = client
 
     def size(self):
         """Calculates document store size.
@@ -431,7 +433,8 @@ class Docs(object):
         Returns:
           int: Number of documents in the store
         """
-        return self.docs.size()
+        r = self.client.get('/docs/size')
+        return int(r.text)
 
     def add(self, name, content):
         """Adds a document to the store.
@@ -444,12 +447,12 @@ class Docs(object):
           >>> docs.add('example', File('example.pdf'))
         """
         with content.data() as data:
-            self.docs.add(name, data)
+            self.client.post('/docs', files={'upload': (name, data)})
 
     def clear(self):
         """Removes all documents from the store.
         """
-        self.docs.clear()
+        self.client.delete('/docs')
 
     def get(self, name, stream=False, chunk_size=10240):
         """Gets a document from the store.
@@ -477,7 +480,12 @@ class Docs(object):
           >>> with docs.get('example', stream=True) as stream:
                             contents = ''.join(stream)
         """
-        doc = self.docs.get(name, stream, chunk_size)
+        def _get():
+            with self.client.get('/docs/{}'.format(name), stream=stream) as r:
+                yield r.iter_content(
+                    chunk_size=chunk_size) if stream else r.content
+
+        doc = _get()
         return _nextcontext(doc) if stream else next(doc)
 
     def delete(self, name):
@@ -486,7 +494,7 @@ class Docs(object):
         Args:
           name (str): Name of the document
         """
-        self.docs.delete(name)
+        self.client.delete('/docs/{}'.format(name))
 
 
 class ICV(object):
