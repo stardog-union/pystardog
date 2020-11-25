@@ -262,6 +262,12 @@ class Connection(object):
             'offset': kwargs.get('offset'),
             'timeout': kwargs.get('timeout'),
             'reasoning': kwargs.get('reasoning')
+            'default-graph-uri': kwargs.get('default-graph-uri'),
+            'named-graph-uri': kwargs.get('named-graph-uri'),
+            'using-graph-uri': kwargs.get('using-graph-uri'),
+            'using-named-graph-uri': kwargs.get('using-named-graph-uri'),
+            'remove-graph-uri': kwargs.get('remove-graph-uri'),
+            'insert-graph-uri':kwargs.get('insert-graph-uri'),
         }
 
         # query bindings
