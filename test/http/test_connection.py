@@ -190,39 +190,6 @@ def test_reasoning(conn, admin):
     assert len(r) == 0
 
 
-def test_icv(conn, admin):
-    icv = conn.icv()
-    constraint = ':Manager rdfs:subClassOf :Employee .'
-
-    # add/remove/clear
-    icv.add(constraint, content_types.TURTLE)
-    icv.remove(constraint, content_types.TURTLE)
-    icv.clear()
-
-    # nothing in the db yet so it should be valid
-    assert icv.is_valid(constraint, content_types.TURTLE)
-
-    # insert a triple that violates the constraint
-    transaction = conn.begin()
-    conn.add(transaction, ':Alice a :Manager .', content_types.TURTLE)
-    conn.commit(transaction)
-
-    assert not icv.is_valid(constraint, content_types.TURTLE)
-
-    assert len(icv.explain_violations(constraint,
-                                      content_types.TURTLE)) == 2
-
-    # make Alice an employee so the constraint is satisfied
-    transaction = conn.begin()
-    conn.add(transaction, ':Alice a :Employee .', content_types.TURTLE)
-    conn.commit(transaction)
-
-    assert icv.is_valid(constraint, content_types.TURTLE)
-
-    assert 'SELECT DISTINCT' in icv.convert(
-        constraint, content_types.TURTLE)
-
-
 def test_graphql(conn, admin):
 
     db = admin.new_database('graphql', {},

@@ -511,7 +511,7 @@ class ICV(object):
         instead of constructing manually.
         """
         self.conn = conn
-        self.icv = conn.conn.icv()
+        self.client = conn.client
 
     def add(self, content):
         """Adds integrity constraints to the database.
@@ -523,7 +523,14 @@ class ICV(object):
           >>> icv.add(File('constraints.ttl'))
         """
         with content.data() as data:
-            self.icv.add(data, content.content_type, content.content_encoding)
+            self.client.post(
+                '/icv/add',
+                data=data,
+                headers={
+                    'Content-Type': content.content_type,
+                    'Content-Encoding': content.content_encoding
+                },
+            )
 
     def remove(self, content):
         """Removes integrity constraints from the database.
@@ -535,13 +542,19 @@ class ICV(object):
           >>> icv.remove(File('constraints.ttl'))
         """
         with content.data() as data:
-            self.icv.remove(data, content.content_type,
-                            content.content_encoding)
+            self.client.post(
+                '/icv/remove',
+                data=data,
+                headers={
+                    'Content-Type': content.content_type,
+                    'Content-Encoding': content.content_encoding
+                },
+            )
 
     def clear(self):
         """Removes all integrity constraints from the database.
         """
-        self.icv.clear()
+        self.client.post('/icv/clear')
 
     def is_valid(self, content, graph_uri=None):
         """Checks if given integrity constraints are valid.
@@ -556,10 +569,21 @@ class ICV(object):
         Examples:
           >>> icv.is_valid(File('constraints.ttl'), graph_uri='urn:graph')
         """
+        transaction = self.conn.transaction
+        url = 'icv/{}/validate'.format(
+            transaction) if transaction else '/icv/validate'
         with content.data() as data:
-            return self.icv.is_valid(data, content.content_type,
-                                     content.content_encoding,
-                                     self.conn.transaction, graph_uri)
+            r = self.client.post(
+                url,
+                data=data,
+                headers={
+                    'Content-Type': content.content_type,
+                    'Content-Encoding': content.content_encoding
+                },
+                params={'graph-uri': graph_uri},
+            )
+
+            return bool(distutils.util.strtobool(r.text))
 
     def explain_violations(self, content, graph_uri=None):
         """Explains violations of the given integrity constraints.
@@ -576,11 +600,22 @@ class ICV(object):
           >>> icv.explain_violations(File('constraints.ttl'),
                                      graph_uri='urn:graph')
         """
+        transaction = self.conn.transaction
+        url = '/icv/{}/violations'.format(
+            transaction) if transaction else '/icv/violations'
 
         with content.data() as data:
-            return self.icv.explain_violations(
-                data, content.content_type, content.content_encoding,
-                self.conn.transaction, graph_uri)
+            r = self.client.post(
+                url,
+                data=data,
+                headers={
+                    'Content-Type': content.content_type,
+                    'Content-Encoding': content.content_encoding
+                },
+                params={'graph-uri': graph_uri},
+            )
+
+            return self.client._multipart(r)
 
     def convert(self, content, graph_uri=None):
         """Converts given integrity constraints to a SPARQL query.
@@ -597,8 +632,17 @@ class ICV(object):
           >>> icv.convert(File('constraints.ttl'), graph_uri='urn:graph')
         """
         with content.data() as data:
-            return self.icv.convert(data, content.content_type,
-                                    content.content_encoding, graph_uri)
+            r = self.client.post(
+                '/icv/convert',
+                data=data,
+                headers={
+                    'Content-Type': content.content_type,
+                    'Content-Encoding': content.content_encoding
+                },
+                params={'graph-uri': graph_uri},
+            )
+
+            return r.text
 
 
 class GraphQL(object):

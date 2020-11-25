@@ -230,6 +230,37 @@ def test_icv(conn, admin):
     icv.remove(constraints)
     icv.clear()
 
+    constraint = content.Raw(
+        ':Manager rdfs:subClassOf :Employee .',
+        content_types.TURTLE
+    )
+
+    # add/remove/clear
+    icv.add(constraint)
+    icv.remove(constraint)
+    icv.clear()
+
+    # nothing in the db yet so it should be valid
+    assert icv.is_valid(constraint)
+
+    # insert a triple that violates the constraint
+    conn.begin()
+    conn.add(content.Raw(':Alice a :Manager .', content_types.TURTLE))
+    conn.commit()
+
+    assert not icv.is_valid(constraint)
+
+    assert len(icv.explain_violations(constraint)) == 2
+
+    # make Alice an employee so the constraint is satisfied
+    conn.begin()
+    conn.add(content.Raw(':Alice a :Employee .', content_types.TURTLE))
+    conn.commit()
+
+    assert icv.is_valid(constraint)
+
+    assert 'SELECT DISTINCT' in icv.convert(constraint)
+
 
 def test_graphql(conn, admin):
 
