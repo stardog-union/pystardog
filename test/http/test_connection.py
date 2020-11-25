@@ -4,7 +4,6 @@ import stardog.content_types as content_types
 import stardog.exceptions as exceptions
 import stardog.admin as stardog_admin
 import stardog.http.connection as http_connection
-import stardog.content as content
 
 
 @pytest.fixture(scope="module")
@@ -188,58 +187,3 @@ def test_reasoning(conn, admin):
     # explain inconsistency
     r = conn.explain_inconsistency()
     assert len(r) == 0
-
-
-def test_graphql(conn, admin):
-
-    db = admin.new_database('graphql', {},
-                            content.File('test/data/starwars.ttl'))
-
-    with http_connection.Connection(
-            'graphql', username='admin', password='admin') as c:
-        gql = c.graphql()
-
-        # query
-        assert gql.query('{ Planet { system } }') == [{
-            'system': 'Tatoo'
-        }, {
-            'system': 'Alderaan'
-        }]
-
-        # variables
-        assert gql.query(
-            'query getHuman($id: Integer) { Human(id: $id) {name} }',
-            variables={'id': 1000}) == [{
-                'name': 'Luke Skywalker'
-            }]
-
-        # schemas
-        with open('test/data/starwars.graphql', 'rb') as f:
-            gql.add_schema('characters', f)
-
-        assert len(gql.schemas()) == 1
-        assert 'type Human' in gql.schema('characters')
-
-        assert gql.query(
-            '{Human(id: 1000) {name friends {name}}}',
-            variables={'@schema': 'characters'}) == [{
-                'friends': [{
-                    'name': 'Han Solo'
-                }, {
-                    'name': 'Leia Organa'
-                }, {
-                    'name': 'C-3PO'
-                }, {
-                    'name': 'R2-D2'
-                }],
-                'name':
-                'Luke Skywalker'
-            }]
-
-        gql.remove_schema('characters')
-        assert len(gql.schemas()) == 0
-
-        gql.clear_schemas()
-        assert len(gql.schemas()) == 0
-
-    db.drop()

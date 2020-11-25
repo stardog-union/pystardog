@@ -263,7 +263,6 @@ def test_icv(conn, admin):
 
 
 def test_graphql(conn, admin):
-
     db = admin.new_database('graphql', {},
                             content.File('test/data/starwars.ttl'))
 
