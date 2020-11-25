@@ -301,6 +301,10 @@ class Connection(object):
             values
           content_type (str, optional): Content type for results.
             Defaults to 'application/sparql-results+json'
+          default-graph-uri (str or list[str], optional): Default
+            graph(s) for the dataset
+          named-graph-uri (str or list[str], optional): Named graph(s)
+            for the dataset
 
         Returns:
           dict: If content_type='application/sparql-results+json'
@@ -333,6 +337,10 @@ class Connection(object):
             values
           content_type (str): Content type for results.
             Defaults to 'text/turtle'
+          default-graph-uri (str or list[str], optional): Default
+            graph(s) for the dataset
+          named-graph-uri (str or list[str], optional): Named graph(s)
+            for the dataset
 
         Returns:
           str: Results in format given by content_type
@@ -363,6 +371,10 @@ class Connection(object):
             values
           content_type (str): Content type for results.
               Defaults to 'application/sparql-results+json'
+          default-graph-uri (str or list[str], optional): Default
+            graph(s) for the dataset
+          named-graph-uri (str or list[str], optional): Named graph(s)
+            for the dataset
 
         Returns:
           dict: if content_type='application/sparql-results+json'.
@@ -389,6 +401,10 @@ class Connection(object):
           reasoning (bool, optional): Enable reasoning for the query
           bindings (dict, optional): Map between query variables and their
             values
+          default-graph-uri (str or list[str], optional): Default
+            graph(s) for the dataset
+          named-graph-uri (str or list[str], optional): Named graph(s)
+            for the dataset
 
         Returns:
           bool: Result of ask query
@@ -412,6 +428,14 @@ class Connection(object):
           reasoning (bool, optional): Enable reasoning for the query
           bindings (dict, optional): Map between query variables and their
             values
+          using-graph-uri (str or list[str], optional): Default
+            graph(s) for the dataset
+          using-named-graph-uri (str or list[str], optional): Default
+            graph(s) for the dataset
+          remove-graph-uri (str or list[str], optional): Named graph(s)
+            for the dataset
+          insert-graph-uri (str or list[str], optional): Named graph(s)
+            for the dataset
 
         Examples:
           >>> conn.update('delete where {?s ?p ?o}')
