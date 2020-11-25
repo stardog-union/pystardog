@@ -1,10 +1,11 @@
 """Administer a Stardog server.
 """
 
+import json
 import contextlib2
 
 from . import content_types as content_types
-from .http import admin as http_admin
+from .http import client
 
 
 class Admin(object):
@@ -31,12 +32,12 @@ class Admin(object):
           >>> admin = Admin(endpoint='http://localhost:9999',
                             username='admin', password='admin')
         """
-        self.admin = http_admin.Admin(endpoint, username, password)
+        self.client = client.Client(endpoint, None, username, password)
 
     def shutdown(self):
         """Shuts down the server.
         """
-        self.admin.shutdown()
+        self.client.post('/admin/shutdown')
 
     def database(self, name):
         """Retrieves an object representing a database.
@@ -47,7 +48,7 @@ class Admin(object):
         Returns:
           Database: The requested database
         """
-        return Database(self.admin.database(name))
+        return Database(name, self.client)
 
     def databases(self):
         """Retrieves all databases.
@@ -55,7 +56,9 @@ class Admin(object):
         Returns:
           list[Database]: A list of database objects
         """
-        return list(map(Database, self.admin.databases()))
+        r = self.client.get('/admin/databases')
+        databases = r.json()['databases']
+        return list(map(lambda name: Database(name, self.client), databases))
 
     def new_database(self, name, options=None, *contents):
         """Creates a new database.
@@ -84,7 +87,8 @@ class Admin(object):
 
             >>> admin.new_database('db', {}, (File('test.rdf'), 'urn:context'))
         """
-        files = []
+        fmetas = []
+        params = []
 
         with contextlib2.ExitStack() as stack:
             for c in contents:
@@ -95,16 +99,27 @@ class Admin(object):
                 # single call use a stack manager to make sure they
                 # all get properly closed at the end
                 data = stack.enter_context(content.data())
+                fname = content.name
+                fmeta = {'filename': fname}
 
-                files.append({
-                    'name': content.name,
-                    'content': data,
-                    'content-type': content.content_type,
-                    'content-encoding': content.content_encoding,
-                    'context': context
-                })
+                if context:
+                    fmeta['context'] = context
 
-            return Database(self.admin.new_database(name, options, *files))
+                fmetas.append(fmeta)
+                params.append((fname, (fname, data, content.content_type, {
+                    'Content-Encoding': content.content_encoding
+                })))
+
+            meta = {
+                'dbname': name,
+                'options': options if options else {},
+                'files': fmetas
+            }
+
+            params.append(('root', (None, json.dumps(meta), 'application/json')))
+            self.client.post('/admin/databases', files=params)
+
+            return Database(name, self.client)
 
     def restore(self, from_path, *, name=None, force=False):
         """Restore a database.
@@ -125,7 +140,14 @@ class Admin(object):
         See Also:
           https://www.stardog.com/docs/#_restore_a_database_from_a_backup
         """
-        self.admin.restore(from_path, name=name, force=force)
+        params = {
+            'from': from_path,
+            'force': force
+        }
+        if name:
+            params['name'] = name
+
+        self.client.put('/admin/restore', params=params)
 
     def query(self, id):
         """Gets information about a running query.
@@ -136,7 +158,8 @@ class Admin(object):
         Returns:
             dict: Query information
         """
-        return self.admin.query(id)
+        r = self.client.get('/admin/queries/{}'.format(id))
+        return r.json()
 
     def queries(self):
         """Gets information about all running queries.
@@ -144,7 +167,8 @@ class Admin(object):
         Returns:
           dict: Query information
         """
-        return self.admin.queries()
+        r = self.client.get('/admin/queries')
+        return r.json()['queries']
 
     def kill_query(self, id):
         """Kills a running query.
@@ -152,7 +176,7 @@ class Admin(object):
         Args:
           id (str): ID of the query to kill
         """
-        self.admin.kill_query(id)
+        self.client.delete('/admin/queries/{}'.format(id))
 
     def stored_query(self, name):
         """Retrieves a Stored Query.
@@ -163,7 +187,7 @@ class Admin(object):
         Returns:
           StoredQuery: The StoredQuery object
         """
-        return StoredQuery(self.admin.stored_query(name))
+        return StoredQuery(name, self.client)
 
     def stored_queries(self):
         """Retrieves all stored queries.
@@ -171,7 +195,10 @@ class Admin(object):
         Returns:
           list[StoredQuery]: A list of StoredQuery objects
         """
-        return list(map(StoredQuery, self.admin.stored_queries()))
+        r = self.client.get('/admin/queries/stored',
+                            headers={'Accept': 'application/json'})
+        query_names = [q['name'] for q in r.json()['queries']]
+        return list(map(lambda name: StoredQuery(name, self.client), query_names))
 
     def new_stored_query(self, name, query, options=None):
         """Creates a new Stored Query.
@@ -190,12 +217,23 @@ class Admin(object):
                   { 'database': 'mydb' }
                 )
         """
-        return StoredQuery(self.admin.new_stored_query(name, query, options))
+        if options is None:
+            options = {}
+
+        meta = {
+            'name': name,
+            'query': query,
+            'creator': self.client.username
+        }
+        meta.update(options)
+
+        self.client.post('/admin/queries/stored', json=meta)
+        return StoredQuery(name, self.client)
 
     def clear_stored_queries(self):
         """Remove all stored queries on the server.
         """
-        self.admin.clear_stored_queries()
+        self.client.delete('/admin/queries/stored')
 
     def user(self, name):
         """Retrieves an object representing a user.
@@ -206,7 +244,7 @@ class Admin(object):
         Returns:
           User: The User object
         """
-        return User(self.admin.user(name))
+        return User(name, self.client)
 
     def users(self):
         """Retrieves all users.
@@ -214,7 +252,9 @@ class Admin(object):
         Returns:
           list[User]: A list of User objects
         """
-        return list(map(User, self.admin.users()))
+        r = self.client.get('/admin/users')
+        users = r.json()['users']
+        return list(map(lambda name: User(name, self.client), users))
 
     def new_user(self, username, password, superuser=False):
         """Creates a new user.
@@ -227,7 +267,15 @@ class Admin(object):
         Returns:
           User: The new User object
         """
-        return User(self.admin.new_user(username, password, superuser))
+        meta = {
+            'username': username,
+            'password': list(password),
+            'superuser': superuser,
+        }
+
+        self.client.post('/admin/users', json=meta)
+        return self.user(username)
+        return User(username, self.client)
 
     def role(self, name):
         """Retrieves an object representing a role.
@@ -238,7 +286,7 @@ class Admin(object):
         Returns:
           Role: The Role object
         """
-        return Role(self.admin.role(name))
+        return Role(name, self.client)
 
     def roles(self):
         """Retrieves all roles.
@@ -246,7 +294,9 @@ class Admin(object):
         Returns:
           list[Role]: A list of Role objects
         """
-        return list(map(Role, self.admin.roles()))
+        r = self.client.get('/admin/roles')
+        roles = r.json()['roles']
+        return list(map(lambda name: Role(name, self.client), roles))
 
     def new_role(self, name):
         """Creates a  new role.
@@ -257,7 +307,8 @@ class Admin(object):
         Returns:
           Role: The new Role object
         """
-        return Role(self.admin.new_role(name))
+        self.client.post('/admin/roles', json={'rolename': name})
+        return Role(name, self.client)
 
     def virtual_graph(self, name):
         """Retrieves a Virtual Graph.
@@ -268,7 +319,7 @@ class Admin(object):
         Returns:
           VirtualGraph: The VirtualGraph object
         """
-        return VirtualGraph(self.admin.virtual_graph(name))
+        return VirtualGraph(name, self.client)
 
     def virtual_graphs(self):
         """Retrieves all virtual graphs.
@@ -276,7 +327,9 @@ class Admin(object):
         Returns:
           list[VirtualGraph]: A list of VirtualGraph objects
         """
-        return list(map(VirtualGraph, self.admin.virtual_graphs()))
+        r = self.client.get('/admin/virtual_graphs')
+        virtual_graphs = r.json()['virtual_graphs']
+        return list(map(lambda name: VirtualGraph(name, self.client), virtual_graphs))
 
     def new_virtual_graph(self, name, mappings, options):
         """Creates a new Virtual Graph.
@@ -296,11 +349,14 @@ class Admin(object):
                 )
         """
         with mappings.data() as data:
-            return VirtualGraph(
-                self.admin.new_virtual_graph(
-                    name,
-                    data.read().decode() if hasattr(data, 'read') else data,
-                    options))
+            meta = {
+                'name': name,
+                'mappings': data.read().decode() if hasattr(data, 'read') else data,
+                'options': options,
+            }
+
+            self.client.post('/admin/virtual_graphs', json=meta)
+            return VirtualGraph(name, self.client)
 
     def validate(self):
         """Validates an admin connection.
@@ -308,13 +364,13 @@ class Admin(object):
         Returns:
           bool: The connection state
         """
-        return self.admin.validate()
+        self.client.get('/admin/users/valid')
 
     def __enter__(self):
         return self
 
     def __exit__(self, *args):
-        self.admin.__exit__(*args)
+        self.client.close()
 
 
 class Database(object):
@@ -324,7 +380,7 @@ class Database(object):
       https://www.stardog.com/docs/#_database_admin
     """
 
-    def __init__(self, db):
+    def __init__(self, name, client):
         """Initializes a Database.
 
         Use :meth:`stardog.admin.Admin.database`,
@@ -332,13 +388,15 @@ class Database(object):
         :meth:`stardog.admin.Admin.new_database` instead of
         constructing manually.
         """
-        self.db = db
+        self.database_name = name
+        self.client = client
+        self.path = '/admin/databases/{}'.format(name)
 
     @property
     def name(self):
         """The name of the database.
         """
-        return self.db.name
+        return self.database_name
 
     def get_options(self, *options):
         """Gets database options.
@@ -352,7 +410,11 @@ class Database(object):
         Examples
           >>> db.get_options('search.enabled', 'spatial.enabled')
         """
-        return self.db.get_options(*options)
+        # transform into {'option': None} dict
+        meta = dict([(x, None) for x in options])
+
+        r = self.client.put(self.path + '/options', json=meta)
+        return r.json()
 
     def set_options(self, options):
         """Sets database options.
@@ -365,19 +427,19 @@ class Database(object):
         Examples
             >>> db.set_options({'spatial.enabled': False})
         """
-        self.db.set_options(options)
+        self.client.post(self.path + '/options', json=options)
 
     def optimize(self):
         """Optimizes a database.
         """
-        self.db.optimize()
+        self.client.put(self.path + '/optimize')
 
     def repair(self):
         """Repairs a database.
 
         The database must be offline.
         """
-        self.db.repair()
+        self.client.put(self.path + '/repair')
 
     def backup(self, *, to=None):
         """Backup a database.
@@ -389,17 +451,18 @@ class Database(object):
         See Also:
           https://www.stardog.com/docs/#_backup_a_database
         """
-        self.db.backup(to=to)
+        params = {'to': to} if to else {}
+        self.client.put(self.path + '/backup', params=params)
 
     def online(self):
         """Sets a database to online state.
         """
-        self.db.online()
+        self.client.put(self.path + '/online')
 
     def offline(self):
         """Sets a database to offline state.
         """
-        self.db.offline()
+        self.client.put(self.path + '/offline')
 
     def copy(self, to):
         """Makes a copy of this database under another name.
@@ -412,13 +475,16 @@ class Database(object):
         Returns:
           Database: The new Database
         """
-        db = self.db.copy(to)
-        return Database(db)
+        self.client.put(self.path + '/copy', params={'to': to})
+        return Database(to, self.client)
 
     def drop(self):
         """Drops the database.
         """
-        self.db.drop()
+        self.client.delete(self.path)
+
+    def __repr__(self):
+        return self.name
 
 
 class StoredQuery(object):
@@ -429,7 +495,7 @@ class StoredQuery(object):
         https://www.stardog.com/docs/#_managing_stored_queries
     """
 
-    def __init__(self, stored_query):
+    def __init__(self, name, client):
         """Initializes a stored query.
 
         Use :meth:`stardog.admin.Admin.stored_query`,
@@ -437,50 +503,57 @@ class StoredQuery(object):
         :meth:`stardog.admin.Admin.new_stored_query` instead of
         constructing manually.
         """
+        self.query_name = name
+        self.client = client
+        self.path = '/admin/queries/stored/{}'.format(name)
+        self.details = {}
+        self.__refresh()
 
-        self.stored_query = stored_query
+    def __refresh(self):
+        details = self.client.get(self.path, headers={'Accept': 'application/json'})
+        self.details.update(details.json()['queries'][0])
 
     @property
     def name(self):
         """The name of the stored query.
         """
-        return self.stored_query.name
+        return self.query_name
 
     @property
     def description(self):
         """The description of the stored query.
         """
-        return self.stored_query.description
+        return self.details['description']
 
     @property
     def creator(self):
         """The creator of the stored query.
         """
-        return self.stored_query.creator
+        return self.details['creator']
 
     @property
     def database(self):
         """The database the stored query applies to.
         """
-        return self.stored_query.database
+        return self.details['database']
 
     @property
     def query(self):
         """The text of the stored query.
         """
-        return self.stored_query.query
+        return self.details['query']
 
     @property
     def shared(self):
         """The value of the shared property.
         """
-        return self.stored_query.shared
+        return self.details['shared']
 
     @property
     def reasoning(self):
         """The value of the reasoning property.
         """
-        return self.stored_query.reasoning
+        return self.details['reasoning']
 
     def update(self, **options):
         """Updates the Stored Query.
@@ -493,12 +566,18 @@ class StoredQuery(object):
 
             >>> stored_query.update(description='this query finds all the relevant...')
         """
-        self.stored_query.update(**options)
+        options['name'] = self.query_name
+        for opt in ['query', 'creator']:
+            if opt not in options:
+                options[opt] = self.__getattribute__(opt)
+
+        self.client.put('/admin/queries/stored', json=options)
+        self.__refresh()
 
     def delete(self):
         """Deletes the Stored Query.
         """
-        self.stored_query.delete()
+        self.client.delete(self.path)
 
 
 class User(object):
@@ -508,7 +587,7 @@ class User(object):
       https://www.stardog.com/docs/#_security
     """
 
-    def __init__(self, user):
+    def __init__(self, name, client):
         """Initializes a User.
 
         Use :meth:`stardog.admin.Admin.user`,
@@ -516,13 +595,15 @@ class User(object):
         :meth:`stardog.admin.Admin.new_user` instead of
         constructing manually.
         """
-        self.user = user
+        self.username = name
+        self.client = client
+        self.path = '/admin/users/{}'.format(name)
 
     @property
     def name(self):
         """str: The user name.
         """
-        return self.user.name
+        return self.username
 
     def set_password(self, password):
         """Sets a new password.
@@ -530,7 +611,7 @@ class User(object):
         Args:
           password (str)
         """
-        self.user.set_password(password)
+        self.client.put(self.path + '/pwd', json={'password': password})
 
     def is_enabled(self):
         """Checks if the user is enabled.
@@ -538,7 +619,8 @@ class User(object):
         Returns:
           bool: User activation state
         """
-        return self.user.is_enabled()
+        r = self.client.get(self.path + '/enabled')
+        return bool(r.json()['enabled'])
 
     def set_enabled(self, enabled):
         """Enables or disables the user.
@@ -546,7 +628,7 @@ class User(object):
         Args:
           enabled (bool): Desired User state
         """
-        self.user.set_enabled(enabled)
+        self.client.put(self.path + '/enabled', json={'enabled': enabled})
 
     def is_superuser(self):
         """Checks if the user is a super user.
@@ -554,7 +636,8 @@ class User(object):
         Returns:
           bool: Superuser state
         """
-        return self.user.is_superuser()
+        r = self.client.get(self.path + '/superuser')
+        return bool(r.json()['superuser'])
 
     def roles(self):
         """Gets all the User's roles.
@@ -562,7 +645,9 @@ class User(object):
         Returns:
           list[Role]
         """
-        return list(map(Role, self.user.roles()))
+        r = self.client.get(self.path + '/roles')
+        roles = r.json()['roles']
+        return list(map(lambda name: Role(name, self.client), roles))
 
     def add_role(self, role):
         """Adds an existing role to the user.
@@ -574,7 +659,7 @@ class User(object):
             >>> user.add_role('reader')
             >>> user.add_role(admin.role('reader'))
         """
-        self.user.add_role(self.__rolename(role))
+        self.client.post(self.path + '/roles', json={'rolename': role})
 
     def set_roles(self, *roles):
         """Sets the roles of the user.
@@ -585,7 +670,8 @@ class User(object):
         Examples
             >>> user.set_roles('reader', admin.role('writer'))
         """
-        self.user.set_roles(*list(map(self.__rolename, roles)))
+        roles = list(map(self.__rolename, roles))
+        self.client.put(self.path + '/roles', json={'roles': roles})
 
     def remove_role(self, role):
         """Removes a role from the user.
@@ -597,12 +683,12 @@ class User(object):
             >>> user.remove_role('reader')
             >>> user.remove_role(admin.role('reader'))
         """
-        self.user.remove_role(self.__rolename(role))
+        self.client.delete(self.path + '/roles/' + role)
 
     def delete(self):
         """Deletes the user.
         """
-        self.user.delete()
+        self.client.delete(self.path)
 
     def permissions(self):
         """Gets the user permissions.
@@ -613,7 +699,8 @@ class User(object):
         Returns:
           dict: User permissions
         """
-        return self.user.permissions()
+        r = self.client.get('/admin/permissions/user/{}'.format(self.name))
+        return r.json()['permissions']
 
     def add_permission(self, action, resource_type, resource):
         """Add a permission to the user.
@@ -630,7 +717,13 @@ class User(object):
             >>> user.add_permission('read', 'user', 'username')
             >>> user.add_permission('write', '*', '*')
         """
-        self.user.add_permission(action, resource_type, resource)
+        meta = {
+            'action': action,
+            'resource_type': resource_type,
+            'resource': [resource]
+        }
+        self.client.put(
+            '/admin/permissions/user/{}'.format(self.name), json=meta)
 
     def remove_permission(self, action, resource_type, resource):
         """Removes a permission from the user.
@@ -647,7 +740,14 @@ class User(object):
             >>> user.remove_permission('read', 'user', 'username')
             >>> user.remove_permission('write', '*', '*')
         """
-        self.user.remove_permission(action, resource_type, resource)
+        meta = {
+            'action': action,
+            'resource_type': resource_type,
+            'resource': [resource]
+        }
+
+        self.client.post(
+            '/admin/permissions/user/{}/delete'.format(self.name), json=meta)
 
     def effective_permissions(self):
         """Gets the user's effective permissions.
@@ -655,7 +755,8 @@ class User(object):
         Returns:
           dict: User effective permissions
         """
-        return self.user.effective_permissions()
+        r = self.client.get('/admin/permissions/effective/user/' + self.name)
+        return r.json()['permissions']
 
     def __rolename(self, role):
         return role.name if isinstance(role, Role) else role
@@ -668,7 +769,7 @@ class Role(object):
         https://www.stardog.com/docs/#_security
     """
 
-    def __init__(self, role):
+    def __init__(self, name, client):
         """Initializes a Role.
 
         Use :meth:`stardog.admin.Admin.role`,
@@ -676,13 +777,15 @@ class Role(object):
         :meth:`stardog.admin.Admin.new_role` instead of
         constructing manually.
         """
-        self.role = role
+        self.role_name = name
+        self.client = client
+        self.path = '/admin/roles/{}'.format(name)
 
     @property
     def name(self):
         """The name of the Role.
         """
-        return self.role.name
+        return self.role_name
 
     def users(self):
         """Lists the users for this role.
@@ -690,7 +793,9 @@ class Role(object):
         Returns:
           list[User]
         """
-        return list(map(User, self.role.users()))
+        r = self.client.get(self.path + '/users')
+        users = r.json()['users']
+        return list(map(lambda name: User(name, self.client), users))
 
     def delete(self, force=None):
         """Deletes the role.
@@ -698,7 +803,7 @@ class Role(object):
         Args:
           force (bool): Force deletion of the role
         """
-        self.role.delete(force)
+        self.client.delete(self.path, params={'force': force})
 
     def permissions(self):
         """Gets the role permissions.
@@ -709,7 +814,8 @@ class Role(object):
         Returns:
           dict: Role permissions
         """
-        return self.role.permissions()
+        r = self.client.get('/admin/permissions/role/{}'.format(self.name))
+        return r.json()['permissions']
 
     def add_permission(self, action, resource_type, resource):
         """Adds a permission to the role.
@@ -726,7 +832,14 @@ class Role(object):
             >>> role.add_permission('read', 'user', 'username')
             >>> role.add_permission('write', '*', '*')
         """
-        self.role.add_permission(action, resource_type, resource)
+        meta = {
+            'action': action,
+            'resource_type': resource_type,
+            'resource': [resource]
+        }
+
+        self.client.put(
+            '/admin/permissions/role/{}'.format(self.name), json=meta)
 
     def remove_permission(self, action, resource_type, resource):
         """Removes a permission from the role.
@@ -743,7 +856,17 @@ class Role(object):
             >>> role.remove_permission('read', 'user', 'username')
             >>> role.remove_permission('write', '*', '*')
         """
-        self.role.remove_permission(action, resource_type, resource)
+        meta = {
+            'action': action,
+            'resource_type': resource_type,
+            'resource': [resource]
+        }
+
+        self.client.post(
+            '/admin/permissions/role/{}/delete'.format(self.name), json=meta)
+
+    def __repr__(self):
+        return self.name
 
 
 class VirtualGraph(object):
@@ -753,7 +876,7 @@ class VirtualGraph(object):
         https://www.stardog.com/docs/#_structured_data
     """
 
-    def __init__(self, vg):
+    def __init__(self, name, client):
         """Initializes a virtual graph.
 
         Use :meth:`stardog.admin.Admin.virtual_graph`,
@@ -762,13 +885,15 @@ class VirtualGraph(object):
         constructing manually.
         """
 
-        self.vg = vg
+        self.graph_name = name
+        self.path = '/admin/virtual_graphs/{}'.format(name)
+        self.client = client
 
     @property
     def name(self):
         """The name of the virtual graph.
         """
-        return self.vg.name
+        return self.graph_name
 
     def update(self, name, mappings, options):
         """Updates the Virtual Graph.
@@ -783,15 +908,19 @@ class VirtualGraph(object):
                          {'jdbc.driver': 'com.mysql.jdbc.Driver'})
         """
         with mappings.data() as data:
-            self.vg.update(
-                name,
-                data.read().decode() if hasattr(data, 'read') else data,
-                options)
+            meta = {
+                'name': name,
+                'mappings': data.read().decode() if hasattr(data, 'read') else data,
+                'options': options,
+            }
+
+            self.client.put(self.path, json=meta)
+            self.graph_name = name
 
     def delete(self):
         """Deletes the Virtual Graph.
         """
-        self.vg.delete()
+        self.client.delete(self.path)
 
     def options(self):
         """Gets Virtual Graph options.
@@ -799,7 +928,8 @@ class VirtualGraph(object):
         Returns:
           dict: Options
         """
-        return self.vg.options()
+        r = self.client.get(self.path + '/options')
+        return r.json()['options']
 
     def mappings(self, content_type=content_types.TURTLE):
         """Gets the Virtual Graph mappings.
@@ -811,7 +941,9 @@ class VirtualGraph(object):
         Returns:
           str: Mappings in given content type
         """
-        return self.vg.mappings(content_type)
+        r = self.client.get(
+            self.path + '/mappings', headers={'Accept': content_type})
+        return r.content
 
     def available(self):
         """Checks if the Virtual Graph is available.
@@ -819,4 +951,8 @@ class VirtualGraph(object):
         Returns:
           bool: Availability state
         """
-        return self.vg.available()
+        r = self.client.get(self.path + '/available')
+        return bool(r.json()['available'])
+
+    def __repr__(self):
+        return self.name

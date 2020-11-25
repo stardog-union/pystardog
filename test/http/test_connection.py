@@ -2,8 +2,9 @@ import pytest
 
 import stardog.content_types as content_types
 import stardog.exceptions as exceptions
-import stardog.http.admin as http_admin
+import stardog.admin as stardog_admin
 import stardog.http.connection as http_connection
+import stardog.content as content
 
 
 @pytest.fixture(scope="module")
@@ -14,7 +15,7 @@ def conn():
 
 @pytest.fixture(scope="module")
 def admin():
-    with http_admin.Admin() as admin:
+    with stardog_admin.Admin() as admin:
 
         for db in admin.databases():
             db.drop()
@@ -263,12 +264,8 @@ def test_icv(conn, admin):
 
 def test_graphql(conn, admin):
 
-    with open('test/data/starwars.ttl', 'rb') as f:
-        db = admin.new_database('graphql', {}, {
-            'name': 'starwars.ttl',
-            'content': f,
-            'content-type': content_types.TURTLE
-        })
+    db = admin.new_database('graphql', {},
+                            content.File('test/data/starwars.ttl'))
 
     with http_connection.Connection(
             'graphql', username='admin', password='admin') as c:

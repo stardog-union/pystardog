@@ -298,7 +298,6 @@ def test_stored_queries(admin):
 
 
 def test_virtual_graphs(admin):
-
     assert len(admin.virtual_graphs()) == 0
 
     options = {
