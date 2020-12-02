@@ -103,10 +103,7 @@ def test_backup_and_restore(admin):
     # determine the path to the backups
     now = datetime.datetime.now()
     date = now.strftime('%Y-%m-%d')
-    stardog_home = os.getenv('STARDOG_HOME', '/data/stardog')
-    restore_from = os.path.join(
-        f"{stardog_home}", '.backup', 'backup_db', f"{date}")
-
+    restore_from = f"/var/opt/stardog/.backup/backup_db/{date}"
     # make a db with test data loaded
     db = admin.new_database(
         'backup_db', {}, content.File('test/data/starwars.ttl'))
@@ -136,7 +133,7 @@ def test_backup_and_restore(admin):
     check_db_for_contents('backup_db', 87)
 
     # the backup location can be specified
-    db.backup(to=os.path.join(stardog_home, 'backuptest'))
+    db.backup(to=os.path.join('/var/opt/stardog/backuptest'))
 
     # clean up
     db.drop()
