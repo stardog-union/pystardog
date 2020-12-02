@@ -184,34 +184,22 @@ def test_users(admin):
     assert len(user.roles()) == 0
 
     # permissions
-    assert user.permissions() == [{
+    read_perm = {
         'action': 'READ',
         'resource_type': 'user',
         'resource': ['username']
-    }]
-    assert user.effective_permissions() == [{
-        'action': 'READ',
-        'resource_type': 'user',
-        'resource': ['username']
-    }]
-
-    user.add_permission('WRITE', 'user', 'username')
-    assert user.permissions() == [{
-        'action': 'READ',
-        'resource_type': 'user',
-        'resource': ['username']
-    }, {
+    }
+    write_perm = {
         'action': 'WRITE',
         'resource_type': 'user',
         'resource': ['username']
-    }]
+    }
+
+    assert user.permissions() == [read_perm, write_perm]
+    assert user.effective_permissions() == [read_perm, write_perm]
 
     user.remove_permission('WRITE', 'user', 'username')
-    assert user.permissions() == [{
-        'action': 'READ',
-        'resource_type': 'user',
-        'resource': ['username']
-    }]
+    assert user.permissions() == [read_perm]
 
     # delete user
     user.delete()
