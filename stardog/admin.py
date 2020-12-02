@@ -116,7 +116,9 @@ class Admin(object):
                 'files': fmetas
             }
 
-            params.append(('root', (None, json.dumps(meta), 'application/json')))
+            params.append(
+                ('root', (None, json.dumps(meta), 'application/json'))
+            )
             self.client.post('/admin/databases', files=params)
 
             return Database(name, self.client)
@@ -198,7 +200,9 @@ class Admin(object):
         r = self.client.get('/admin/queries/stored',
                             headers={'Accept': 'application/json'})
         query_names = [q['name'] for q in r.json()['queries']]
-        return list(map(lambda name: StoredQuery(name, self.client), query_names))
+        return list(
+            map(lambda name: StoredQuery(name, self.client), query_names)
+        )
 
     def new_stored_query(self, name, query, options=None):
         """Creates a new Stored Query.
@@ -329,7 +333,9 @@ class Admin(object):
         """
         r = self.client.get('/admin/virtual_graphs')
         virtual_graphs = r.json()['virtual_graphs']
-        return list(map(lambda name: VirtualGraph(name, self.client), virtual_graphs))
+        return list(
+            map(lambda name: VirtualGraph(name, self.client), virtual_graphs)
+        )
 
     def new_virtual_graph(self, name, mappings, options):
         """Creates a new Virtual Graph.
@@ -349,9 +355,10 @@ class Admin(object):
                 )
         """
         with mappings.data() as data:
+            mappings = data.read().decode() if hasattr(data, 'read') else data
             meta = {
                 'name': name,
-                'mappings': data.read().decode() if hasattr(data, 'read') else data,
+                'mappings': mappings,
                 'options': options,
             }
 
@@ -402,7 +409,12 @@ class Admin(object):
         r = self.client.get('/admin/cache/graphs')
         return list(map(lambda name: Cache(name, self.client), r.json()))
 
-    def new_cached_query(self, name, target, query, database=None, refresh_script=None):
+    def new_cached_query(self,
+                         name,
+                         target,
+                         query,
+                         database=None,
+                         refresh_script=None):
         """Creates a new cached query.
 
         Args:
@@ -415,9 +427,16 @@ class Admin(object):
         Returns:
           Cache: The new Cache
         """
-        return Cache.__new_cache(name, target, database, refresh_script, query=query)
+        return Cache.__new_cache(
+            name, target, database, refresh_script, query=query
+        )
 
-    def new_cached_graph(self, name, target, graph, database=None, refresh_script=None):
+    def new_cached_graph(self,
+                         name,
+                         target,
+                         graph,
+                         database=None,
+                         refresh_script=None):
         """Creates a new cached graph.
 
         Args:
@@ -429,7 +448,9 @@ class Admin(object):
 
         Returns:
           Cache: The new Cache"""
-        return Cache.__new_cache(name, target, database, refresh_script, graph=graph)
+        return Cache.__new_cache(
+            name, target, database, refresh_script, graph=graph
+        )
 
     def cache_targets(self):
         """Retrieves all cache targets.
@@ -438,7 +459,12 @@ class Admin(object):
           list[CacheTarget]: A list of CacheTarget objects
         """
         r = self.client.get('/admin/cache/target')
-        return list(map(lambda: target: CacheTarget(target['name'], self.client), r.json()))
+        return list(
+            map(
+                lambda target: CacheTarget(target['name'], self.client),
+                r.json()
+            )
+        )
 
     def new_cache_target(self, name, hostname, port, username, password):
         """Creates a new cache target.
@@ -607,7 +633,10 @@ class StoredQuery(object):
         self.__refresh()
 
     def __refresh(self):
-        details = self.client.get(self.path, headers={'Accept': 'application/json'})
+        details = self.client.get(
+            self.path,
+            headers={'Accept': 'application/json'}
+        )
         self.details.update(details.json()['queries'][0])
 
     @property
@@ -661,7 +690,9 @@ class StoredQuery(object):
         Examples:
             Update description
 
-            >>> stored_query.update(description='this query finds all the relevant...')
+            >>> stored_query.update(
+                    description='this query finds all the relevant...'
+                )
         """
         options['name'] = self.query_name
         for opt in ['query', 'creator']:
@@ -1005,9 +1036,10 @@ class VirtualGraph(object):
                          {'jdbc.driver': 'com.mysql.jdbc.Driver'})
         """
         with mappings.data() as data:
+            mappings = data.read().decode() if hasattr(data, 'read') else data
             meta = {
                 'name': name,
-                'mappings': data.read().decode() if hasattr(data, 'read') else data,
+                'mappings': mappings,
                 'options': options,
             }
 
@@ -1064,12 +1096,19 @@ class Cache(object):
         https://www.stardog.com/docs/#_cache_management
     """
     @classmethod
-    def __new_cache(client, name, target, database=None, refresh_script=None, query=None, graph=None):
+    def __new_cache(
+            client,
+            name,
+            target,
+            database=None,
+            refresh_script=None,
+            query=None,
+            graph=None):
         params = {
             'name': name,
             'target': target,
             'database': database,
-            'refreshScript': refresh_cript,
+            'refreshScript': refresh_script,
             'query': query,
             'graph': graph,
         }
@@ -1115,7 +1154,7 @@ class CacheTarget(object):
         self.details = {}
         self.__refresh()
 
-    def __refresh():
+    def __refresh(self):
         r = self.client.get('/admin/cache/target')
         target = next(t for t in r.json() if t.name == self.name)
         self.details.update(target)

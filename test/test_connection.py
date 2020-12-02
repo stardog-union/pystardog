@@ -28,7 +28,9 @@ def admin():
 
 
 def test_transactions(conn, admin):
-    data = content.Raw('<urn:subj> <urn:pred> <urn:obj> .', content_types.TURTLE)
+    data = content.Raw(
+        '<urn:subj> <urn:pred> <urn:obj> .', content_types.TURTLE
+    )
 
     # add
     conn.begin()
@@ -97,7 +99,11 @@ def test_transactions(conn, admin):
 def test_export(conn, admin):
     conn.begin()
     # add to default graph
-    conn.add(content.Raw('<urn:default_subj> <urn:default_pred> <urn:default_obj> .'))
+    conn.add(
+        content.Raw(
+            '<urn:default_subj> <urn:default_pred> <urn:default_obj> .'
+        )
+    )
     # add to a named graph
     conn.add(
         content.Raw('<urn:named_subj> <urn:named_pred> <urn:named_obj> .'),
@@ -224,11 +230,15 @@ def test_reasoning(conn, admin):
 
     # explain inference in transaction
     conn.begin()
-    conn.add(content.Raw('<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE))
+    conn.add(
+        content.Raw('<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE)
+    )
 
     with pytest.raises(exceptions.StardogException):
         r = conn.explain_inference(
-            content.Raw('<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE)
+            content.Raw(
+                '<urn:subj> <urn:pred> <urn:obj3> .', content_types.TURTLE
+            )
         )
         assert len(r) == 0
 

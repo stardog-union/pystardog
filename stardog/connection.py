@@ -310,7 +310,9 @@ class Connection(object):
 
           >>> conn.select('select * {?s ?p ?o}', bindings={'o': '<urn:a>'})
         """
-        return self.__query(query, 'query', content_type=content_type, **kwargs)
+        return self.__query(
+            query, 'query', content_type=content_type, **kwargs
+        )
 
     def graph(self, query, content_type=content_types.TURTLE, **kwargs):
         """Executes a SPARQL graph query.
@@ -444,7 +446,8 @@ class Connection(object):
         txId = self.transaction
 
         with content.data() as data:
-            url = '/reasoning/{}/explain'.format(txId) if txId else '/reasoning/explain'
+            url = '/reasoning/{}/explain'.format(txId) \
+                if txId else '/reasoning/explain'
 
             r = self.client.post(
                 url,
