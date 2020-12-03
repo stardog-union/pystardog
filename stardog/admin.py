@@ -489,7 +489,7 @@ class Admin(object):
             'password': password,
             'useExistingDb': False
         }
-        r = self.client.post('/admin/cache/target', json=params)
+        self.client.post('/admin/cache/target', json=params)
         return CacheTarget(name, self.client)
 
     def __enter__(self):
@@ -1132,7 +1132,7 @@ class Cache(object):
 
     def drop(self):
         """Drops the cache."""
-        self.delete('/admin/cache/{}'.format(self.name))
+        self.client.delete('/admin/cache/{}'.format(self.name))
 
     def refresh(self):
         """Refreshes the cache."""
