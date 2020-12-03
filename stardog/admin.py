@@ -381,15 +381,15 @@ class Admin(object):
         """
         return Cache(name, self.client)
 
-    def cache_status(self, names):
+    def cache_status(self, *names):
         """Retrieves the status of one or more cached graphs or queries.
 
         Args:
-          names: list[str]: Names of the cached graphs or queries
+          *names: (str): Names of the cached graphs or queries
         Returns:
           list[str]: List of statuses
         """
-        return self.client.post('/admin/cache/status', json=names)
+        return self.client.post('/admin/cache/status', json=names).json()
 
     def cached_queries(self):
         """Retrieves all cached queries.
@@ -418,17 +418,18 @@ class Admin(object):
         """Creates a new cached query.
 
         Args:
-          name
-          target
+          name (str): The name (URI) of the cached query
+          target (str): The name (URI) of the cache target
           query (str): The query to cache
-          database
-          refresh_script
+          database (str, optional): The name of the database
+          refresh_script (str, optional): A SPARQL insert query to run
+            when refreshing the cache
 
         Returns:
           Cache: The new Cache
         """
-        return Cache.__new_cache(
-            name, target, database, refresh_script, query=query
+        return Cache._new_cache(
+            self.client, name, target, database, refresh_script, query=query
         )
 
     def new_cached_graph(self,
@@ -440,16 +441,17 @@ class Admin(object):
         """Creates a new cached graph.
 
         Args:
-          name
-          target
-          graph (str): The graph to cache
-          database
+          name (str): The name (URI) of the cached query
+          target (str): The name (URI) of the cache target
+          graph (str): The name of the graph to cache
+          database (str): The name of the database
           refresh_script
 
         Returns:
-          Cache: The new Cache"""
-        return Cache.__new_cache(
-            name, target, database, refresh_script, graph=graph
+          Cache: The new Cache
+        """
+        return Cache._new_cache(
+            self.client, name, target, database, refresh_script, graph=graph
         )
 
     def cache_targets(self):
@@ -470,11 +472,11 @@ class Admin(object):
         """Creates a new cache target.
 
         Args:
-          name
-          hostname
-          port
-          username
-          password
+          name (str): The name of the cache target
+          hostname (str): The hostname of the cache target server
+          port (int): The port of the cache target server
+          username (int): The username for the cache target
+          password (int): The password for the cache target
 
         Returns:
           CacheTarget: The new CacheTarget
@@ -484,9 +486,10 @@ class Admin(object):
             'hostname': hostname,
             'port': port,
             'username': username,
-            'password': password
+            'password': password,
+            'useExistingDb': False
         }
-        client.post('/admin/cache/target', json=params)
+        r = self.client.post('/admin/cache/target', json=params)
         return CacheTarget(name, self.client)
 
     def __enter__(self):
@@ -1096,7 +1099,8 @@ class Cache(object):
         https://www.stardog.com/docs/#_cache_management
     """
     @classmethod
-    def __new_cache(
+    def _new_cache(
+            cls,
             client,
             name,
             target,
@@ -1124,6 +1128,7 @@ class Cache(object):
         """
         self.name = name
         self.client = client
+        self.status()  # raise exception if cache doesn't exist on the server
 
     def drop(self):
         """Drops the cache."""
@@ -1137,6 +1142,9 @@ class Cache(object):
         """Retrieves the status of the cache."""
         r = self.client.post('/admin/cache/status', json=[self.name])
         return r.json()
+
+    def __repr__(self):
+        return self.name
 
 
 class CacheTarget(object):
@@ -1152,11 +1160,13 @@ class CacheTarget(object):
         self.path = '/admin/cache/target/{}'.format(name)
         self.client = client
         self.details = {}
-        self.__refresh()
+        self.refresh = self.__refresh()
 
     def __refresh(self):
+        target = []
         r = self.client.get('/admin/cache/target')
-        target = next(t for t in r.json() if t.name == self.name)
+        self.targets = r.json()
+        target = next((t for t in r.json() if t['name'] == self.name), {})
         self.details.update(target)
 
     @property
@@ -1191,3 +1201,6 @@ class CacheTarget(object):
     def remove(self):
         """Removes the cache target and destroy its contents."""
         self.client.delete(self.path)
+
+    def __repr__(self):
+        return self.name
