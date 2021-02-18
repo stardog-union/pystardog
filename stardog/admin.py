@@ -17,7 +17,7 @@ class Admin(object):
       https://www.stardog.com/docs/#_administering_stardog
     """
 
-    def __init__(self, endpoint=None, username=None, password=None):
+    def __init__(self, endpoint=None, username=None, password=None, auth=None):
         """Initializes an admin connection to a Stardog server.
 
         Args:
@@ -27,12 +27,16 @@ class Admin(object):
             Defaults to `admin`
           password (str, optional): Password to use in the connection.
             Defaults to `admin`
+        auth (requests.auth.AuthBase, optional): requests Authentication object.
+            Defaults to `None`
 
+        auth and username/password should not be used together.  If the are the value
+        of `auth` will take precedent.
         Examples:
           >>> admin = Admin(endpoint='http://localhost:9999',
                             username='admin', password='admin')
         """
-        self.client = client.Client(endpoint, None, username, password)
+        self.client = client.Client(endpoint, None, username, password, auth=auth)
 
     def shutdown(self):
         """Shuts down the server.

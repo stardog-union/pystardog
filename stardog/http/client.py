@@ -1,4 +1,5 @@
 import requests
+import requests.auth
 import requests_toolbelt.multipart as multipart
 
 from .. import exceptions as exceptions
@@ -14,16 +15,21 @@ class Client(object):
                  endpoint=None,
                  database=None,
                  username=None,
-                 password=None):
+                 password=None,
+                 auth=None):
         self.url = endpoint if endpoint else self.DEFAULT_ENDPOINT
+
+        # XXX this might not be right when the auth object is used.  Ideally we could drop storing this
+        # information with this object but it is used when a store procedure is made as the "creator"
         self.username = username if username else self.DEFAULT_USERNAME
-        self.password = password if password else self.DEFAULT_PASSWORD
 
         if database:
             self.url = '{}/{}'.format(self.url, database)
 
         self.session = requests.Session()
-        self.session.auth = (self.username, self.password)
+        if auth is None:
+            auth = requests.auth.HTTPBasicAuth(self.username, password if password else self.DEFAULT_PASSWORD)
+        self.session.auth = auth
 
     def post(self, path, **kwargs):
         return self.__wrap(self.session.post(self.url + path, **kwargs))
