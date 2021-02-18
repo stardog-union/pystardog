@@ -48,7 +48,7 @@ with stardog.Admin(**conn_details) as admin:
 
   with stardog.Connection('db', **conn_details) as conn:
     conn.begin()
-    conn.add(stardog.content.File('./test/data/example.ttl'))
+    conn.add(stardog.content.File('./test/data/examples.ttl'))
     conn.commit()
     results = conn.select('select * { ?a ?p ?o }')
 

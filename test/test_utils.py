@@ -11,17 +11,17 @@ def test_content():
         assert r.content_encoding == 'zip'
         assert r.name == 'raw.ttl.zip'
 
-    f = content.File('test/data/example.ttl')
+    f = content.File('test/data/examples.ttl')
     with f.data() as c:
         assert c.read() == b'<urn:subj> <urn:pred> <urn:obj> .'
         assert f.content_type == content_types.TURTLE
         assert f.content_encoding is None
-        assert f.name == 'example.ttl'
+        assert f.name == 'examples.ttl'
 
-    f = content.File('test/data/example.ttl.zip')
+    f = content.File('test/data/examples.ttl.zip')
     assert f.content_type == content_types.TURTLE
     assert f.content_encoding == 'zip'
-    assert f.name == 'example.ttl.zip'
+    assert f.name == 'examples.ttl.zip'
 
     u = content.URL('https://www.w3.org/2000/10/rdf-tests/'
                     'RDF-Model-Syntax_1.0/ms_4.1_1.rdf')

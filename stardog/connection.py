@@ -114,7 +114,7 @@ class Connection(object):
             If not currently in a transaction
 
         Examples:
-          >>> conn.add(File('example.ttl'), graph_uri='urn:graph')
+          >>> conn.add(File('examples.ttl'), graph_uri='urn:graph')
         """
         self._assert_in_transaction()
 
@@ -140,7 +140,7 @@ class Connection(object):
             If currently not in a transaction
 
         Examples:
-          >>> conn.remove(File('example.ttl'), graph_uri='urn:graph')
+          >>> conn.remove(File('examples.ttl'), graph_uri='urn:graph')
         """
 
         self._assert_in_transaction()
@@ -532,7 +532,7 @@ class Docs(object):
           content (Content): Contents of the document
 
         Examples:
-          >>> docs.add('example', File('example.pdf'))
+          >>> docs.add('examples', File('examples.pdf'))
         """
         with content.data() as data:
             self.client.post('/docs', files={'upload': (name, data)})
@@ -561,11 +561,11 @@ class Docs(object):
         Examples:
           no streaming
 
-          >>> contents = docs.get('example')
+          >>> contents = docs.get('examples')
 
           streaming
 
-          >>> with docs.get('example', stream=True) as stream:
+          >>> with docs.get('examples', stream=True) as stream:
                             contents = ''.join(stream)
         """
         def _get():

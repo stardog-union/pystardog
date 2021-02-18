@@ -40,7 +40,7 @@ def test_transactions(conn, admin):
 
     # remove
     conn.begin()
-    conn.remove(content.File('test/data/example.ttl.zip'))
+    conn.remove(content.File('test/data/examples.ttl.zip'))
     conn.commit()
 
     assert conn.size() == 0
@@ -253,7 +253,7 @@ def test_docs(conn, admin):
     assert docs.size() == 0
 
     # add
-    docs.add('doc', content.File('test/data/example.txt'))
+    docs.add('doc', content.File('test/data/examples.txt'))
     assert docs.size() == 1
 
     # get
@@ -268,7 +268,7 @@ def test_docs(conn, admin):
     assert docs.size() == 0
 
     # clear
-    docs.add('doc', content.File('test/data/example.txt'))
+    docs.add('doc', content.File('test/data/examples.txt'))
     assert docs.size() == 1
     docs.clear()
     assert docs.size() == 0
