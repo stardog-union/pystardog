@@ -85,7 +85,7 @@ class Admin(object):
             bulk-load
 
             >>> admin.new_database('db', {},
-                                   File('examples.ttl'), File('test.rdf'))
+                                   File('example.ttl'), File('test.rdf'))
 
             bulk-load to named graph
 

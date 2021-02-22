@@ -73,7 +73,7 @@ def test_databases(admin):
             '<urn:subj> <urn:pred> <urn:obj3> .',
             content_types.TURTLE,
             name='bulkload.ttl'),
-        (content.File('test/data/examples.ttl.zip'), 'urn:context'),
+        (content.File('test/data/example.ttl.zip'), 'urn:context'),
         content.URL('https://www.w3.org/2000/10/rdf-tests/'
                     'RDF-Model-Syntax_1.0/ms_4.1_1.rdf')
     ]
