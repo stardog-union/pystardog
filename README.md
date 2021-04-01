@@ -30,7 +30,26 @@ Docs](http://pystardog.readthedocs.io) or can be built using Sphinx:
 
 ## Tests
 
-Run the tests with: `python setup.py test`
+Create a virtual environment:
+
+```shell script
+virtualenv -p $(which python3) venv
+```
+
+Activate the virtualenv:
+
+```shell script
+$ . venv/bin/activate
+(venv) $
+```
+Install the dependencies
+```shell script
+pip install -r requirements.txt
+```
+Run the tests 
+```
+python setup.py test
+```
 
 ## Quick Example
 

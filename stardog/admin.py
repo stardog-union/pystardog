@@ -439,7 +439,7 @@ class Database(object):
 
         The database must be offline.
         """
-        self.client.put(self.path + '/repair')
+        self.client.post(self.path + '/repair')
 
     def backup(self, *, to=None):
         """Backup a database.
