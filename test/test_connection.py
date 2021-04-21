@@ -13,21 +13,15 @@ def conn():
         yield conn
 
 
-@pytest.fixture(scope="module")
-def admin():
+@pytest.fixture(scope="module", autouse="True")
+def db():
     with stardog.admin.Admin() as admin:
-
-        for db in admin.databases():
-            db.drop()
-
-        admin.new_database('newtest', {
-            'search.enabled': True
-        })
-
+        db = admin.new_database('newtest', {'search.enabled': True})
         yield admin
+        db.drop()
 
 
-def test_transactions(conn, admin):
+def test_transactions(conn):
     data = content.Raw('<urn:subj> <urn:pred> <urn:obj> .', content_types.TURTLE)
 
     # add
@@ -94,7 +88,7 @@ def test_transactions(conn, admin):
     assert conn.size(exact=True) == 0
 
 
-def test_export(conn, admin):
+def test_export(conn):
     conn.begin()
     # add to default graph
     conn.add(content.Raw('<urn:default_subj> <urn:default_pred> <urn:default_obj> .'))
@@ -114,7 +108,7 @@ def test_export(conn, admin):
     assert b'default_obj' not in named_export
 
 
-def test_queries(conn, admin):
+def test_queries(conn):
     # add
     conn.begin()
     conn.clear()
@@ -202,7 +196,8 @@ def test_queries(conn, admin):
     conn.commit()
 
 
-def test_reasoning(conn, admin):
+@pytest.mark.skip(reason="Bug introduced in reasoning, it's being tracked here: https://stardog.atlassian.net/browse/PLAT-2027")
+def test_reasoning(conn):
     data = content.Raw(
         b'<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .',
         content_types.TURTLE
@@ -244,7 +239,7 @@ def test_reasoning(conn, admin):
     assert len(r) == 0
 
 
-def test_docs(conn, admin):
+def test_docs(conn):
     example = (b'Only the Knowledge Graph can unify all data types and '
                b'every data velocity into a single, coherent, unified whole.')
 
@@ -274,7 +269,7 @@ def test_docs(conn, admin):
     assert docs.size() == 0
 
 
-def test_icv(conn, admin):
+def test_icv(conn):
 
     conn.begin()
     conn.clear()
@@ -326,8 +321,9 @@ def test_icv(conn, admin):
     assert 'SELECT DISTINCT' in icv.convert(constraint)
 
 
-def test_graphql(conn, admin):
-    db = admin.new_database('graphql', {},
+def test_graphql():
+    with stardog.admin.Admin() as admin:
+        db = admin.new_database('graphql', {},
                             content.File('test/data/starwars.ttl'))
 
     with connection.Connection(

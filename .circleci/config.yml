@@ -1,0 +1,33 @@
+jobs:
+  build:
+    docker:
+      - image: cimg/python:3.9.2
+    steps:
+      - checkout
+      - run: python --version
+      - run:
+          name: Install dependencies
+          command: |
+            curl http://packages.stardog.com/stardog.gpg.pub | sudo apt-key add
+            echo "deb http://packages.stardog.com/deb/ stable main" | sudo tee -a /etc/apt/sources.list
+            sudo apt-get update -y && sudo apt-get install stardog -y
+
+      - run:
+          name: Setup server
+          command: |
+            sudo su -c "mkdir -p /var/opt/stardog/ && chown stardog:stardog /var/opt/stardog"
+            sudo su - stardog -c "echo ${pystardog_license} | base64 --decode  > /var/opt/stardog/stardog-license-key.bin"
+            sudo su - stardog -c "/opt/stardog/bin/stardog-admin server start"
+
+      - run:
+          name: Confirm Stardog server Up
+          command: /opt/stardog/bin/stardog-admin server status
+
+      - run:
+          name: Run pystardog test
+          command: |
+            virtualenv -p $(which python3) venv
+            source venv/bin/activate
+            pip install -r requirements.txt
+            python setup.py test
+

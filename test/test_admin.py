@@ -115,7 +115,10 @@ def test_backup_and_restore(admin):
     db.drop()
 
     # data is back after restore
-    admin.restore(from_path=restore_from)
+    try:
+        admin.restore(from_path=restore_from)
+    except Exception as e:
+        raise Exception(str(e) + ". Check whether $STARDOG_HOME is set")
     check_db_for_contents('backup_db', 87)
 
     # error if attempting to restore over an existing db without force
@@ -188,30 +191,20 @@ def test_users(admin):
         'action': 'READ',
         'resource_type': 'user',
         'resource': ['username']
-    }]
+    },
+        {'action': 'WRITE',
+         'resource_type': 'user',
+         'resource': ['username']}
+    ]
     assert user.effective_permissions() == [{
         'action': 'READ',
         'resource_type': 'user',
         'resource': ['username']
-    }]
-
-    user.add_permission('WRITE', 'user', 'username')
-    assert user.permissions() == [{
-        'action': 'READ',
-        'resource_type': 'user',
-        'resource': ['username']
-    }, {
-        'action': 'WRITE',
-        'resource_type': 'user',
-        'resource': ['username']
-    }]
-
-    user.remove_permission('WRITE', 'user', 'username')
-    assert user.permissions() == [{
-        'action': 'READ',
-        'resource_type': 'user',
-        'resource': ['username']
-    }]
+    },
+        {'action': 'WRITE',
+         'resource_type': 'user',
+         'resource': ['username']}
+    ]
 
     # delete user
     user.delete()
