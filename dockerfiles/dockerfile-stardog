@@ -2,3 +2,4 @@ FROM stardog/stardog:latest
 
 COPY stardog-license-key.bin /var/opt/stardog
 COPY mysql-connector-java-5.1.48.jar /opt/stardog/server/dbms
+
