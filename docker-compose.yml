@@ -1,0 +1,23 @@
+version: "3.3"
+services:
+  stardog:
+    build:
+      context: dockerfiles/
+      dockerfile: dockerfile-stardog
+    container_name: pystardog_stardog
+  tests:
+    build:
+      context: .
+      dockerfile: dockerfiles/dockerfile-python
+    entrypoint: /bin/bash -c
+    command: ["./utils/run_tests.sh"]
+    container_name: pystardog_tests
+  mysql:
+    image: "mysql:8.0.3"
+    environment:
+      - MYSQL_ROOT_PASSWORD=rootpw
+      - MYSQL_DATABASE=test_db
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=passw0rd
+    container_name: pystardog_mysql
+

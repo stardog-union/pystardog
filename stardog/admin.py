@@ -279,7 +279,6 @@ class Admin(object):
 
         self.client.post('/admin/users', json=meta)
         return self.user(username)
-        return User(username, self.client)
 
     def role(self, name):
         """Retrieves an object representing a role.
@@ -335,7 +334,7 @@ class Admin(object):
         virtual_graphs = r.json()['virtual_graphs']
         return list(map(lambda name: VirtualGraph(name, self.client), virtual_graphs))
 
-    def new_virtual_graph(self, name, mappings, options):
+    def new_virtual_graph(self, name, mappings, options={}, datasource=None, db=None):
         """Creates a new Virtual Graph.
 
         Args:
@@ -352,15 +351,91 @@ class Admin(object):
                   {'jdbc.driver': 'com.mysql.jdbc.Driver'}
                 )
         """
-        with mappings.data() as data:
+
+        if mappings:
+            with mappings.data() as data:
+                mappings = data.read().decode() if hasattr(data, 'read') else data
+
+        if options:
             meta = {
                 'name': name,
-                'mappings': data.read().decode() if hasattr(data, 'read') else data,
+                'mappings': mappings,
                 'options': options,
             }
+        else:
+            meta = {
+                'name': name,
+                'mappings': mappings,
+                'data_source': datasource,
+                'db': db
+            }
 
-            self.client.post('/admin/virtual_graphs', json=meta)
-            return VirtualGraph(name, self.client)
+
+        self.client.post('/admin/virtual_graphs', json=meta)
+        return VirtualGraph(name, self.client)
+
+    def datasource(self, name):
+        """Retrieves an object representing a DataSource.
+
+        Args:
+          name (str): The name of the data source
+
+        Returns:
+          DataSource: The DataSource object
+        """
+        return DataSource(name, self.client)
+
+    def datasources(self):
+        """Retrieves all data sources.
+
+        Returns:
+          list[DataSources]: A list of DataSources
+        """
+        r = self.client.get('/admin/data_sources')
+        data_sources = r.json()['data_sources']
+        return list(map(lambda name: DataSource(name, self.client), data_sources))
+
+    def datasources_info(self):
+        """List data sources info
+
+        Returns:
+          list: A list of data sources info
+        """
+
+        r = self.client.get('/admin/data_sources/list')
+        return r.json()['data_sources']
+
+    def new_datasource(self, name, options):
+        """Creates a new DataSource.
+
+        Args:
+          name (str): The name of the data source
+          options (dict): Data source options
+
+        Returns:
+          User: The new DataSource object
+        """
+
+        if options is None:
+            options = {}
+
+        meta = {
+            "name": name,
+            "options": options
+        }
+
+        self.client.post('/admin/data_sources', json=meta)
+        return self.datasource(name)
+
+    def get_server_properties(self):
+        """Get the value of any set server-level properties
+
+        Returns
+            dict: Server properties
+        """
+
+        r = self.client.get('/admin/properties')
+        return r.json()
 
     def validate(self):
         """Validates an admin connection.
@@ -369,6 +444,26 @@ class Admin(object):
           bool: The connection state
         """
         self.client.get('/admin/users/valid')
+
+    def cluster_status(self):
+        """Prints status information for each node
+        in the cluster
+
+        Returns:
+            dict: Nodes of the cluster and extra information
+        """
+        r = self.client.get('/admin/cluster/status')
+        return r.json()
+
+    def cluster_info(self):
+        """Prints info about the nodes in the Stardog
+        Pack cluster.
+
+        Returns:
+            dict: Nodes of the cluster.
+        """
+        r = self.client.get('/admin/cluster')
+        return r.json()
 
     def __enter__(self):
         return self
@@ -899,7 +994,7 @@ class VirtualGraph(object):
         """
         return self.graph_name
 
-    def update(self, name, mappings, options):
+    def update(self, name, mappings, options={}, datasource=None, db=None):
         """Updates the Virtual Graph.
 
         Args:
@@ -911,15 +1006,26 @@ class VirtualGraph(object):
             >>> vg.update('users', File('mappings.ttl'),
                          {'jdbc.driver': 'com.mysql.jdbc.Driver'})
         """
-        with mappings.data() as data:
+        if mappings:
+            with mappings.data() as data:
+                mappings = data.read().decode() if hasattr(data, 'read') else data
+
+        if options:
             meta = {
                 'name': name,
-                'mappings': data.read().decode() if hasattr(data, 'read') else data,
+                'mappings': mappings,
                 'options': options,
             }
+        else:
+            meta = {
+                'name': name,
+                'mappings': mappings,
+                'data_source': datasource,
+                'db': db
+            }
 
-            self.client.put(self.path, json=meta)
-            self.graph_name = name
+        self.client.put(self.path, json=meta)
+        self.graph_name = name
 
     def delete(self):
         """Deletes the Virtual Graph.
@@ -934,6 +1040,26 @@ class VirtualGraph(object):
         """
         r = self.client.get(self.path + '/options')
         return r.json()['options']
+
+    def info(self):
+        """Gets Virtual Graph info.
+
+        Returns:
+          dict: Info
+        """
+
+        r = self.client.get(self.path + '/info')
+        return r.json()['info']
+
+    def get_database(self):
+        """Gets database associated with the VirtualGraph.
+
+        Returns:
+          string: Database name
+        """
+
+        r = self.client.get(self.path + '/database')
+        return r.text
 
     def mappings(self, content_type=content_types.TURTLE):
         """Gets the Virtual Graph mappings.
@@ -957,6 +1083,110 @@ class VirtualGraph(object):
         """
         r = self.client.get(self.path + '/available')
         return bool(r.json()['available'])
+
+    def __repr__(self):
+        return self.name
+
+
+class DataSource(object):
+    """Initializes a DataSource
+
+    See Also:
+        https://docs.stardog.com/virtual-graphs/virtual-sources
+    """
+
+    def __init__(self, name, client):
+        """Initializes a DataSource.
+
+        Use :meth:`stardog.admin.Admin.data_source`,
+        :meth:`stardog.admin.Admin.data_sources`, or
+        :meth:`stardog.admin.Admin.new_data_source` instead of
+        constructing manually.
+        """
+
+        self.data_source_name = name
+        self.path = '/admin/data_sources/{}'.format(name)
+        self.client = client
+
+    @property
+    def name(self):
+        """The name of the data source.
+        """
+        return self.data_source_name
+
+    def available(self):
+        """Checks if the data source is available.
+
+        Returns:
+          bool: Availability state
+        """
+        r = self.client.get(self.path + '/available')
+        return bool(r.json())
+
+    def refresh_count(self, meta=None):
+        """Refresh table row-count estimates
+        """
+
+        if meta is None:
+            meta = {}
+
+        self.client.post(self.path + '/refresh_counts', json=meta)
+
+    def update(self, options=None):
+        """Update data source
+        """
+        if options is None:
+            options = {}
+
+        meta = {
+            "options": options
+        }
+
+        self.client.put(self.path, json=meta)
+
+    def delete(self):
+        """Deletes a data source
+        """
+
+        self.client.delete(self.path)
+
+    def online(self):
+        """Online a data source
+        """
+
+        self.client.post(self.path + '/online')
+
+    def info(self):
+        """Get data source info
+
+        Returns:
+          dict: Info
+        """
+
+        r = self.client.get(self.path + '/info')
+        return r.json()['info']
+
+    def refresh_metadata(self, meta=None):
+        """Refresh metadata
+        """
+
+        if meta is None:
+            meta = {}
+
+        self.client.post(self.path + '/refresh_metadata', json=meta)
+
+    def share(self):
+        """Share data source
+        """
+
+        self.client.post(self.path + '/share')
+
+    def get_options(self):
+        """Get data source options
+        """
+
+        r = self.client.get(self.path + '/options')
+        return r.json()['options']
 
     def __repr__(self):
         return self.name

@@ -1,0 +1,3 @@
+FROM stardog/stardog:latest
+
+COPY . /var/opt/stardog
