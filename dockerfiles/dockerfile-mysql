@@ -1,0 +1,11 @@
+FROM mysql:8.0.3
+
+RUN apt-get update && apt-get install -y vim nano
+
+COPY ./test/data/beatles.sql /docker-entrypoint-initdb.d/2-beatles.sql
+COPY ./test/data/music_schema.sql /docker-entrypoint-initdb.d/1-music_schema.sql
+
+ENV MYSQL_ROOT_PASSWORD=rootpw
+ENV MYSQL_DATABASE=music
+ENV MYSQL_USER=user
+ENV MYSQL_PASSWORD=pass

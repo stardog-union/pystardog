@@ -13,3 +13,15 @@ def conn_string(pytestconfig):
         'password': pytestconfig.getoption("passwd")
     }
     return conn
+
+
+@pytest.fixture
+def ds_options():
+    options = {
+        "namespaces": "stardog=tag:stardog:api",
+        "jdbc.driver": "com.mysql.jdbc.Driver",
+        "jdbc.username": "user",
+        "jdbc.password": "pass",
+        "jdbc.url": "jdbc:mysql://pystardog_mysql/music"
+    }
+    return options

@@ -2,6 +2,7 @@ import pytest
 import datetime
 import os
 
+
 import stardog.admin
 import stardog.connection as connection
 import stardog.content as content
@@ -290,17 +291,9 @@ def test_stored_queries(admin):
     admin.clear_stored_queries()
     assert len(admin.stored_queries()) == 0
 
-
-def test_virtual_graphs(admin):
+@pytest.mark.skip(reason="Fix this tests, and test against a real VG: https://github.com/stardog-union/pystardog/issues/2")
+def test_virtual_graphs(admin, ds_options):
     assert len(admin.virtual_graphs()) == 0
-
-    options = {
-        "namespaces": "stardog=tag:stardog:api",
-        "jdbc.driver": "com.mysql.jdbc.Driver",
-        "jdbc.username": "admin",
-        "jdbc.password": "admin",
-        "jdbc.url": "jdbc:mysql://localhost/support"
-    }
 
     vg = admin.virtual_graph('test')
 
@@ -308,11 +301,11 @@ def test_virtual_graphs(admin):
     with pytest.raises(
             exceptions.StardogException, match='java.sql.SQLException'):
         admin.new_virtual_graph('vg', content.File('test/data/r2rml.ttl'),
-                                options)
+                                ds_options)
 
     with pytest.raises(
             exceptions.StardogException, match='java.sql.SQLException'):
-        vg.update('vg', content.File('test/data/r2rml.ttl'), options)
+        vg.update('vg', content.File('test/data/r2rml.ttl'), ds_options)
 
     with pytest.raises(
             exceptions.StardogException,
@@ -333,3 +326,16 @@ def test_virtual_graphs(admin):
             exceptions.StardogException,
             match='Virtual Graph test Not Found!'):
         vg.delete()
+
+def test_data_source(admin, ds_options):
+
+    ds = admin.new_datasource('music', ds_options)
+    assert len(admin.datasources()) == 1
+    assert ds.name == 'music'
+    assert ds.get_options() == ds_options
+    ds.delete()
+    assert len(admin.datasources()) == 0
+
+
+
+
