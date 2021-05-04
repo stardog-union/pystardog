@@ -1,0 +1,9 @@
+FROM python
+
+RUN apt-get update && apt-get install -y vim nano
+
+COPY . /var/pystardog
+
+WORKDIR /var/pystardog
+RUN pip install -r requirements.txt
+

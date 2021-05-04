@@ -2,6 +2,7 @@ import pytest
 import datetime
 import os
 
+
 import stardog.admin
 import stardog.connection as connection
 import stardog.content as content
@@ -12,9 +13,9 @@ DEFAULT_USERS = ['admin', 'anonymous']
 DEFAULT_ROLES = ['reader']
 
 
-@pytest.fixture(scope="module")
-def admin():
-    with stardog.admin.Admin() as admin:
+@pytest.fixture()
+def admin(conn_string):
+    with stardog.admin.Admin(**conn_string) as admin:
 
         for db in admin.databases():
             db.drop()
@@ -33,7 +34,7 @@ def admin():
         yield admin
 
 
-def test_databases(admin):
+def test_databases(admin, conn_string):
     assert len(admin.databases()) == 0
 
     # create database
@@ -81,7 +82,7 @@ def test_databases(admin):
     bl = admin.new_database('bulkload', {}, *contents)
 
     with connection.Connection(
-            'bulkload', username='admin', password='admin') as c:
+            'bulkload', **conn_string) as c:
         q = c.select('select * where { graph <urn:context> {?s ?p ?o}}')
         assert len(q['results']['bindings']) == 1
         assert c.size() == 7
@@ -93,17 +94,19 @@ def test_databases(admin):
     assert len(admin.databases()) == 0
 
 
-def test_backup_and_restore(admin):
+def test_backup_and_restore(admin, conn_string):
     def check_db_for_contents(dbname, num_results):
         with connection.Connection(
-                dbname, username='admin', password='admin') as c:
+                dbname, **conn_string) as c:
             q = c.select('select * where { ?s ?p ?o }')
             assert len(q['results']['bindings']) == num_results
 
     # determine the path to the backups
     now = datetime.datetime.now()
     date = now.strftime('%Y-%m-%d')
-    stardog_home = os.getenv('STARDOG_HOME', '/data/stardog')
+    # This only makes sense if stardog server is running in the same server. Recommended STARDOG_HOME
+    # should be /var/opt/stardog which I am setting as default in case of hitting a remote server.
+    stardog_home = os.getenv('STARDOG_HOME', '/var/opt/stardog')
     restore_from = os.path.join(
         f"{stardog_home}", '.backup', 'backup_db', f"{date}")
 
@@ -146,7 +149,7 @@ def test_backup_and_restore(admin):
     admin.database('backup_db2').drop()
 
 
-def test_users(admin):
+def test_users(admin, conn_string):
     assert len(admin.users()) == len(DEFAULT_USERS)
 
     # new user
@@ -157,13 +160,12 @@ def test_users(admin):
     assert user.is_enabled()
 
     # check if able to connect
-    with stardog.admin.Admin(
-            username='username', password='password') as uadmin:
+    with stardog.admin.Admin(**conn_string) as uadmin:
         uadmin.validate()
 
     # change password
     user.set_password('new_password')
-    with stardog.admin.Admin(
+    with stardog.admin.Admin(endpoint=conn_string['endpoint'],
             username='username', password='new_password') as uadmin:
         uadmin.validate()
 
@@ -289,17 +291,9 @@ def test_stored_queries(admin):
     admin.clear_stored_queries()
     assert len(admin.stored_queries()) == 0
 
-
-def test_virtual_graphs(admin):
+@pytest.mark.skip(reason="Fix this tests, and test against a real VG: https://github.com/stardog-union/pystardog/issues/2")
+def test_virtual_graphs(admin, ds_options):
     assert len(admin.virtual_graphs()) == 0
-
-    options = {
-        "namespaces": "stardog=tag:stardog:api",
-        "jdbc.driver": "com.mysql.jdbc.Driver",
-        "jdbc.username": "admin",
-        "jdbc.password": "admin",
-        "jdbc.url": "jdbc:mysql://localhost/support"
-    }
 
     vg = admin.virtual_graph('test')
 
@@ -307,11 +301,11 @@ def test_virtual_graphs(admin):
     with pytest.raises(
             exceptions.StardogException, match='java.sql.SQLException'):
         admin.new_virtual_graph('vg', content.File('test/data/r2rml.ttl'),
-                                options)
+                                ds_options)
 
     with pytest.raises(
             exceptions.StardogException, match='java.sql.SQLException'):
-        vg.update('vg', content.File('test/data/r2rml.ttl'), options)
+        vg.update('vg', content.File('test/data/r2rml.ttl'), ds_options)
 
     with pytest.raises(
             exceptions.StardogException,
@@ -332,3 +326,16 @@ def test_virtual_graphs(admin):
             exceptions.StardogException,
             match='Virtual Graph test Not Found!'):
         vg.delete()
+
+def test_data_source(admin, ds_options):
+
+    ds = admin.new_datasource('music', ds_options)
+    assert len(admin.datasources()) == 1
+    assert ds.name == 'music'
+    assert ds.get_options() == ds_options
+    ds.delete()
+    assert len(admin.datasources()) == 0
+
+
+
+

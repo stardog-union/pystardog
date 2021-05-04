@@ -644,6 +644,12 @@ class ICV(object):
         """
         self.client.post('/icv/clear')
 
+    def list(self):
+        """List all integrity constraints from the database.
+        """
+        r = self.client.get('/icv')
+        return r.text
+
     def is_valid(self, content, graph_uri=None):
         """Checks if given integrity constraints are valid.
 

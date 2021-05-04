@@ -7,15 +7,15 @@ import stardog.content_types as content_types
 import stardog.exceptions as exceptions
 
 
-@pytest.fixture(scope="module")
-def conn():
-    with connection.Connection('newtest') as conn:
+@pytest.fixture()
+def conn(conn_string):
+    with connection.Connection('newtest', **conn_string) as conn:
         yield conn
 
 
-@pytest.fixture(scope="module", autouse="True")
-def db():
-    with stardog.admin.Admin() as admin:
+@pytest.fixture(autouse="True")
+def db(conn_string):
+    with stardog.admin.Admin(**conn_string) as admin:
         db = admin.new_database('newtest', {'search.enabled': True})
         yield admin
         db.drop()
@@ -320,14 +320,13 @@ def test_icv(conn):
 
     assert 'SELECT DISTINCT' in icv.convert(constraint)
 
-
-def test_graphql():
-    with stardog.admin.Admin() as admin:
+def test_graphql(conn_string):
+    with stardog.admin.Admin(**conn_string) as admin:
         db = admin.new_database('graphql', {},
                             content.File('test/data/starwars.ttl'))
 
     with connection.Connection(
-            'graphql', username='admin', password='admin') as c:
+            'graphql', **conn_string) as c:
         gql = c.graphql()
 
         # query
