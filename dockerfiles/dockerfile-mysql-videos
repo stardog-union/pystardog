@@ -1,0 +1,10 @@
+FROM mysql:8.0.3
+
+# RUN apt-get update && apt-get install -y vim nano
+
+COPY ./test/data/videos.sql /docker-entrypoint-initdb.d/0-videos.sql
+
+ENV MYSQL_ROOT_PASSWORD=rootpw
+ENV MYSQL_DATABASE=videos
+ENV MYSQL_USER=user
+ENV MYSQL_PASSWORD=pass

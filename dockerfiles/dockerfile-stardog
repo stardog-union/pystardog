@@ -1,5 +1,15 @@
-FROM stardog/stardog:latest
+FROM alpine as base
 
+ARG CONNECTOR_VERSION=8.0.21
+
+RUN wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-${CONNECTOR_VERSION}.zip \
+  && unzip mysql-connector-java-${CONNECTOR_VERSION}.zip \
+  && mv mysql-connector-java-${CONNECTOR_VERSION}/mysql-connector-java-${CONNECTOR_VERSION}.jar /tmp/mysql-connector-java.jar
+
+
+FROM stardog/stardog
+
+COPY --from=base /tmp/mysql-connector-java.jar opt/stardog/server/dbms
 COPY stardog-license-key.bin /var/opt/stardog
-COPY mysql-connector-java-5.1.48.jar /opt/stardog/server/dbms
+
 

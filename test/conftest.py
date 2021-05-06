@@ -14,15 +14,27 @@ def conn_string(pytestconfig):
     }
     return conn
 
-
+# Java 291 (packed in the Stardog docker image from 7.6.3+) disabled TLS 1.0 and 1.1 which breaks the MySQL connector:
+# https://www.oracle.com/java/technologies/javase/8u291-relnotes.html
+# ?useSSL=false works around this for testing purposes:
 @pytest.fixture
-def ds_options():
+def music_options():
     options = {
-        "namespaces": "stardog=tag:stardog:api",
         "jdbc.driver": "com.mysql.jdbc.Driver",
         "jdbc.username": "user",
         "jdbc.password": "pass",
-        "jdbc.url": "jdbc:mysql://pystardog_mysql/music"
+        "mappings.syntax": "STARDOG",
+        "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?useSSL=false"
     }
     return options
 
+@pytest.fixture
+def videos_options():
+    options = {
+        "jdbc.driver": "com.mysql.jdbc.Driver",
+        "jdbc.username": "user",
+        "jdbc.password": "pass",
+        "mappings.syntax": "STARDOG",
+        "jdbc.url": "jdbc:mysql://pystardog_mysql_videos/videos?useSSL=false"
+    }
+    return options

@@ -16,9 +16,16 @@ services:
     entrypoint: /bin/bash -c
     command: ["./utils/run_tests.sh"]
     container_name: pystardog_tests
-  mysql:
+  # two mysql servers are used instead of one so we can simulate multiple datasources.
+  mysql-music:
     build:
       context: .
-      dockerfile: dockerfiles/dockerfile-mysql
-    container_name: pystardog_mysql
-
+      dockerfile: dockerfiles/dockerfile-mysql-music
+    # this value is hardcoded in conftest.py (music_options fixture), for multiple datasource / vg tests.
+    # it's also hardcoded in test/test_admin.py for testing imports.
+    container_name: pystardog_mysql_music
+  mysql-videos:
+    build:
+      context: .
+      dockerfile: dockerfiles/dockerfile-mysql-videos
+    container_name: pystardog_mysql_videos

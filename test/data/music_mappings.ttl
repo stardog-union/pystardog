@@ -1,0 +1,32 @@
+PREFIX : <http://stardog.com/tutorial/>
+PREFIX sm: <tag:stardog:api:mapping:>
+
+:Album{id} a :Album ;
+           :name "{name}" ;
+           :date "{release_date}" ;
+           :artist :Artist{artist} ;
+           sm:map [ sm:table "Album" ]  .      
+
+:Artist{id} a :SoloArtist ;
+            sm:map [ sm:query "SELECT id FROM Artist WHERE type = 1" ]  .
+            
+:Artist{id} a :Band ;
+            sm:map [ sm:query "SELECT id FROM Artist WHERE type = 2" ]  .
+  
+:Artist{id} :name "{name}" ;
+            :description "{description}"  ;
+            sm:map [ sm:table "Artist" ]  .                  
+             
+:Artist{artist} :member :Artist{band} ;
+              sm:map [ sm:table "Membership" ]  .
+
+:Song{id} a :Song ;
+           :name "{name}" ;
+           :length "{length}" ;
+           sm:map [ sm:table "Track" ]  .
+
+:Album{album} :track :Song{id} ;
+              sm:map [ sm:table "Track" ]  .
+
+:Song{song} :writer :Artist{writer} ;
+           sm:map [ sm:table "Songwriter" ]  .
