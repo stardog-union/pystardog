@@ -18,7 +18,7 @@ jobs:
       - setup_remote_docker
 
       - run:
-          name: Start container and verify it is working
+          name: Start containers and run tests
           command: |
             set -x
             docker-compose up --exit-code-from tests

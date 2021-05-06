@@ -30,25 +30,11 @@ Docs](http://pystardog.readthedocs.io) or can be built using Sphinx:
 
 ## Tests
 
-Create a virtual environment:
+To run the tests locally, a valid Stardog license is required and placed in the `dockerfiles/stardog-license-key.bin`. 
+Docker and docker-compose are also required.
 
 ```shell script
-virtualenv -p $(which python3) venv
-```
-
-Activate the virtualenv:
-
-```shell script
-$ . venv/bin/activate
-(venv) $
-```
-Install the dependencies
-```shell script
-pip install -r requirements.txt
-```
-Run the tests 
-```
-python setup.py test
+docker-compose up --exit-code-from tests
 ```
 
 ## Quick Example

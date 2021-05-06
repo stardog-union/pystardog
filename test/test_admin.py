@@ -17,6 +17,12 @@ DEFAULT_ROLES = ['reader']
 def admin(conn_string):
     with stardog.admin.Admin(**conn_string) as admin:
 
+        # IMO we should remove these. reason being, if by mistake a user decides to run this
+        # tests against their own stardog deployment, and they don't go trough the code first,
+        # they are risking dropping all databases, users, roles, and others.
+
+        # alternatively we could warn somewhere (README, when running the tests, or other places)
+        # that this are not intended to run against any other stardog deployment that is not a clean one.
         for db in admin.databases():
             db.drop()
 
@@ -30,6 +36,12 @@ def admin(conn_string):
 
         for stored_query in admin.stored_queries():
             stored_query.delete()
+
+        for vg in admin.virtual_graphs():
+            vg.delete()
+
+        for ds in admin.datasources():
+            ds.delete()
 
         yield admin
 
@@ -291,48 +303,91 @@ def test_stored_queries(admin):
     admin.clear_stored_queries()
     assert len(admin.stored_queries()) == 0
 
-@pytest.mark.skip(reason="Fix this tests, and test against a real VG: https://github.com/stardog-union/pystardog/issues/2")
-def test_virtual_graphs(admin, ds_options):
+def test_virtual_graphs(admin, music_options):
     assert len(admin.virtual_graphs()) == 0
 
+    #creating a VG using empty mappings, and specifying a datasource
+    ds = admin.new_datasource('music', music_options)
+    vg = admin.new_virtual_graph('test_vg', mappings='', datasource=ds.name)
+    vg.delete()
+    ds.delete()
+
+    # existing datasource name, plus dbname, plus empty mappings#
+    ds = admin.new_datasource('music', music_options)
+    vg = admin.new_virtual_graph('test_vg', mappings='', datasource=ds.name, db='somedb')
+    vg.delete()
+    ds.delete()
+
+    # test passing options instead of a datasource
+    vg = admin.new_virtual_graph('test_vg', mappings='', options=music_options)
+    vg.delete()
+
+
+    # specify a mappings file, and options.
+    vg = admin.new_virtual_graph('test_vg', mappings=content.File('test/data/music_mappings.ttl'), options=music_options)
+    vg.delete()
+
+    # passing options and a datasource should not conflict
+    ds = admin.new_datasource('music', music_options)
+    vg = admin.new_virtual_graph('test_vg', mappings='', options=music_options, datasource=ds.name, db='no-db')
+    vg.delete()
+    ds.delete()
+
+
+    # Testing basic errors
     vg = admin.virtual_graph('test')
 
-    # TODO add VG to test server
-    with pytest.raises(
-            exceptions.StardogException, match='java.sql.SQLException'):
-        admin.new_virtual_graph('vg', content.File('test/data/r2rml.ttl'),
-                                ds_options)
+    with pytest.raises(TypeError, match="missing 1 required positional argument: 'mappings'"):
+        admin.new_virtual_graph('test_vg', datasource='non-existent')
 
-    with pytest.raises(
-            exceptions.StardogException, match='java.sql.SQLException'):
-        vg.update('vg', content.File('test/data/r2rml.ttl'), ds_options)
+    with pytest.raises(exceptions.StardogException, match='Unable to determine data source type'):
+        admin.new_virtual_graph('vg', content.File('test/data/r2rml.ttl'))
 
-    with pytest.raises(
-            exceptions.StardogException,
-            match='Virtual Graph test Not Found!'):
+    with pytest.raises(exceptions.StardogException, match='Unable to determine data source type'):
+        vg.update('vg', content.File('test/data/r2rml.ttl'))
+
+    with pytest.raises(exceptions.StardogException, match='Virtual Graph test Not Found!'):
         vg.available()
-
-    with pytest.raises(
-            exceptions.StardogException,
-            match='Virtual Graph test Not Found!'):
         vg.options()
-
-    with pytest.raises(
-            exceptions.StardogException,
-            match='Virtual Graph test Not Found!'):
         vg.mappings()
-
-    with pytest.raises(
-            exceptions.StardogException,
-            match='Virtual Graph test Not Found!'):
         vg.delete()
 
-def test_data_source(admin, ds_options):
 
-    ds = admin.new_datasource('music', ds_options)
+def count_records(bd_name, conn_string):
+
+    with connection.Connection(bd_name, **conn_string) as conn:
+        graph_name = conn.select('select ?g { graph ?g {}}')['results']['bindings'][0]['g']['value']
+        q = conn.select('SELECT * { GRAPH <' + graph_name + '> { ?s ?p ?o }}')
+        count = len(q['results']['bindings'])
+    return count
+
+
+def test_import(admin, conn_string, music_options, videos_options):
+
+    bd = admin.new_database('test-db')
+    graph_name = 'test-graph'
+
+    # tests passing mappings
+    admin.import_virtual_graph('test-db', mappings=content.File('test/data/music_mappings.ttl'), named_graph=graph_name, remove_all=True, options=music_options)
+    # specified mapping file generates a graph with total of 37 triples
+    assert 37 == count_records(bd.name, conn_string)
+
+    # tests passing empty mappings
+    admin.import_virtual_graph('test-db', mappings='', named_graph=graph_name, remove_all=True, options=music_options)
+    # if mapping is not specified, music bd generates a graph with 79 triples
+    assert 79 == count_records(bd.name, conn_string)
+
+    # test removing_all false, it should return  music records + video records.
+    admin.import_virtual_graph('test-db', mappings='', named_graph=graph_name, remove_all=False, options=videos_options)
+    # if no mapping is specified, videos db generates a graph with 800 triples. adding un-mapped music sums up to 879.
+    assert 879 == count_records(bd.name, conn_string)
+
+def test_data_source(admin, music_options):
+
+    ds = admin.new_datasource('music', music_options)
     assert len(admin.datasources()) == 1
     assert ds.name == 'music'
-    assert ds.get_options() == ds_options
+    assert ds.get_options() == music_options
     ds.delete()
     assert len(admin.datasources()) == 0
 

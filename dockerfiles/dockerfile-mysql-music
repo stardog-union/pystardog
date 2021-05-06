@@ -1,6 +1,6 @@
 FROM mysql:8.0.3
 
-RUN apt-get update && apt-get install -y vim nano
+# RUN apt-get update && apt-get install -y vim nano
 
 COPY ./test/data/beatles.sql /docker-entrypoint-initdb.d/2-beatles.sql
 COPY ./test/data/music_schema.sql /docker-entrypoint-initdb.d/1-music_schema.sql
