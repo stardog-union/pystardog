@@ -564,6 +564,11 @@ class Database(object):
         """
         self.client.put(self.path + '/optimize')
 
+    def verify(self):
+        """verifies a database.
+        """
+        self.client.post(self.path + '/verify')
+
     def repair(self):
         """Repairs a database.
 
