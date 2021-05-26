@@ -75,6 +75,9 @@ def test_databases(admin, conn_string):
     # optimize
     db.optimize()
 
+    # verify
+    db.verify()
+
     # repair
     db.offline()
     db.repair()
