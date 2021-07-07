@@ -59,6 +59,16 @@ class Connection(object):
         """
         return GraphQL(self)
 
+    #TODO
+    # def list(self):
+    #     """
+    #     List all open transactions on a database
+    #     https://stardog-union.github.io/http-docs/#operation/listTransactions
+    #     :return:
+    #     """
+
+    # TODO: Begin a transaction that takes a specific txid (the docs specify /begin and /begin/{txid}, I am not sure if this supports the latter)
+    #   Maybe this already supports it, or we might need to create another method
     def begin(self, **kwargs):
         """Begins a transaction.
 
@@ -191,6 +201,14 @@ class Connection(object):
         """
         r = self.client.get('/size', params={'exact': exact})
         return int(r.text)
+
+    #TODO: This could be part of dbms-admin (hence moved into admin.py) or here.
+    # def model(self):
+    #     """
+    #     Generate the reasoning model used by this database in various formats
+    #     https://stardog-union.github.io/http-docs/#operation/generateModel
+    #     :return:
+    #     """
 
     def export(self,
                content_type=content_types.TURTLE,
@@ -541,6 +559,14 @@ class Docs(object):
         """Removes all documents from the store.
         """
         self.client.delete('/docs')
+
+    #TODO
+    # def reindex(self):
+    #     """
+    #     Reindex document store
+    #     https://stardog-union.github.io/http-docs/#operation/reindex
+    #     :return:
+    #     """
 
     def get(self, name, stream=False, chunk_size=10240):
         """Gets a document from the store.

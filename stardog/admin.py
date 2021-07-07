@@ -43,6 +43,38 @@ class Admin(object):
         """
         self.client.post('/admin/shutdown')
 
+    #TODO
+    # def alive(self):
+    #     """
+    #     Determine whether the server is running
+    #     https://stardog-union.github.io/http-docs/#operation/aliveCheck
+    #     :return:
+    #     """
+
+    #TODO:
+    # def healthcheck(self):
+    #     """
+    #     Determine whether the server is running and able to accept traffic
+    #     https://stardog-union.github.io/http-docs/#operation/healthCheck
+    #     :return:
+    #     """
+
+    #TODO
+    # def get_prometheus_metrics(self):
+    #     """
+    #     Return metric information from the registry in Prometheus format
+    #     https://stardog-union.github.io/http-docs/#operation/prometheus
+    #     :return:
+    #     """
+
+    #TODO
+    # def get_server_metrics(self):
+    #     """
+    #     Return metric information from the registry in JSON format
+    #     https://stardog-union.github.io/http-docs/#operation/status
+    #     :return:
+    #     """
+
     def database(self, name):
         """Retrieves an object representing a database.
 
@@ -153,6 +185,73 @@ class Admin(object):
 
         self.client.put('/admin/restore', params=params)
 
+    #TODO:
+    # def backup_all(self):
+    #     """
+    #     Create a backup of all databases on the server
+    #     https://stardog-union.github.io/http-docs/#operation/backupAll
+    #     :return:
+    #     """
+
+    #TODO
+    # def restore_all(self):
+    #     """
+    #     Restore multiple databases from backup
+    #     https://stardog-union.github.io/http-docs/#operation/restoreAll
+    #     :return:
+    #     """
+
+    #TODO
+    # def get_all_metadata_options(self):
+    #     """
+    #     Get information on all database metadata properties, including description and example values
+    #     https://stardog-union.github.io/http-docs/#operation/getAllMetaProperties
+    #     :return:
+    #     """
+
+    #TODO
+    # def get_namespaces(self):
+    #     """
+    #     Retrieve the namespaces stored in the database
+    #     https://stardog-union.github.io/http-docs/#operation/getNamespaces
+    #     :return:
+    #     """
+
+    #TODO
+    # def import_namespaces(self):
+    #     """
+    #     Add namespaces to the database via a block or blocks of RDF that declares them
+    #     https://stardog-union.github.io/http-docs/#operation/importNamespaces
+    #     :return:
+    #     """
+
+    #TODO: These are not documented in the API docs, but they are listed in the ./stardog cli
+    # def add_namespace(self):
+    #     """
+    #     The following is coming from the ./stardog cli help, and not from the api docs
+    #             stardog namespace add - Adds a new namespace prefix in the database,
+    #     overriding any previous mapping for the prefix.
+    #     :return:
+    #     """
+
+    #TODO: These are not documented in the API docs, but they are listed in the ./stardog cli
+    # def export_namespace(self):
+    #     """
+    #     The following is coming from the ./stardog cli help, and not from the api docs
+    #             stardog namespace export - Exports the namespace prefixes stored in a
+    #     database in Turtle or SPARQL format.
+    #     """
+
+    #TODO: These are not documented in the API docs, but they are listed in the ./stardog cli
+    # We might need to initialize a new namespace as a class, and implement a delete method from there. Need to decide when the time comes
+    # def delete_namespace(self):
+    #     """
+    #     The following is coming from the ./stardog cli help, and not from the api docs
+    #             stardog namespace remove - Removes an existing namespace prefix from a
+    #     database.
+    #     :return:
+    #     """
+
     def query(self, id):
         """Gets information about a running query.
 
@@ -234,10 +333,52 @@ class Admin(object):
         self.client.post('/admin/queries/stored', json=meta)
         return StoredQuery(name, self.client)
 
+    #TODO
+    # def update_stored_query(self):
+    #     """
+    #     Add stored query, overwriting if a query with that name already exists
+    #     https://stardog-union.github.io/http-docs/#operation/updateStoredQuery
+    #     :return:
+    #     """
+
     def clear_stored_queries(self):
         """Remove all stored queries on the server.
         """
         self.client.delete('/admin/queries/stored')
+
+
+    #TODO
+    # def new_stored_function(self):
+    #     """
+    #     Adds Stored Function
+    #     https://stardog-union.github.io/http-docs/#operation/addStoredFunction
+    #     :return:
+    #     """
+
+    #TODO
+    # def stored_function(self):
+    #     """
+    #     Get Stored function
+    #     https://stardog-union.github.io/http-docs/#operation/getStoredFunction
+    #     :return:
+    #     """
+
+    #TODO
+    # def stored_functions(self):
+    #     """
+    #     Retrieve all stored functions on the server, or optionally just the function specified in the query string parameter
+    #     https://stardog-union.github.io/http-docs/#operation/exportStoredFunctions
+    #     :return:
+    #     """
+
+    #TODO: Note this can delete all, or a specific stored function passed as a paramter.
+    #  We might need to discuss if we are going to support both methods separatly, or depending if no param is passed, then delete all stored functions.
+    # def delete_stored_functions(self):
+    #     """
+    #     Delete all stored functions on the server, or optionally just the function specified in the query string parameter
+    #     https://stardog-union.github.io/http-docs/#operation/deleteStoredFunction
+    #     :return:
+    #     """
 
     def user(self, name):
         """Retrieves an object representing a user.
@@ -334,6 +475,15 @@ class Admin(object):
         virtual_graphs = r.json()['virtual_graphs']
         return list(map(lambda name: VirtualGraph(name, self.client), virtual_graphs))
 
+    #TODO
+    # def virtual_graphs_info(self):
+    #     """
+    #     List Virtual Graphs Info
+    #     https://stardog-union.github.io/http-docs/#operation/virtualGraphInfos
+    #
+    #     :return:
+    #     """
+
 
     def import_virtual_graph(self, db, mappings, named_graph, remove_all, options):
         """Import (materialize) a virtual graph directly into the local knowledge graph.
@@ -405,6 +555,15 @@ class Admin(object):
         self.client.post('/admin/virtual_graphs', json=meta)
         return VirtualGraph(name, self.client)
 
+    #TODO
+    # def virtual_graph_import_file(self):
+    #     """
+    #     Import a CSV or JSON file as a virtual graph into the knowledge graph.
+    #     https://stardog-union.github.io/http-docs/#operation/importFileVG
+    #     :return:
+    #     """
+    #     return
+
     def datasource(self, name):
         """Retrieves an object representing a DataSource.
 
@@ -458,6 +617,30 @@ class Admin(object):
         self.client.post('/admin/data_sources', json=meta)
         return self.datasource(name)
 
+    #TODO: currently on PR: https://github.com/stardog-union/pystardog/pull/37/files
+    # def cache(self):
+
+    #TODO
+    # def cache_status(self):
+
+    #TODO
+    # def cached_queries(self):
+
+    #TODO
+    # def cached_graphs(self):
+
+    #TODO
+    # def new_cached_query(self):
+
+    #TODO
+    # def new_cached_grapgh(self):
+
+    #TODO
+    # def cache_targets(self):
+
+    #TODO
+    # def new_cache_target(self):
+
     def get_server_properties(self):
         """Get the value of any set server-level properties
 
@@ -468,6 +651,14 @@ class Admin(object):
         r = self.client.get('/admin/properties')
         return r.json()
 
+    #TODO
+    # def set_server_properties(self):
+    #     """
+    #     Set the value of specific server properties
+    #     https://stardog-union.github.io/http-docs/#operation/setProperty
+    #     :return:
+    #     """
+
     def validate(self):
         """Validates an admin connection.
 
@@ -475,6 +666,62 @@ class Admin(object):
           bool: The connection state
         """
         self.client.get('/admin/users/valid')
+
+    #TODO
+    # def cluster_list_standby_nodes(self):
+    #     """
+    #     List standby nodes
+    #     https://stardog-union.github.io/http-docs/#operation/getStandbyNodes
+    #     :return:
+    #     """
+
+    #TODO
+    # def cluster_join(self):
+    #     """
+    #     Instruct a standby node to join its cluster as a full node
+    #     https://stardog-union.github.io/http-docs/#operation/standbyJoin
+    #     :return:
+    #     """
+
+    #TODO
+    # def cluster_node_pause_status(self):
+    #     """
+    #     Get the pause status of a standby node
+    #     https://stardog-union.github.io/http-docs/#operation/getPauseState
+    #     :return:
+    #     """
+
+    #TODO
+    # def cluster_node_pause(self):
+    #     """
+    #     Pause/Unpause standby node
+    #     https://stardog-union.github.io/http-docs/#operation/standbyPause
+    #     :return:
+    #     """
+
+    #TODO
+    # def cluster_revoke_standby_access(self):
+    #     """
+    #     Instruct a standby node to leave its cluster
+    #     https://stardog-union.github.io/http-docs/#operation/standbyRevokeAccess
+    #     :return:
+    #     """
+
+    #TODO
+    # def cluster_coordinator_check(self):
+    #     """
+    #     Determine if a specific cluster node is the cluster coordinator
+    #     https://stardog-union.github.io/http-docs/#operation/isCoordinator
+    #     :return:
+    #     """
+
+    #TODO
+    # def cluster_diagnostics_report(self):
+    #     """
+    #     Get cluster diagnostics report
+    #     https://stardog-union.github.io/http-docs/#operation/generateClusterDiagnosticsReport
+    #     :return:
+    #     """
 
     def cluster_status(self):
         """Prints status information for each node
@@ -495,6 +742,15 @@ class Admin(object):
         """
         r = self.client.get('/admin/cluster')
         return r.json()
+
+    #TODO
+    # def cluster_shutdown(self):
+    #     """
+    #     Shutdown all nodes
+    #    https://stardog-union.github.io/http-docs/#operation/shutdownAll
+    #     :return:
+    #     """
+
 
     def __enter__(self):
         return self
@@ -565,14 +821,14 @@ class Database(object):
         self.client.put(self.path + '/optimize')
 
     def repair(self):
-        """Repairs a database.
+        """Attempt to recover a corrupted database.
 
         The database must be offline.
         """
         self.client.post(self.path + '/repair')
 
     def backup(self, *, to=None):
-        """Backup a database.
+        """Create a backup of a database on the server.
 
         Args:
           to (string, optional): specify a path on the server to store
@@ -612,6 +868,9 @@ class Database(object):
         """Drops the database.
         """
         self.client.delete(self.path)
+
+    # TODO: we MIght not need to initialize a namepsace after all, and we could move all the namespace methods here
+    #   as they require the dbname as param.
 
     def __repr__(self):
         return self.name
@@ -1092,6 +1351,8 @@ class VirtualGraph(object):
         r = self.client.get(self.path + '/database')
         return r.text
 
+    # Should test this. The docs state the path is /mappingsString, but this one goes to /mappings.
+    # Either the docs, or this implementation is wrong.
     def mappings(self, content_type=content_types.TURTLE):
         """Gets the Virtual Graph mappings.
 
@@ -1114,6 +1375,15 @@ class VirtualGraph(object):
         """
         r = self.client.get(self.path + '/available')
         return bool(r.json()['available'])
+
+    #TODO
+    # def online(self):
+    #     """
+    #     Online virtual graph
+    #     https://stardog-union.github.io/http-docs/#operation/onlineVG
+    #     :return:
+    #     """
+
 
     def __repr__(self):
         return self.name
@@ -1221,3 +1491,40 @@ class DataSource(object):
 
     def __repr__(self):
         return self.name
+
+#TODO
+# We could get rid of this class, and the delete method here as admin.delete_stored_functions() can take a single stored function
+# and mimic this behaviour. This is intentionally put here in case more methods are added to StoredFunctions
+# in the future.
+# class StoredFunction(object):
+#     def init(self):
+#         """
+#         Initializes an StoredFunction
+#         :return:
+#         """
+#     def delete(self):
+#         """
+#         Delete the stored function specified in the query string parameter
+#         https://stardog-union.github.io/http-docs/#operation/deleteStoredFunctionNamed
+#         :return:
+#        """
+
+#TODO: Currently on PR: https://github.com/stardog-union/pystardog/pull/37/files
+# class Cache(object):
+#     def __init__(self):
+#     def drop(self):
+#     def refresh(self):
+#     def status(self):
+
+#TODO: Currently on PR: https://github.com/stardog-union/pystardog/pull/37/files
+# class CacheTarget(object):
+#     def __init__(self):
+#     def __refresh(self):
+#     def name(self):
+#     def hostname(self):
+#     def port(self):
+#     def username(self):
+#     def password(self):
+#     def orphan(self):
+#     def remove(self):
+
