@@ -456,7 +456,7 @@ class Admin(object):
         }
 
         self.client.post('/admin/data_sources', json=meta)
-        return self.datasource(name)
+        return DataSource(name, self.client)
 
     def get_server_properties(self):
         """Get the value of any set server-level properties
@@ -577,7 +577,7 @@ class Admin(object):
             map(lambda target: CacheTarget(target['name'], self.client), r.json())
         )
 
-    def new_cache_target(self, name, hostname, port, username, password):
+    def new_cache_target(self, name, hostname, port, username, password, use_existing_db=False, register_only=False):
         """Creates a new cache target.
 
         Args:
@@ -586,6 +586,8 @@ class Admin(object):
           port (int): The port of the cache target server
           username (int): The username for the cache target
           password (int): The password for the cache target
+          use_existing_db (bool): If true, check for an existing cache database to use before creating a new one
+          register_only (bool): If true, register a cached dataset without loading data for cache targets with existing cache databases
 
         Returns:
           CacheTarget: The new CacheTarget
@@ -596,7 +598,8 @@ class Admin(object):
             'port': port,
             'username': username,
             'password': password,
-            'useExistingDb': False
+            'useExistingDb': use_existing_db,
+            'registerOnly': register_only
         }
         self.client.post('/admin/cache/target', json=params)
         return CacheTarget(name, self.client)
@@ -1404,7 +1407,7 @@ class CacheTarget(object):
         self.details = {}
         self.refresh = self.__refresh()
 
-    def __refresh():
+    def __refresh(self):
         target = []
         r = self.client.get('/admin/cache/target')
         self.targets = r.json()

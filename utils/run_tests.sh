@@ -26,5 +26,7 @@ function wait_for_start {
 }
 
 # depends_on in compose is not enough
-wait_for_start pystardog_stardog 5820
-pytest --endpoint http://pystardog_stardog:5820
+
+# Might need to add a lb, so we hit that instead of a specific node.
+wait_for_start pystardog_stardog_1 5820
+pytest --endpoint http://stardog1:5820

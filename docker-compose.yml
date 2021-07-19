@@ -2,20 +2,114 @@
 # https://support.circleci.com/hc/en-us/articles/360007324514-How-can-I-use-Docker-volume-mounting-on-CircleCI-
 # For this reason, we are creating specific dockerfiles, and building the images from them, copying the files in the images
 # instead of mounting them.
+
+
 version: "3.3"
 services:
-  stardog:
+  zoo1:
+      image: zookeeper:${ZOO_TAG}
+      hostname: zoo1
+      container_name: zkn1
+      environment:
+          ZOO_MY_ID: 1
+          ZOO_SERVERS: server.1=0.0.0.0:2888:3888 server.2=zoo2:2888:3888 server.3=zoo3:2888:3888
+
+  zoo2:
+      image: zookeeper:${ZOO_TAG}
+      hostname: zoo2
+      container_name: zkn2
+      environment:
+          ZOO_MY_ID: 2
+          ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=0.0.0.0:2888:3888 server.3=zoo3:2888:3888
+
+  zoo3:
+      image: zookeeper:${ZOO_TAG}
+      hostname: zoo3
+      container_name: zkn3
+      environment:
+          ZOO_MY_ID: 3
+          ZOO_SERVERS: server.1=zoo1:2888:3888 server.2=zoo2:2888:3888 server.3=0.0.0.0:2888:3888
+
+  sd1:
     build:
       context: dockerfiles/
       dockerfile: dockerfile-stardog
-    container_name: pystardog_stardog
+      args:
+          - TAG=${STARDOG_TAG}
+          - NODE_TYPE=node
+    container_name: pystardog_stardog_1
+    hostname: stardog1
+    user: root
+    depends_on: # This will not wait for container finish, only start (https://docs.docker.com/compose/startup-order/)
+      - zoo1
+      - zoo2
+      - zoo3
+
+  sd2:
+    build:
+      context: dockerfiles/
+      dockerfile: dockerfile-stardog
+      args:
+          - TAG=${STARDOG_TAG}
+          - NODE_TYPE=node
+    container_name: pystardog_stardog_2
+    hostname: stardog2
+    depends_on: # This will not wait for container finish, only start (https://docs.docker.com/compose/startup-order/)
+      - zoo1
+      - zoo2
+      - zoo3
+
+  sd3:
+    build:
+      context: dockerfiles/
+      dockerfile: dockerfile-stardog
+      args:
+          - TAG=${STARDOG_TAG}
+          - NODE_TYPE=node
+    container_name: pystardog_stardog_3
+    hostname: stardog3
+    depends_on: # This will not wait for container finish, only start (https://docs.docker.com/compose/startup-order/)
+      - zoo1
+      - zoo2
+      - zoo3
+
+  sdcache1:
+    build:
+      context: dockerfiles/
+      dockerfile: dockerfile-stardog
+      args:
+          - TAG=${STARDOG_TAG}
+          - NODE_TYPE=cache
+    container_name: pystardog_cache_1
+    hostname: cache1
+    depends_on: # This will not wait for container finish, only start (https://docs.docker.com/compose/startup-order/)
+      - zoo1
+      - zoo2
+      - zoo3
+
+  sdcache2:
+    build:
+      context: dockerfiles/
+      dockerfile: dockerfile-stardog
+      args:
+          - TAG=${STARDOG_TAG}
+          - NODE_TYPE=cache
+    container_name: pystardog_cache_2
+    hostname: cache2
+    depends_on: # This will not wait for container finish, only start (https://docs.docker.com/compose/startup-order/)
+      - zoo1
+      - zoo2
+      - zoo3
+
   tests:
     build:
       context: .
       dockerfile: dockerfiles/dockerfile-python
     entrypoint: /bin/bash -c
-    command: ["./utils/run_tests.sh"]
+    command: ["tail -f /dev/null"]
+    # command: ["./utils/run_tests.sh"]
     container_name: pystardog_tests
+
   # two mysql servers are used instead of one so we can simulate multiple datasources.
   mysql-music:
     build:
@@ -24,6 +118,7 @@ services:
     # this value is hardcoded in conftest.py (music_options fixture), for multiple datasource / vg tests.
     # it's also hardcoded in test/test_admin.py for testing imports.
     container_name: pystardog_mysql_music
+
   mysql-videos:
     build:
       context: .

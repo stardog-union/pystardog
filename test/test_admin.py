@@ -43,6 +43,9 @@ def admin(conn_string):
         for ds in admin.datasources():
             ds.delete()
 
+        for cache in admin.cache_targets():
+            cache.remove()
+
         yield admin
 
 
@@ -393,6 +396,67 @@ def test_data_source(admin, music_options):
     assert ds.get_options() == music_options
     ds.delete()
     assert len(admin.datasources()) == 0
+
+# We should work on make this so that specific hostname can be passed, as right now this is too coupled to docker-compose
+def test_cache_targets(admin):
+
+    name = 'pystardog-test-cache-target'
+    # hardcoded in docker-compose
+    hostname = 'cache1'
+    port = 5820
+    username = 'admin'
+    password = 'admin'
+
+    print(admin.cache_targets())
+
+    cache_targets = admin.cache_targets()
+    assert len(cache_targets) == 0
+
+    cache_target = admin.new_cache_target(name, hostname, port, username, password)
+    cache_targets = admin.cache_targets()
+    assert len(cache_targets) == 1
+
+    assert cache_target.name == name
+    assert cache_target.hostname == hostname
+    assert cache_target.port == port
+    assert cache_target.username == username
+
+
+    # tests orphan
+    cache_target.orphan()
+    cache_targets = admin.cache_targets()
+    assert len(cache_targets) == 0
+
+    cache_target = admin.new_cache_target(name, hostname, port, username, password, use_existing_db=True)
+    cache_targets = admin.cache_targets()
+    assert len(cache_targets) == 1
+    cache_target.remove()
+
+    # tests remove
+    cache_target = admin.new_cache_target(name, hostname, port, username, password)
+    cache_target.remove()
+    cache_targets = admin.cache_targets()
+    assert len(cache_targets) == 0
+
+
+def test_cache_datasets(admin):
+
+    # maybe create a fixture, or add both to the same test? fixture sounds more appropiate.
+    name = 'pystardog-test-cache-target'
+    # hardcoded in docker-compose
+    hostname = 'cache1'
+    port = 5820
+    username = 'admin'
+    password = 'admin'
+
+    # will use later
+    cache_target = admin.new_cache_target(name, hostname, port, username, password)
+
+
+    print(admin.cached_graphs())
+    print(admin.cached_queries())
+    print(admin.cache_status())
+
 
 
 
