@@ -5,7 +5,7 @@ with open("README.md", "r") as fh:
 
 setuptools.setup(
     name="pystardog",
-    version="0.9.9",
+    version="0.9.10",
     author="Stardog Union",
     author_email="support@stardog.com",
     description="Use Stardog with Python!",
