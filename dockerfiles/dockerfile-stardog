@@ -9,6 +9,8 @@ RUN wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-${
 
 FROM stardog/stardog
 
+ARG NODE_TYPE
+
 COPY --from=base /tmp/mysql-connector-java.jar opt/stardog/server/dbms
 COPY stardog-license-key.bin /var/opt/stardog
 

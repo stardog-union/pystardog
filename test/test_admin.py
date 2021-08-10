@@ -1,12 +1,11 @@
 import pytest
 import datetime
 import os
-
+from time import sleep
 
 import stardog.admin
 import stardog.connection as connection
 import stardog.content as content
-import stardog.content_types as content_types
 import stardog.exceptions as exceptions
 
 DEFAULT_USERS = ['admin', 'anonymous']
@@ -23,30 +22,37 @@ def admin(conn_string):
 
         # alternatively we could warn somewhere (README, when running the tests, or other places)
         # that this are not intended to run against any other stardog deployment that is not a clean one.
-        for db in admin.databases():
-            db.drop()
+        databases = admin.databases()
+        if databases:
+            for db in admin.databases():
+                db.drop()
 
-        for user in admin.users():
-            if user.name not in DEFAULT_USERS:
-                user.delete()
+        users = admin.users()
+        if users:
+            for user in users:
+                if user.name not in DEFAULT_USERS:
+                    user.delete()
 
-        for role in admin.roles():
-            if role.name not in DEFAULT_ROLES:
-                role.delete()
+        roles = admin.roles()
+        if roles:
+            for role in roles:
+                if role.name not in DEFAULT_ROLES:
+                    role.delete()
 
-        for stored_query in admin.stored_queries():
-            stored_query.delete()
+        stored_queries = admin.stored_queries()
+        if stored_queries:
+            for stored_query in stored_queries:
+                stored_query.delete()
 
-        for vg in admin.virtual_graphs():
-            vg.delete()
-
-        for ds in admin.datasources():
-            ds.delete()
+        cache_targets = admin.cache_targets()
+        if cache_targets :
+            for cache in cache_targets:
+                cache.remove()
 
         yield admin
 
 
-def test_databases(admin, conn_string):
+def test_databases(admin, conn_string, bulkload_content):
     assert len(admin.databases()) == 0
 
     # create database
@@ -83,18 +89,8 @@ def test_databases(admin, conn_string):
     db.repair()
     db.online()
 
-    # bulk load
-    contents = [
-        content.Raw(
-            '<urn:subj> <urn:pred> <urn:obj3> .',
-            content_types.TURTLE,
-            name='bulkload.ttl'),
-        (content.File('test/data/example.ttl.zip'), 'urn:context'),
-        content.URL('https://www.w3.org/2000/10/rdf-tests/'
-                    'RDF-Model-Syntax_1.0/ms_4.1_1.rdf')
-    ]
 
-    bl = admin.new_database('bulkload', {}, *contents)
+    bl = admin.new_database('bulkload', {}, *bulkload_content)
 
     with connection.Connection(
             'bulkload', **conn_string) as c:
@@ -395,5 +391,181 @@ def test_data_source(admin, music_options):
     assert len(admin.datasources()) == 0
 
 
+def wait_for_cleaning_cache_target(admin, cache_target_name):
+    retries = 0
+    while True:
+        cache_targets = admin.cache_targets()
+        cache_target_names = [cache_target.name for cache_target in cache_targets]
+        if cache_target_name in cache_target_names:
+            retries += 1
+            sleep(1)
+            if retries >= 20:
+                raise Exception("Took too long to remove cache target: " + cache_target_name)
+        else:
+            return
+
+def wait_for_creating_cache_target(admin, cache_target_name):
+    retries = 0
+    while True:
+        cache_targets = admin.cache_targets()
+        cache_target_names = [cache_target.name  for cache_target in cache_targets]
+        if cache_target_name not in cache_target_names:
+            retries += 1
+            sleep(1)
+            if retries >= 20:
+                raise Exception("Took too long to register cache target: " + cache_target_name)
+        else:
+            return
 
 
+def test_cache_targets(admin, cache_target_info):
+
+    cache_target_name = cache_target_info['target_name']
+    cache_target_hostname = cache_target_info['hostname']
+    cache_target_port = cache_target_info['port']
+    cache_target_username = cache_target_info['username']
+    cache_target_password = cache_target_info['password']
+
+    cache_targets = admin.cache_targets()
+    assert len(cache_targets) == 0
+
+    cache_target = admin.new_cache_target(cache_target_name, cache_target_hostname, cache_target_port, cache_target_username, cache_target_password)
+    wait_for_creating_cache_target(admin, cache_target_name)
+    cache_targets = admin.cache_targets()
+    assert len(cache_targets) == 1
+
+    assert cache_target.info()['name'] == cache_target_name
+    assert cache_target.info()['port'] == cache_target_port
+    assert cache_target.info()['hostname'] == cache_target_hostname
+    assert cache_target.info()['username'] == cache_target_username
+
+
+    # test remove()
+    cache_target.remove()
+    wait_for_cleaning_cache_target(admin, cache_target.name)
+    cache_targets = admin.cache_targets()
+    assert len(cache_targets) == 0
+
+
+    # tests orphan
+    cache_target = admin.new_cache_target(cache_target_name, cache_target_hostname, cache_target_port, cache_target_username, cache_target_password)
+    wait_for_creating_cache_target(admin, cache_target_name)
+    cache_target.orphan()
+    wait_for_cleaning_cache_target(admin, cache_target.name)
+    cache_targets = admin.cache_targets()
+    assert len(cache_targets) == 0
+    # recall that removing a cache is an idempotent operation, and will always (unless it fails)
+    # return that cache target was removed, even if it doesn't exists in the first place
+    # Removing a an orphaned cache target will not delete the data, because the target is already orphaned
+    # We need to recreate the orphaned cached target (using use_existing_db) in order to fully delete its data
+    cache_target = admin.new_cache_target(cache_target_name, cache_target_hostname, cache_target_port, cache_target_username, cache_target_password, use_existing_db=True)
+    wait_for_creating_cache_target(admin, cache_target_name)
+    cache_target.remove()
+
+def test_cache_ng_datasets(admin, bulkload_content, cache_target_info):
+
+    cache_target_name = cache_target_info['target_name']
+    cache_target_hostname = cache_target_info['hostname']
+    cache_target_port = cache_target_info['port']
+    cache_target_username = cache_target_info['username']
+    cache_target_password = cache_target_info['password']
+
+    cache_target = admin.new_cache_target(cache_target_name, cache_target_hostname, cache_target_port, cache_target_username, cache_target_password)
+    wait_for_creating_cache_target(admin, cache_target_name)
+
+    bl = admin.new_database('bulkload', {}, *bulkload_content)
+
+    assert len(admin.cached_graphs()) == 0
+    cached_graph_name = 'cache://cached-ng'
+    cached_graph = admin.new_cached_graph(cached_graph_name, cache_target.name, 'urn:context', bl.name)
+
+    assert len(admin.cached_graphs()) == 1
+
+    cached_graph_status = cached_graph.status()
+    assert cached_graph_status[0]['name'] == cached_graph_name
+    assert cached_graph_status[0]['target'] == cache_target.name
+    cached_graph.refresh()
+    cached_graph.drop()
+    assert len(admin.cached_queries()) == 0
+
+
+
+def test_cache_vg_datasets(admin, music_options, cache_target_info):
+
+    cache_target_name = cache_target_info['target_name']
+    cache_target_hostname = cache_target_info['hostname']
+    cache_target_port = cache_target_info['port']
+    cache_target_username = cache_target_info['username']
+    cache_target_password = cache_target_info['password']
+
+    #creating a VG using empty mappings, and specifying a datasource
+    ds = admin.new_datasource('music', music_options)
+    admin.new_virtual_graph('test_vg', mappings='', datasource=ds.name)
+
+    cache_target = admin.new_cache_target(cache_target_name, cache_target_hostname, cache_target_port, cache_target_username, cache_target_password)
+    wait_for_creating_cache_target(admin, cache_target_name)
+    # We need to register the VG into the cache target as well.
+
+    conn_string_cache = {
+        'endpoint': 'http://' +  cache_target_hostname + ':5820',
+        'username': 'admin',
+        'password': 'admin'
+    }
+
+    with stardog.admin.Admin(**conn_string_cache) as admin_cache_target:
+        ds = admin_cache_target.new_datasource('music', music_options)
+        vg = admin_cache_target.new_virtual_graph('test_vg', mappings='', datasource=ds.name)
+
+    assert len(admin.cached_graphs()) == 0
+
+
+    cached_graph_name = 'cache://cached-vg'
+    cached_graph = admin.new_cached_graph(cached_graph_name, cache_target.name, 'virtual://' + vg.name)
+
+    assert len(admin.cached_graphs()) == 1
+
+    cached_graph_status = cached_graph.status()
+    assert cached_graph_status[0]['name'] == cached_graph_name
+    assert cached_graph_status[0]['target'] == cache_target.name
+    cached_graph.refresh()
+    cached_graph.drop()
+    assert len(admin.cached_queries()) == 0
+
+    cache_target.remove()
+    wait_for_cleaning_cache_target(admin, cache_target.name)
+
+    vg.delete()
+    ds.delete()
+
+def test_cache_query_datasets(admin, bulkload_content, cache_target_info):
+
+    cache_target_name = cache_target_info['target_name']
+    cache_target_hostname = cache_target_info['hostname']
+    cache_target_port = cache_target_info['port']
+    cache_target_username = cache_target_info['username']
+    cache_target_password = cache_target_info['password']
+
+    cache_target = admin.new_cache_target(cache_target_name, cache_target_hostname, cache_target_port, cache_target_username, cache_target_password)
+    wait_for_creating_cache_target(admin, cache_target_name)
+
+    bl = admin.new_database('bulkload', {}, *bulkload_content)
+
+    assert len(admin.cached_queries()) == 0
+
+    cached_query_name = 'cache://my_new_query_cached'
+
+    cached_query = admin.new_cached_query(cached_query_name, cache_target.name,  'SELECT * { ?s ?p ?o }', bl.name)
+    #wait_for_creating_cache_dataset(admin, cached_query_name, 'query')
+
+    assert len(admin.cached_queries()) == 1
+
+    cached_query_status = cached_query.status()
+    assert cached_query_status[0]['name'] == cached_query_name
+    assert cached_query_status[0]['target'] ==cache_target.name
+    cached_query.refresh()
+    cached_query.drop()
+    assert len(admin.cached_queries()) == 0
+
+
+    cache_target.remove()
+    wait_for_cleaning_cache_target(admin, cache_target.name)
