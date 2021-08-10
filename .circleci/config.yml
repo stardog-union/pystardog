@@ -7,9 +7,9 @@ jobs:
       - checkout
       - run:
           name: Install debugging utils
-          command:
-            sudo apt-get update -y &&
-            sudo apt-get install -y vim nano
+          command: |
+            sudo apt-get update -y
+
       - run:
           name: Pull license
           command: |
@@ -19,6 +19,7 @@ jobs:
 
       - run:
           name: Start containers and run tests
+          no_output_timeout: 10m
           command: |
             set -x
             docker-compose up --exit-code-from tests

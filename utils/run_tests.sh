@@ -11,6 +11,7 @@ function wait_for_start {
     while [[ ${RC} -ne 0 ]];
     do
       if [[ ${COUNT} -gt 50 ]]; then
+          echo "Failed to start Stardog cluster on time"
           return 1;
       fi
       COUNT=$(expr 1 + ${COUNT} )
@@ -25,6 +26,6 @@ function wait_for_start {
     )
 }
 
-# depends_on in compose is not enough
-wait_for_start pystardog_stardog 5820
-pytest --endpoint http://pystardog_stardog:5820
+wait_for_start pystardog_stardog_1 5820
+pytest --endpoint http://pystardog_stardog_1:5820
+

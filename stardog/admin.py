@@ -3,6 +3,9 @@
 
 import json
 import contextlib2
+import urllib
+
+from time import sleep
 
 from . import content_types as content_types
 from .http import client
@@ -615,31 +618,7 @@ class Admin(object):
         }
 
         self.client.post('/admin/data_sources', json=meta)
-        return self.datasource(name)
-
-    #TODO: currently on PR: https://github.com/stardog-union/pystardog/pull/37/files
-    # def cache(self):
-
-    #TODO
-    # def cache_status(self):
-
-    #TODO
-    # def cached_queries(self):
-
-    #TODO
-    # def cached_graphs(self):
-
-    #TODO
-    # def new_cached_query(self):
-
-    #TODO
-    # def new_cached_grapgh(self):
-
-    #TODO
-    # def cache_targets(self):
-
-    #TODO
-    # def new_cache_target(self):
+        return DataSource(name, self.client)
 
     def get_server_properties(self):
         """Get the value of any set server-level properties
@@ -743,6 +722,7 @@ class Admin(object):
         r = self.client.get('/admin/cluster')
         return r.json()
 
+
     #TODO
     # def cluster_shutdown(self):
     #     """
@@ -751,6 +731,153 @@ class Admin(object):
     #     :return:
     #     """
 
+
+    def cache(self, name):
+        """Retrieve an object representing a cached dataset.
+
+        Returns:
+          Cache: The requested cache
+        """
+        return Cache(name, self.client)
+
+    def cache_status(self, *names):
+        """Retrieves the status of one or more cached graphs or queries.
+
+        Args:
+          *names: (str): Names of the cached graphs or queries
+        Returns:
+          list[str]: List of statuses
+        """
+        return self.client.post('/admin/cache/status', json=names).json()
+
+    def cached_queries(self):
+        """Retrieves all cached queries.
+
+        Returns:
+          list[Cache]: A list of Cache objects
+        """
+        r = self.client.get('/admin/cache/queries')
+        cache_names = [cache_name['name'] for cache_name in r.json()]
+        return list(map(lambda name: Cache(name, self.client), cache_names))
+
+    def cached_graphs(self):
+        """Retrieves all cached graphs.
+
+        Returns:
+          list[Cache]: A list of Cache objects
+        """
+        r = self.client.get('/admin/cache/graphs')
+        cache_names = [cache_name['name'] for cache_name in r.json()]
+        return list(map(lambda name: Cache(name, self.client), cache_names))
+
+
+    def new_cached_query(self, name, target, query, database, refresh_script=None, register_only=False):
+        """Creates a new cached query.
+
+        Args:
+          name (str): The name (URI) of the cached query
+          target (str): The name (URI) of the cache target
+          query (str): The query to cache
+          database (str): The name of the database
+          refresh_script (str, optional): A SPARQL insert query to run
+            when refreshing the cache
+          register_only (bool): Default: false. If true, register a
+            cached dataset without loading data from the source graph
+            or query into the cache target's databases
+
+        Returns:
+          Cache: The new Cache
+        """
+
+        params = {
+            'name': name,
+            'target': target,
+            'database': database,
+            'query': query,
+
+        }
+
+        if refresh_script:
+            params['refreshScript'] = refresh_script
+
+        if register_only:
+            params['registerOnly'] = True
+
+        self.client.post('/admin/cache', json=params)
+        return Cache(name, self.client)
+
+    def new_cached_graph(self, name, target, graph, database=None, refresh_script=None, register_only=False):
+        """Creates a new cached graph.
+
+        Args:
+          name (str): The name (URI) of the cached query
+          target (str): The name (URI) of the cache target
+          graph (str): The name of the graph to cache
+          database (str): The name of the database. Optional for virtual graphs, mandatory for named graphs.
+          refresh_script (str): An optional SPARQL Insert query to run when refreshing the cache.
+          register_only (bool): An optional value that if true, register a cached dataset without loading data from the source graph or query into the cache target's databases.
+
+
+        Returns:
+          Cache: The new Cache"""
+
+        params = {
+            'name': name,
+            'target': target,
+            'graph': graph,
+        }
+
+        if database:
+            params['database'] = database
+
+        if refresh_script:
+            params['refreshScript'] = refresh_script
+
+        if register_only:
+            params['registerOnly'] = True
+
+
+        self.client.post('/admin/cache', json=params)
+        return Cache(name, self.client)
+
+    def cache_targets(self):
+        """Retrieves all cache targets.
+
+        Returns:
+          list[CacheTarget]: A list of CacheTarget objects
+        """
+        r = self.client.get('/admin/cache/target')
+        return list(
+            map(lambda target: CacheTarget(target['name'], self.client), r.json())
+        )
+
+    def new_cache_target(self, name, hostname, port, username, password, use_existing_db=False):
+        """Creates a new cache target.
+
+        Args:
+          name (str): The name of the cache target
+          hostname (str): The hostname of the cache target server
+          port (int): The port of the cache target server
+          username (int): The username for the cache target
+          password (int): The password for the cache target
+          use_existing_db (bool): If true, check for an existing cache database to use before creating a new one
+
+        Returns:
+          CacheTarget: The new CacheTarget
+        """
+        params = {
+            'name': name,
+            'hostname': hostname,
+            'port': port,
+            'username': username,
+            'password': password,
+        }
+
+        if use_existing_db:
+            params['useExistingDb'] = True
+
+        self.client.post('/admin/cache/target', json=params)
+        return CacheTarget(name, self.client)
 
     def __enter__(self):
         return self
@@ -1497,6 +1624,7 @@ class DataSource(object):
     def __repr__(self):
         return self.name
 
+
 #TODO
 # We could get rid of this class, and the delete method here as admin.delete_stored_functions() can take a single stored function
 # and mimic this behaviour. This is intentionally put here in case more methods are added to StoredFunctions
@@ -1514,22 +1642,96 @@ class DataSource(object):
 #         :return:
 #        """
 
-#TODO: Currently on PR: https://github.com/stardog-union/pystardog/pull/37/files
-# class Cache(object):
-#     def __init__(self):
-#     def drop(self):
-#     def refresh(self):
-#     def status(self):
+class Cache(object):
+    """Cached data
 
-#TODO: Currently on PR: https://github.com/stardog-union/pystardog/pull/37/files
-# class CacheTarget(object):
-#     def __init__(self):
-#     def __refresh(self):
-#     def name(self):
-#     def hostname(self):
-#     def port(self):
-#     def username(self):
-#     def password(self):
-#     def orphan(self):
-#     def remove(self):
+    A cached dataset from a query or named/virtual graph.
 
+    See Also:
+        https://www.stardog.com/docs/#_cache_management
+    """
+
+    def __init__(self, name, client):
+        """Initializes a new cached dataset from a query or named/virtual graph.
+
+        Use :meth:`stardog.admin.Admin.new_cached_graph` or
+        :meth:`stardog.admin.Admin.new_cached_query` instead of
+        constructing manually.
+        """
+        self.name = name
+        self.client = client
+        self.status()  # raises exception if cache doesn't exist on the server
+
+    def drop(self):
+        """Drops the cache."""
+        url_encoded_name = urllib.parse.quote_plus(self.name)
+        self.client.delete('/admin/cache/{}'.format(url_encoded_name))
+
+    def refresh(self):
+        """Refreshes the cache."""
+        url_encoded_name = urllib.parse.quote_plus(self.name)
+        self.client.post('/admin/cache/refresh/{}'.format(url_encoded_name))
+
+    def status(self):
+        """Retrieves the status of the cache."""
+        r = self.client.post('/admin/cache/status', json=[self.name])
+        return r.json()
+
+    def __repr__(self):
+        return self.name
+
+
+class CacheTarget(object):
+    """Cache Target Server
+    """
+    def __init__(self, name, client):
+        """Initializes a cache target.
+
+        Use :meth:`stardog.admin.Admin.new_cache_target` instead of
+        constructing manually.
+        """
+        self.cache_target_name = name
+        self.path = '/admin/cache/target/{}'.format(name)
+        self.client = client
+
+    @property
+    def name(self):
+        """The name (URI) of the cache target."""
+        return self.cache_target_name
+
+    def info(self):
+        """ Get info for the cache target
+
+        Returns:
+          dict: Info
+        """
+
+        return self.__cache_target_info()
+
+    def orphan(self):
+        """Orphans the cache target but do not destroy its contents."""
+        self.client.delete(self.path + '/orphan')
+
+    def remove(self):
+        """Removes the cache target and destroy its contents."""
+        self.client.delete(self.path)
+
+    def __wait_for_registering_cache_target(self):
+        retries = 0
+        while True:
+            r = self.client.get('/admin/cache/target')
+            cache_target_info = next((t for t in r.json() if t['name'] == self.name), {})
+            if not cache_target_info:
+                retries += 1
+                sleep(1)
+                if retries >= 20:
+                    raise Exception("Took too long to read cache target: " + self.name)
+            else:
+                return cache_target_info
+
+    def __cache_target_info(self):
+        cache_target_info = self.__wait_for_registering_cache_target()
+        return cache_target_info
+
+    def __repr__(self):
+        return self.name

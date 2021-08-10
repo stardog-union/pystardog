@@ -2,13 +2,23 @@
 # https://support.circleci.com/hc/en-us/articles/360007324514-How-can-I-use-Docker-volume-mounting-on-CircleCI-
 # For this reason, we are creating specific dockerfiles, and building the images from them, copying the files in the images
 # instead of mounting them.
+
+
 version: "3.3"
 services:
-  stardog:
+  sd1:
     build:
       context: dockerfiles/
       dockerfile: dockerfile-stardog
-    container_name: pystardog_stardog
+    container_name: pystardog_stardog_1
+
+  sdcache1:
+    build:
+      context: dockerfiles/
+      dockerfile: dockerfile-stardog
+    # underscores not allowed for cache target hostnames
+    container_name: pystardog-cache-1
+
   tests:
     build:
       context: .
@@ -16,6 +26,7 @@ services:
     entrypoint: /bin/bash -c
     command: ["./utils/run_tests.sh"]
     container_name: pystardog_tests
+
   # two mysql servers are used instead of one so we can simulate multiple datasources.
   mysql-music:
     build:
@@ -24,6 +35,7 @@ services:
     # this value is hardcoded in conftest.py (music_options fixture), for multiple datasource / vg tests.
     # it's also hardcoded in test/test_admin.py for testing imports.
     container_name: pystardog_mysql_music
+
   mysql-videos:
     build:
       context: .
