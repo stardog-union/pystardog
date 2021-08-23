@@ -13,5 +13,28 @@ ARG NODE_TYPE
 
 COPY --from=base /tmp/mysql-connector-java.jar opt/stardog/server/dbms
 COPY stardog-license-key.bin /var/opt/stardog
+COPY start.sh /var/start.sh
+
+USER root
+RUN yes stardogpw | passwd stardog
+RUN yum install openssh-server vim -y
+
+USER stardog
+# We require ssh to test that backups are successfully generated.
+# We are considering the option of move to circleci machine executor that allows mounting volumes, which could
+# make this easier in the future. We might still require ssh for tests that require restarting a stardog server.
+RUN mkdir ${HOME}/custom_ssh && \
+    ssh-keygen -f ${HOME}/custom_ssh/ssh_host_rsa_key -N '' -t rsa && \
+    ssh-keygen -f ${HOME}/custom_ssh/ssh_host_dsa_key -N '' -t dsa && \
+    echo -e "Port 2222 \n\
+    HostKey ${HOME}/custom_ssh/ssh_host_rsa_key \n\
+    HostKey ${HOME}/custom_ssh/ssh_host_dsa_key \n\
+    AuthorizedKeysFile  .ssh/authorized_keys \n\
+    ChallengeResponseAuthentication no \n\
+    UsePAM yes \n\
+    Subsystem   sftp    /usr/lib/ssh/sftp-server \n\
+    PidFile ${HOME}/custom_ssh/sshd.pid" > ${HOME}/custom_ssh/sshd_config
+
+
 
 

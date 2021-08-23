@@ -1,6 +1,6 @@
 FROM python
 
-# RUN apt-get update && apt-get install -y vim nano netcat
+RUN apt-get update && apt-get install sshpass
 
 COPY . /var/pystardog
 

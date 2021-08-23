@@ -2,6 +2,7 @@ import pytest
 import datetime
 import os
 from time import sleep
+import subprocess
 
 import stardog.admin
 import stardog.connection as connection
@@ -50,6 +51,38 @@ def admin(conn_string):
                 cache.remove()
 
         yield admin
+
+
+def test_get_server_metrics(admin):
+    assert "dbms.storage.levels" in admin.get_server_metrics()
+
+def test_get_prometheus_metrics(admin):
+    assert "TYPE databases_planCache_size gauge" in admin.get_prometheus_metrics()
+
+def test_get_metadata_properties(admin):
+    assert "database.archetypes" in admin.get_all_metadata_properties()
+
+def test_alive(admin):
+    assert admin.alive()
+
+def test_healthcheck(admin):
+    assert admin.healthcheck()
+
+def test_backup_all(admin):
+    admin.backup_all()
+
+    default_backup = subprocess.run(
+        ["sshpass", "-p", "stardogpw", "ssh", "-o", "StrictHostKeyChecking=no", "ssh://stardog@pystardog_stardog:2222", "--",
+         "ls", "-la", "/var/opt/stardog/"],
+        stdout=subprocess.PIPE, universal_newlines=True)
+    admin.backup_all(location='/tmp')
+    assert '.backup' in default_backup.stdout
+
+    tmp_backup = subprocess.run(
+        ["sshpass", "-p", "stardogpw", "ssh", "-o", "StrictHostKeyChecking=no", "ssh://stardog@pystardog_stardog:2222", "--",
+         "ls", "-l", "/tmp"],
+        stdout=subprocess.PIPE, universal_newlines=True)
+    assert 'meta' in tmp_backup.stdout
 
 
 def test_databases(admin, conn_string, bulkload_content):

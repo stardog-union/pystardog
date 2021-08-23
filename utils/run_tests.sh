@@ -26,6 +26,6 @@ function wait_for_start {
     )
 }
 
-wait_for_start pystardog_stardog_1 5820
-pytest --endpoint http://pystardog_stardog_1:5820
-
+# depends_on in compose is not enough
+wait_for_start pystardog_stardog 5820
+pytest --endpoint http://pystardog_stardog:5820

@@ -4,7 +4,6 @@
 import json
 import contextlib2
 import urllib
-
 from time import sleep
 
 from . import content_types as content_types
@@ -46,37 +45,44 @@ class Admin(object):
         """
         self.client.post('/admin/shutdown')
 
-    #TODO
-    # def alive(self):
-    #     """
-    #     Determine whether the server is running
-    #     https://stardog-union.github.io/http-docs/#operation/aliveCheck
-    #     :return:
-    #     """
+    def alive(self):
+        """
+        Determine whether the server is running
+        :return: Returns True if server is alive
+        :rtype: bool
+        """
+        r = self.client.get('/admin/alive')
+        return r.status_code == 200
 
-    #TODO:
-    # def healthcheck(self):
-    #     """
-    #     Determine whether the server is running and able to accept traffic
-    #     https://stardog-union.github.io/http-docs/#operation/healthCheck
-    #     :return:
-    #     """
 
-    #TODO
-    # def get_prometheus_metrics(self):
-    #     """
-    #     Return metric information from the registry in Prometheus format
-    #     https://stardog-union.github.io/http-docs/#operation/prometheus
-    #     :return:
-    #     """
+    def healthcheck(self):
+        """
+        Determine whether the server is running and able to accept traffic
+        :return: Returns true if server is able to accept traffic
+        :rtype: bool
+        """
+        r = self.client.get('/admin/healthcheck')
+        return r.status_code == 200
 
-    #TODO
-    # def get_server_metrics(self):
-    #     """
-    #     Return metric information from the registry in JSON format
-    #     https://stardog-union.github.io/http-docs/#operation/status
-    #     :return:
-    #     """
+    def get_prometheus_metrics(self):
+        """
+        :return:  Return metric information from the registry in Prometheus format
+        :rtype: String
+        """
+        r = self.client.get('/admin/status/prometheus')
+        return r.text
+
+
+    def get_server_metrics(self):
+        """
+        Return metric information from the registry in JSON format
+        https://stardog-union.github.io/http-docs/#operation/status
+        :return: Server metrics
+        :rtype: dict
+        """
+        r = self.client.get('/admin/status')
+        return r.json()
+
 
     def database(self, name):
         """Retrieves an object representing a database.
@@ -188,29 +194,26 @@ class Admin(object):
 
         self.client.put('/admin/restore', params=params)
 
-    #TODO:
-    # def backup_all(self):
-    #     """
-    #     Create a backup of all databases on the server
-    #     https://stardog-union.github.io/http-docs/#operation/backupAll
-    #     :return:
-    #     """
+    def backup_all(self, location=None):
+        """
+        Create a backup of all databases on the server
+        """
+        url = '/admin/databases/backup_all'
+        if location is not None:
+            params = urllib.parse.urlencode({'to': location})
+            url = f'{url}?{params}'
+        self.client.put(url)
 
-    #TODO
-    # def restore_all(self):
-    #     """
-    #     Restore multiple databases from backup
-    #     https://stardog-union.github.io/http-docs/#operation/restoreAll
-    #     :return:
-    #     """
 
-    #TODO
-    # def get_all_metadata_options(self):
-    #     """
-    #     Get information on all database metadata properties, including description and example values
-    #     https://stardog-union.github.io/http-docs/#operation/getAllMetaProperties
-    #     :return:
-    #     """
+    def get_all_metadata_properties(self):
+        """
+        Get information on all database metadata properties, including description and example values
+        :return: Metadata properties
+        :rtype: dict
+        """
+        r = self.client.get('/admin/config_properties')
+        return r.json()
+
 
     #TODO
     # def get_namespaces(self):
