@@ -10,7 +10,9 @@ services:
     build:
       context: dockerfiles/
       dockerfile: dockerfile-stardog
-    container_name: pystardog_stardog_1
+    container_name: pystardog_stardog
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["/var/start.sh"]
 
   sdcache1:
     build:
