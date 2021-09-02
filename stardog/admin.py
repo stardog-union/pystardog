@@ -66,8 +66,6 @@ class Admin(object):
 
     def get_prometheus_metrics(self):
         """
-        :return:  Return metric information from the registry in Prometheus format
-        :rtype: String
         """
         r = self.client.get('/admin/status/prometheus')
         return r.text
@@ -649,68 +647,91 @@ class Admin(object):
         """
         self.client.get('/admin/users/valid')
 
-    #TODO
-    # def cluster_list_standby_nodes(self):
-    #     """
-    #     List standby nodes
-    #     https://stardog-union.github.io/http-docs/#operation/getStandbyNodes
-    #     :return:
-    #     """
+    def cluster_list_standby_nodes(self):
+        """
+        List standby nodes
+        :return: Returns the registry ID for the standby nodes.
+        :rtype: dict
+        """
+        r = self.client.get('/admin/cluster/standby/registry')
+        return r.json()
 
-    #TODO
-    # def cluster_join(self):
-    #     """
-    #     Instruct a standby node to join its cluster as a full node
-    #     https://stardog-union.github.io/http-docs/#operation/standbyJoin
-    #     :return:
-    #     """
+    def cluster_join(self):
+        """
+        Instruct a standby node to join its cluster as a full node
+        """
+        self.client.put('/admin/cluster/standby/join')
 
-    #TODO
-    # def cluster_node_pause_status(self):
-    #     """
-    #     Get the pause status of a standby node
-    #     https://stardog-union.github.io/http-docs/#operation/getPauseState
-    #     :return:
-    #     """
+    def standby_node_pause_status(self):
+        """
+        Get the pause status of a standby node
+        https://stardog-union.github.io/http-docs/#operation/getPauseState
+        :return: Pause status of a standby node, possible values are: "WAITING", "SYNCING", "PAUSING", "PAUSED"
+        :rtype: Dict
+        """
+        r = self.client.get('/admin/cluster/standby/pause')
+        return r.json()
 
-    #TODO
-    # def cluster_node_pause(self):
-    #     """
-    #     Pause/Unpause standby node
-    #     https://stardog-union.github.io/http-docs/#operation/standbyPause
-    #     :return:
-    #     """
+    def standby_node_pause(self, pause):
+        """
+        Pause/Unpause standby node
+        Args:
+          *pause: (boolean): True for pause, False for unpause
+        :return: Returns True if the pause status was modified successfully, false if it failed.
+        :rtype: bool
+        """
+        if pause:
+            r = self.client.put('/admin/cluster/standby/pause?pause=true')
+        else:
+            r = self.client.put('/admin/cluster/standby/pause?pause=false')
+        return r.status_code == 200
 
-    #TODO
-    # def cluster_revoke_standby_access(self):
-    #     """
-    #     Instruct a standby node to leave its cluster
-    #     https://stardog-union.github.io/http-docs/#operation/standbyRevokeAccess
-    #     :return:
-    #     """
 
-    #TODO
-    # def cluster_coordinator_check(self):
-    #     """
-    #     Determine if a specific cluster node is the cluster coordinator
-    #     https://stardog-union.github.io/http-docs/#operation/isCoordinator
-    #     :return:
-    #     """
+    def cluster_revoke_standby_access(self, registry_id):
+        """
+        Instruct a standby node to stop syncing
+        Args:
+          *registry_id: (string): Id of the standby node to stop syncing.
+        """
+        self.client.delete('/admin/cluster/standby/registry/' + registry_id)
 
-    #TODO
+    def cluster_start_readonly(self):
+        """
+        Start read only mode
+        """
+        self.client.put('/admin/cluster/readonly')
+
+    def cluster_stop_readonly(self):
+        """
+        Stops read only mode
+        """
+        self.client.delete('/admin/cluster/readonly')
+
+    def cluster_coordinator_check(self):
+        """
+        Determine if a specific cluster node is the cluster coordinator
+        :return: True if the node is a coordinator, false if not.
+        :rtype: Bool
+        """
+        r = self.client.get('/admin/cluster/coordinator')
+        return r.status_code == 200
+
+    #TODO:
     # def cluster_diagnostics_report(self):
     #     """
     #     Get cluster diagnostics report
     #     https://stardog-union.github.io/http-docs/#operation/generateClusterDiagnosticsReport
     #     :return:
     #     """
+    #     r = self.client.post('/admin/cluster/diagnostics')
+    #     return r
 
     def cluster_status(self):
         """Prints status information for each node
         in the cluster
 
-        Returns:
-            dict: Nodes of the cluster and extra information
+        :return: Nodes of the cluster and extra information
+        :rtype: dict
         """
         r = self.client.get('/admin/cluster/status')
         return r.json()
@@ -719,20 +740,20 @@ class Admin(object):
         """Prints info about the nodes in the Stardog
         Pack cluster.
 
-        Returns:
-            dict: Nodes of the cluster.
+        :return: Nodes of the cluster
+        :rtype: dict
         """
         r = self.client.get('/admin/cluster')
         return r.json()
 
-
-    #TODO
-    # def cluster_shutdown(self):
-    #     """
-    #     Shutdown all nodes
-    #    https://stardog-union.github.io/http-docs/#operation/shutdownAll
-    #     :return:
-    #     """
+    def cluster_shutdown(self):
+        """
+        Shutdown all nodes
+        :return: True if the cluster got shutdown successfully.
+        :rtype: bool
+        """
+        r = self.client.post('/admin/shutdownAll')
+        return r.status_code == 200
 
 
     def cache(self, name):

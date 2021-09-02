@@ -3,23 +3,87 @@
 # For this reason, we are creating specific dockerfiles, and building the images from them, copying the files in the images
 # instead of mounting them.
 
-
 version: "3.3"
 services:
+  zoo1:
+    image: zookeeper:${ZOO_TAG}
+    container_name: zkn1
+    environment:
+        ZOO_MY_ID: 1
+        ZOO_SERVERS: server.1=0.0.0.0:2888:3888
+
   sd1:
     build:
       context: dockerfiles/
       dockerfile: dockerfile-stardog
-    container_name: pystardog_stardog
+      args:
+        - TAG=${STARDOG_TAG}
+        - NODE_TYPE=node
+        - SSH_USER=${SSH_USER}
+        - SSH_PASS=${SSH_PASS}
+    container_name: ${STARDOG_HOSTNAME_NODE_1}
     entrypoint: ["/bin/bash", "-c"]
     command: ["/var/start.sh"]
+    depends_on:
+      - zoo1
+
+  sd2:
+    build:
+      context: dockerfiles/
+      dockerfile: dockerfile-stardog
+      args:
+          - TAG=${STARDOG_TAG}
+          - NODE_TYPE=node
+          - SSH_USER=${SSH_USER}
+          - SSH_PASS=${SSH_PASS}
+    container_name: ${STARDOG_HOSTNAME_NODE_2}
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["/var/start.sh"]
+    depends_on:
+      - zoo1
+
+  sdstandby:
+    build:
+      context: dockerfiles/
+      dockerfile: dockerfile-stardog
+      args:
+        - TAG=${STARDOG_TAG}
+        - NODE_TYPE=standby
+        - SSH_USER=${SSH_USER}
+        - SSH_PASS=${SSH_PASS}
+    container_name: ${STARDOG_HOSTNAME_STANDBY}
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["/var/start-standby.sh"]
+    depends_on:
+      - zoo1
 
   sdcache1:
     build:
       context: dockerfiles/
       dockerfile: dockerfile-stardog
+      args:
+        - TAG=${STARDOG_TAG}
+        - NODE_TYPE=cache
+        - SSH_USER=${SSH_USER}
+        - SSH_PASS=${SSH_PASS}
     # underscores not allowed for cache target hostnames
-    container_name: pystardog-cache-1
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["/var/start.sh"]
+    container_name: ${STARDOG_HOSTNAME_CACHE}
+    depends_on:
+      - zoo1
+
+  sdlb:
+    build:
+      context: dockerfiles/
+      dockerfile: dockerfile-haproxy
+      args:
+        - TAG=${HAPROXY_TAG}
+    container_name: ${STARDOG_LB}
+    depends_on:
+      - zoo1
+      - sd1
+      - sd2
 
   tests:
     build:
@@ -28,6 +92,16 @@ services:
     entrypoint: /bin/bash -c
     command: ["./utils/run_tests.sh"]
     container_name: pystardog_tests
+    environment:
+      - SSH_USER=${SSH_USER}
+      - SSH_PASS=${SSH_PASS}
+      - STARDOG_HOSTNAME_NODE_1=${STARDOG_HOSTNAME_NODE_1}
+      - STARDOG_HOSTNAME_CACHE=${STARDOG_HOSTNAME_CACHE}
+      - STARDOG_HOSTNAME_STANDBY=${STARDOG_HOSTNAME_STANDBY}
+      - STARDOG_LB=${STARDOG_LB}
+      - STARDOG_USER=${STARDOG_USER}
+      - STARDOG_PASS=${STARDOG_PASS}
+
 
   # two mysql servers are used instead of one so we can simulate multiple datasources.
   mysql-music:

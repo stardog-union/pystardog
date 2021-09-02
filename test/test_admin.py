@@ -12,6 +12,57 @@ import stardog.exceptions as exceptions
 DEFAULT_USERS = ['admin', 'anonymous']
 DEFAULT_ROLES = ['reader']
 
+SSH_USER = os.environ['SSH_USER']
+SSH_PASS = os.environ['SSH_PASS']
+STARDOG_HOSTNAME_NODE_1 = os.environ['STARDOG_HOSTNAME_NODE_1']
+STARDOG_HOSTNAME_STANDBY = os.environ['STARDOG_HOSTNAME_STANDBY']
+
+##################
+# Help functions #
+##################
+def get_node_ip(node_hostname):
+    node_ip = subprocess.run(
+        ["sshpass", "-p", SSH_PASS, "ssh", "-o", "StrictHostKeyChecking=no", f"ssh://{SSH_USER}@{node_hostname}:2222", "--",
+         "hostname", "-I"],
+        stdout=subprocess.PIPE)
+    return node_ip.stdout
+
+def get_current_node_count(admin):
+    return len(admin.cluster_info()['nodes'])
+
+# This is currently used to work around
+# https://github.com/stardog-union/pystardog/issues/63
+# Although it could potentially be useful in the future.
+def wait_nodes_to_rejoin(node_count_expected, admin):
+    retries = 0
+    while True:
+        if get_current_node_count(admin) == node_count_expected:
+            return
+        else:
+            retries += 1
+            sleep(1)
+            if retries >= 20:
+                raise Exception("Took too long for cluster to come up")
+
+
+def wait_standby_node_to_join(admin):
+    standby_node_ip = get_node_ip(STARDOG_HOSTNAME_STANDBY).decode("utf-8").strip() + ':5820'
+    retries = 0
+    while True:
+        if standby_node_ip in admin.cluster_info()['nodes']:
+            return
+        else:
+            retries += 1
+            sleep(10)
+            if retries >= 50:
+                raise Exception("Took too long for standby node to join the cluster")
+
+def count_records(bd_name, conn_string):
+    with connection.Connection(bd_name, **conn_string) as conn:
+        graph_name = conn.select('select ?g { graph ?g {}}')['results']['bindings'][0]['g']['value']
+        q = conn.select('SELECT * { GRAPH <' + graph_name + '> { ?s ?p ?o }}')
+        count = len(q['results']['bindings'])
+    return count
 
 @pytest.fixture()
 def admin(conn_string):
@@ -52,6 +103,58 @@ def admin(conn_string):
 
         yield admin
 
+##############
+# Admin tests#
+##############
+@pytest.mark.skip(reason="Implementation is not well documented, https://stardog.atlassian.net/browse/PLAT-2946")
+def test_cluster_diagnostic_report(admin):
+    admin.cluster_diagnostic_reports()
+
+def test_cluster_readonly(admin):
+    admin.cluster_start_readonly()
+
+    with pytest.raises(exceptions.StardogException, match='The cluster is read only'):
+        admin.new_database('fail_db')
+
+    admin.cluster_stop_readonly()
+
+    new_db = admin.new_database('fail_db')
+    new_db.drop()
+
+
+def test_coordinator_check(admin, conn_string):
+
+    coordinator_info = admin.cluster_info()['coordinator']
+    coordinator_conn_string = conn_string
+    coordinator_conn_string['endpoint'] = "http://" + coordinator_info
+
+    with stardog.admin.Admin(**coordinator_conn_string) as admin_coordinator_check:
+        assert admin_coordinator_check.cluster_coordinator_check()
+
+
+def test_cluster_standby(cluster_standby_node_conn_string):
+
+    with stardog.admin.Admin(**cluster_standby_node_conn_string) as admin_standby:
+
+        assert admin_standby.standby_node_pause(pause=True)
+        assert admin_standby.standby_node_pause_status()["STATE"] == "PAUSED"
+        assert admin_standby.standby_node_pause(pause=False)
+        assert admin_standby.standby_node_pause_status()["STATE"] == "WAITING"
+
+        standby_nodes = admin_standby.cluster_list_standby_nodes()
+        node_id = standby_nodes['standbynodes'][0]
+        # removes a standby node from the registry, i.e from syncing with the rest of the cluster.
+        admin_standby.cluster_revoke_standby_access(standby_nodes['standbynodes'][0])
+        standby_nodes_revoked = admin_standby.cluster_list_standby_nodes()
+        assert node_id not in standby_nodes_revoked['standbynodes']
+
+        # Join a standby node is still allowed even if it's not part of the registry.
+        admin_standby.cluster_join()
+        wait_standby_node_to_join(admin_standby)
+
+        # Make sure the standby node is part of the cluster
+        standby_node_info = get_node_ip(STARDOG_HOSTNAME_STANDBY).decode('utf-8').strip() + ':5820'
+        assert standby_node_info in admin_standby.cluster_info()['nodes']
 
 def test_get_server_metrics(admin):
     assert "dbms.storage.levels" in admin.get_server_metrics()
@@ -72,14 +175,14 @@ def test_backup_all(admin):
     admin.backup_all()
 
     default_backup = subprocess.run(
-        ["sshpass", "-p", "stardogpw", "ssh", "-o", "StrictHostKeyChecking=no", "ssh://stardog@pystardog_stardog:2222", "--",
+        ["sshpass", "-p", SSH_PASS, "ssh", "-o", "StrictHostKeyChecking=no", "ssh://" + SSH_USER + "@" + STARDOG_HOSTNAME_NODE_1 + ":2222", "--",
          "ls", "-la", "/var/opt/stardog/"],
         stdout=subprocess.PIPE, universal_newlines=True)
-    admin.backup_all(location='/tmp')
     assert '.backup' in default_backup.stdout
 
+    admin.backup_all(location='/tmp')
     tmp_backup = subprocess.run(
-        ["sshpass", "-p", "stardogpw", "ssh", "-o", "StrictHostKeyChecking=no", "ssh://stardog@pystardog_stardog:2222", "--",
+        ["sshpass", "-p", SSH_PASS, "ssh", "-o", "StrictHostKeyChecking=no", "ssh://" + SSH_USER + "@" + STARDOG_HOSTNAME_NODE_1 + ":2222", "--",
          "ls", "-l", "/tmp"],
         stdout=subprocess.PIPE, universal_newlines=True)
     assert 'meta' in tmp_backup.stdout
@@ -122,8 +225,9 @@ def test_databases(admin, conn_string, bulkload_content):
     db.repair()
     db.online()
 
-
+    current_node_count = get_current_node_count(admin)
     bl = admin.new_database('bulkload', {}, *bulkload_content)
+    wait_nodes_to_rejoin(current_node_count, admin)
 
     with connection.Connection(
             'bulkload', **conn_string) as c:
@@ -385,15 +489,6 @@ def test_virtual_graphs(admin, music_options):
         vg.delete()
 
 
-def count_records(bd_name, conn_string):
-
-    with connection.Connection(bd_name, **conn_string) as conn:
-        graph_name = conn.select('select ?g { graph ?g {}}')['results']['bindings'][0]['g']['value']
-        q = conn.select('SELECT * { GRAPH <' + graph_name + '> { ?s ?p ?o }}')
-        count = len(q['results']['bindings'])
-    return count
-
-
 def test_import(admin, conn_string, music_options, videos_options):
 
     bd = admin.new_database('test-db')
@@ -506,7 +601,9 @@ def test_cache_ng_datasets(admin, bulkload_content, cache_target_info):
     cache_target = admin.new_cache_target(cache_target_name, cache_target_hostname, cache_target_port, cache_target_username, cache_target_password)
     wait_for_creating_cache_target(admin, cache_target_name)
 
+    current_node_count = get_current_node_count(admin)
     bl = admin.new_database('bulkload', {}, *bulkload_content)
+    wait_nodes_to_rejoin(current_node_count, admin)
 
     assert len(admin.cached_graphs()) == 0
     cached_graph_name = 'cache://cached-ng'
@@ -581,7 +678,10 @@ def test_cache_query_datasets(admin, bulkload_content, cache_target_info):
     cache_target = admin.new_cache_target(cache_target_name, cache_target_hostname, cache_target_port, cache_target_username, cache_target_password)
     wait_for_creating_cache_target(admin, cache_target_name)
 
+    current_node_count = get_current_node_count(admin)
     bl = admin.new_database('bulkload', {}, *bulkload_content)
+    wait_nodes_to_rejoin(current_node_count, admin)
+
 
     assert len(admin.cached_queries()) == 0
 
