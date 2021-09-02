@@ -10,13 +10,16 @@ RUN wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-${
 FROM stardog/stardog
 
 ARG NODE_TYPE
+ARG SSH_USER
+ARG SSH_PASS
 
 COPY --from=base /tmp/mysql-connector-java.jar opt/stardog/server/dbms
 COPY stardog-license-key.bin /var/opt/stardog
 COPY start.sh /var/start.sh
+COPY start-standby.sh /var/start-standby.sh
 
 USER root
-RUN yes stardogpw | passwd stardog
+RUN yes $SSH_PASS | passwd $SSH_USER
 RUN yum install openssh-server vim -y
 
 USER stardog
@@ -36,5 +39,7 @@ RUN mkdir ${HOME}/custom_ssh && \
     PidFile ${HOME}/custom_ssh/sshd.pid" > ${HOME}/custom_ssh/sshd_config
 
 
+
+COPY stardog.$NODE_TYPE.properties /var/opt/stardog/stardog.properties
 
 

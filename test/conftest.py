@@ -1,7 +1,11 @@
 import pytest
 import stardog.content as content
 import stardog.content_types as content_types
+import os
 
+STARDOG_HOSTNAME_NODE_1 = os.environ['STARDOG_HOSTNAME_NODE_1']
+STARDOG_HOSTNAME_CACHE = os.environ['STARDOG_HOSTNAME_CACHE']
+STARDOG_HOSTNAME_STANDBY = os.environ['STARDOG_HOSTNAME_STANDBY']
 
 def pytest_addoption(parser):
     parser.addoption("--username", action="store", default="admin")
@@ -36,13 +40,21 @@ def bulkload_content():
 def cache_target_info():
     target_info = {
         'target_name': 'pystardog-test-cache-target',
-        #docker-compose sdcache1 containername
-        'hostname': 'pystardog-cache-1',
+        'hostname': STARDOG_HOSTNAME_CACHE,
         'port': 5820,
         'username': 'admin',
         'password': 'admin'
     }
     return target_info
+
+@pytest.fixture
+def cluster_standby_node_conn_string():
+    standby_conn_string= {
+        'endpoint': f"http://{STARDOG_HOSTNAME_STANDBY}:5820",
+        'username': 'admin',
+        'password': 'admin'
+    }
+    return standby_conn_string
 
 # Java 291 (packed in the Stardog docker image from 7.6.3+) disabled TLS 1.0 and 1.1 which breaks the MySQL connector:
 # https://www.oracle.com/java/technologies/javase/8u291-relnotes.html

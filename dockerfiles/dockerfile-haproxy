@@ -1,0 +1,5 @@
+ARG TAG
+
+FROM haproxy:$TAG
+
+COPY haproxy.cfg /usr/local/etc/haproxy/

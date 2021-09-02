@@ -19,10 +19,8 @@ jobs:
 
       - run:
           name: Start containers and run tests
-          no_output_timeout: 10m
+          no_output_timeout: 15m
           command: |
             set -x
             docker-compose up --exit-code-from tests
-
-
 
