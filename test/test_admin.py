@@ -463,9 +463,16 @@ def test_virtual_graphs(admin, music_options):
     vg = admin.new_virtual_graph('test_vg', mappings=content.File('test/data/music_mappings.ttl'), options=music_options)
     vg.delete()
 
-    # passing options and a datasource should not conflict
+    # passing options and a datasource should not conflict. if options contains another url connector, it will be ignored
+    # and the datasource specified will be prefferred.
     ds = admin.new_datasource('music', music_options)
     vg = admin.new_virtual_graph('test_vg', mappings='', options=music_options, datasource=ds.name, db='no-db')
+    vg.delete()
+    ds.delete()
+
+    # passing options plus an existing datasource.
+    ds = admin.new_datasource('music', music_options)
+    vg = admin.new_virtual_graph('test_vg', mappings='', options={'mappings.syntax': 'SMS2'}, datasource=ds.name, db='no-db')
     vg.delete()
     ds.delete()
 
