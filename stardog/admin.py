@@ -541,20 +541,15 @@ class Admin(object):
             with mappings.data() as data:
                 mappings = data.read().decode() if hasattr(data, 'read') else data
 
+        meta = {}
+        meta['name'] = name
+        meta['mappings'] = mappings
         if options:
-            meta = {
-                'name': name,
-                'mappings': mappings,
-                'options': options,
-            }
-        else:
-            meta = {
-                'name': name,
-                'mappings': mappings,
-                'data_source': datasource,
-                'db': db
-            }
-
+            meta['options'] = options
+        if datasource:
+            meta['data_source'] = datasource
+        if db:
+            meta['db'] = db
 
         self.client.post('/admin/virtual_graphs', json=meta)
         return VirtualGraph(name, self.client)
