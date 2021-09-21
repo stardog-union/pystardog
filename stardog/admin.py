@@ -519,13 +519,15 @@ class Admin(object):
         r = self.client.post('/admin/virtual_graphs/import_db', json=meta)
 
 
-    def new_virtual_graph(self, name, mappings, options={}, datasource=None, db=None):
+    def new_virtual_graph(self, name, mappings, options=None, datasource=None, db=None):
         """Creates a new Virtual Graph.
 
         Args:
-          name (str): The name of the virtual graph
-          mappings (Content): New mapping contents
-          options (dict): Options for the new virtual graph
+          name (str): The name of the virtual graph.
+          mappings (Content): New mapping contents.
+          options (dict, Optional): Options for the new virtual graph. If not passed, then a datasource must be specified.
+          datasource (str, Optional): Name of the datasource to use. If not passed, options with a datasource must be set.
+          db (str, Optional): Name of the database to associate the VG. If not passed, will be associated to all databases.
 
         Returns:
           VirtualGraph: the new VirtualGraph
@@ -541,20 +543,15 @@ class Admin(object):
             with mappings.data() as data:
                 mappings = data.read().decode() if hasattr(data, 'read') else data
 
-        if options:
-            meta = {
-                'name': name,
-                'mappings': mappings,
-                'options': options,
-            }
-        else:
-            meta = {
-                'name': name,
-                'mappings': mappings,
-                'data_source': datasource,
-                'db': db
-            }
-
+        meta = {}
+        meta['name'] = name
+        meta['mappings'] = mappings
+        if options is not None:
+            meta['options'] = options
+        if datasource is not None:
+            meta['data_source'] = datasource
+        if db is not None:
+            meta['db'] = db
 
         self.client.post('/admin/virtual_graphs', json=meta)
         return VirtualGraph(name, self.client)
