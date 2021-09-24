@@ -1,0 +1,4 @@
+PREFIX ls: <sd:demo:lsrnd#>
+PREFIX ns1: <some:iri>
+PREFIX rdfsm: <http://www.w3.org/2000/01/rdf-schema-more>
+PREFIX rdfsnx: <https://www.w3.org/1999/02/22-rdf-syntax-ns#>

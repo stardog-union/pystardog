@@ -161,7 +161,6 @@ class Admin(object):
 
             params.append(('root', (None, json.dumps(meta), 'application/json')))
             self.client.post('/admin/databases', files=params)
-
             return Database(name, self.client)
 
     def restore(self, from_path, *, name=None, force=False):
@@ -211,50 +210,6 @@ class Admin(object):
         """
         r = self.client.get('/admin/config_properties')
         return r.json()
-
-
-    #TODO
-    # def get_namespaces(self):
-    #     """
-    #     Retrieve the namespaces stored in the database
-    #     https://stardog-union.github.io/http-docs/#operation/getNamespaces
-    #     :return:
-    #     """
-
-    #TODO
-    # def import_namespaces(self):
-    #     """
-    #     Add namespaces to the database via a block or blocks of RDF that declares them
-    #     https://stardog-union.github.io/http-docs/#operation/importNamespaces
-    #     :return:
-    #     """
-
-    #TODO: These are not documented in the API docs, but they are listed in the ./stardog cli
-    # def add_namespace(self):
-    #     """
-    #     The following is coming from the ./stardog cli help, and not from the api docs
-    #             stardog namespace add - Adds a new namespace prefix in the database,
-    #     overriding any previous mapping for the prefix.
-    #     :return:
-    #     """
-
-    #TODO: These are not documented in the API docs, but they are listed in the ./stardog cli
-    # def export_namespace(self):
-    #     """
-    #     The following is coming from the ./stardog cli help, and not from the api docs
-    #             stardog namespace export - Exports the namespace prefixes stored in a
-    #     database in Turtle or SPARQL format.
-    #     """
-
-    #TODO: These are not documented in the API docs, but they are listed in the ./stardog cli
-    # We might need to initialize a new namespace as a class, and implement a delete method from there. Need to decide when the time comes
-    # def delete_namespace(self):
-    #     """
-    #     The following is coming from the ./stardog cli help, and not from the api docs
-    #             stardog namespace remove - Removes an existing namespace prefix from a
-    #     database.
-    #     :return:
-    #     """
 
     def query(self, id):
         """Gets information about a running query.
@@ -936,7 +891,7 @@ class Database(object):
         return self.database_name
 
     def get_options(self, *options):
-        """Gets database options.
+        """ Get the value of specific metadata options for a database
 
         Args:
           *options (str): Database option names
@@ -953,6 +908,15 @@ class Database(object):
         r = self.client.put(self.path + '/options', json=meta)
         return r.json()
 
+    def get_all_options(self):
+        """ Get the value of every metadata option for a database
+
+        :return: Dict detailing all database metadata
+        :rtype: Dict
+        """
+        r = self.client.get(self.path + '/options')
+        return r.json()
+
     def set_options(self, options):
         """Sets database options.
 
@@ -964,7 +928,9 @@ class Database(object):
         Examples
             >>> db.set_options({'spatial.enabled': False})
         """
-        self.client.post(self.path + '/options', json=options)
+
+        r = self.client.post(self.path + '/options', json=options)
+        return r.status_code == 200
 
     def optimize(self):
         """Optimizes a database.
@@ -1025,8 +991,75 @@ class Database(object):
         """
         self.client.delete(self.path)
 
-    # TODO: we MIght not need to initialize a namepsace after all, and we could move all the namespace methods here
-    #   as they require the dbname as param.
+    def namespaces(self):
+        """
+        Retrieve the namespaces stored in the database
+        https://stardog-union.github.io/http-docs/#operation/getNamespaces
+        :return: A dict listing the prefixes and IRIs of the stored namespaces
+        :rtype: Dict
+        """
+        r = self.client.get(f'/{self.database_name}/namespaces')
+        return r.json()['namespaces']
+
+    def import_namespaces(self, content):
+        """
+        Args:
+          content (Content): RDF File containing prefix declarations
+            Imports namespace prefixes from an RDF file
+            that contains prefix declarations into the database, overriding any
+            previous mappings for those prefixes. Only the prefix declarations in
+            the file are processed, the rest of the file is not parsed.
+
+        :return: Dictionary with all namespaces after import
+        :rtype: Dict
+        """
+
+        with content.data() as data:
+            r = self.client.post('/' + self.database_name + '/namespaces',
+                data=data,
+                headers={
+                 'Content-Type': content.content_type,
+                 'Content-Encoding': content.content_encoding
+                }
+            )
+
+        return r.json()
+
+    def add_namespace(self, prefix, iri):
+        """ Adds a specific namespace to a database
+        :return: True if the operation succeeded.
+        :rtype: Bool
+        """
+
+        # easy way to check if a namespace already exists
+        current_namespaces = self.namespaces()
+        for namespace in current_namespaces:
+            if prefix in namespace['prefix']:
+                raise Exception(f"Namespace already exists for this database: {namespace}")
+
+        namespaces = self.get_options("database.namespaces")['database.namespaces']
+        namespace_to_append = f"{prefix}={iri}"
+        namespaces.append(namespace_to_append)
+        result  = self.set_options({'database.namespaces': namespaces})
+        return result
+
+    def remove_namespace(self, prefix):
+        """ Removes a specific namespace from a database
+        :return: True if the operation succeeded.
+        :rtype: Bool
+        """
+
+        # easy way to check if a namespace already exists
+        current_namespaces = self.namespaces()
+        for namespace in current_namespaces:
+            if prefix in namespace['prefix']:
+                namespaces = self.get_options("database.namespaces")['database.namespaces']
+                namespace_to_remove = f"{prefix}={namespace['name']}"
+                namespaces.remove(namespace_to_remove)
+                result = self.set_options({'database.namespaces': namespaces})
+                return result
+
+        raise Exception(f"Namespace does not exists for this database: {namespace}")
 
     def __repr__(self):
         return self.name
