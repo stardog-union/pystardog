@@ -702,3 +702,52 @@ def test_cache_query_datasets(admin, bulkload_content, cache_target_info):
 
     cache_target.remove()
     wait_for_cleaning_cache_target(admin, cache_target.name)
+
+
+def test_import_namespaces(admin):
+    # we want to tests more than 1 file format
+    namespaces_ttl = content.File('test/data/namespaces.ttl')
+    namespaces_rdf = content.File('test/data/namespaces.xml')
+
+    db = admin.new_database('test_db')
+    db_default_namespaces = db.namespaces()
+    ns_default_count = len(db_default_namespaces)
+
+    # number of namespaces is always 6 by default for any new database
+    # https://docs.stardog.com/operating-stardog/database-administration/managing-databases#namespaces
+    assert ns_default_count == 6
+
+    # imports 4 namespaces
+    db.import_namespaces(namespaces_ttl)
+    ttl_ns_count = len(db.namespaces())
+    assert ns_default_count + 4 == ttl_ns_count
+
+    # imports 2 namespaces
+    db.import_namespaces(namespaces_rdf)
+    rdf_ns_count = len(db.namespaces())
+    assert ttl_ns_count + 2 == rdf_ns_count
+
+    db.drop()
+
+def test_add_and_delete_namespaces(admin):
+
+    db = admin.new_database('test_db')
+
+    # number of namespaces is always 6 by default for any new database
+    assert len(db.namespaces()) == 6
+
+    db.add_namespace("testns", "my:test:IRI")
+    assert len(db.namespaces()) == 7
+
+    # tests a failure while adding an existing namespace
+    with pytest.raises(Exception, match='Namespace already exists for this database'):
+        db.add_namespace("stardog", "someiri")
+
+    db.remove_namespace("testns")
+    assert len(db.namespaces()) == 6
+
+    # tests a failure while removing an existing namespace
+    with pytest.raises(Exception, match='Namespace does not exists for this database'):
+        db.remove_namespace("non-existent-ns")
+
+    db.drop()
