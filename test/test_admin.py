@@ -468,6 +468,18 @@ def test_stored_queries(admin):
     admin.clear_stored_queries()
     assert len(admin.stored_queries()) == 0
 
+def test_vg_update(admin, music_options):
+
+    ds = admin.new_datasource('music', music_options)
+    vg = admin.new_virtual_graph('test_vg', mappings='', datasource=ds.name)
+    assert 'mappings.syntax' not in vg.options()
+
+    vg.update('test_vg', mappings='', options={'mappings.syntax': 'SMS2'}, datasource=ds.name)
+    assert 'mappings.syntax' in vg.options()
+
+    vg.delete()
+    ds.delete()
+
 def test_vg_no_options(admin, music_options):
     ds = admin.new_datasource('music', music_options)
     vg = admin.new_virtual_graph('test_vg', mappings='', datasource=ds.name)
@@ -497,7 +509,6 @@ def test_create_vg_with_custom_mappings(admin, music_options):
     vg.delete()
 
 def test_datasource_preffered_over_options_for_vg_creation(admin, music_options, conn_string):
-
 
     bad_options = {
         "jdbc.driver": "com.mysql.jdbc.Driver",
