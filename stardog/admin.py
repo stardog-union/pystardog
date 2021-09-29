@@ -1486,19 +1486,15 @@ class VirtualGraph(object):
             with mappings.data() as data:
                 mappings = data.read().decode() if hasattr(data, 'read') else data
 
-        if options:
-            meta = {
-                'name': name,
-                'mappings': mappings,
-                'options': options,
-            }
-        else:
-            meta = {
-                'name': name,
-                'mappings': mappings,
-                'data_source': datasource,
-                'db': db
-            }
+        meta = {}
+        meta['name'] = name
+        meta['mappings'] = mappings
+        if options is not None:
+            meta['options'] = options
+        if datasource is not None:
+            meta['data_source'] = datasource
+        if db is not None:
+            meta['db'] = db
 
         self.client.put(self.path, json=meta)
         self.graph_name = name
