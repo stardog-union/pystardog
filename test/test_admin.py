@@ -270,7 +270,7 @@ def test_backup_and_restore(admin, conn_string):
         admin.restore(from_path=restore_from)
     except Exception as e:
         raise Exception(str(e) + ". Check whether $STARDOG_HOME is set")
-    check_db_for_contents('backup_db', 87)
+    check_db_for_contents('backup_db', 90)
 
     # error if attempting to restore over an existing db without force
     with pytest.raises(
@@ -280,14 +280,14 @@ def test_backup_and_restore(admin, conn_string):
 
     # restore to a new db
     admin.restore(from_path=restore_from, name='backup_db2')
-    check_db_for_contents('backup_db2', 87)
+    check_db_for_contents('backup_db2', 90)
 
     # force to overwrite existing
     db.drop()
     db = admin.new_database('backup_db')
     check_db_for_contents('backup_db', 0)
     admin.restore(from_path=restore_from, force=True)
-    check_db_for_contents('backup_db', 87)
+    check_db_for_contents('backup_db', 90)
 
     # the backup location can be specified
     db.backup(to=os.path.join(stardog_home, 'backuptest'))

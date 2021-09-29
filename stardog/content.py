@@ -33,8 +33,8 @@ class Raw(Content):
 
         Examples:
           >>> Raw(':luke a :Human', 'text/turtle', name='data.ttl')
-          >>> Raw(open('data.ttl.zip', 'rb'),
-                  'text/turtle', 'zip', 'data.ttl')
+          >>> Raw(':βüãäoñr̈ a :Employee .'.encode('utf-8'), 'text/turtle')
+
         """
         self.raw = content
         self.content_type = content_type

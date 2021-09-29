@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 function wait_for_start {
     (

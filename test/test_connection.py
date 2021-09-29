@@ -126,7 +126,7 @@ def test_queries(conn):
 
     # reasoning
     q = conn.select('select * {?s a :Character}', reasoning=True)
-    assert len(q['results']['bindings']) == 7
+    assert len(q['results']['bindings']) == 8
 
     # no results with reasoning turned off
     q = conn.select('select * {?s a :Character}')
@@ -142,14 +142,14 @@ def test_queries(conn):
     # the query should return results if reasoning is on for the transaction
     conn.begin(reasoning=True)
     q = conn.select('select * {?s a :Character}', reasoning=True)
-    assert len(q['results']['bindings']) == 7
+    assert len(q['results']['bindings']) == 8
     conn.rollback()
 
     # reasoning does not need to be specified in the query when it is
     # on in the transaction
     conn.begin(reasoning=True)
     q = conn.select('select * {?s a :Character}')
-    assert len(q['results']['bindings']) == 7
+    assert len(q['results']['bindings']) == 8
     conn.rollback()
 
     # bindings
@@ -269,6 +269,13 @@ def test_docs(conn):
     docs.clear()
     assert docs.size() == 0
 
+def test_unicode(conn):
+    conn.begin()
+    conn.add(content.Raw(':βüãäoñr̈ a :Employee .'.encode('utf-8'), content_types.TURTLE))
+    conn.commit()
+
+    r = conn.select('select * where { ?s ?p ?o }')
+    assert r['results']['bindings'][0]['s']['value'] == 'http://api.stardog.com/βüãäoñr̈'
 
 def test_icv(conn):
 

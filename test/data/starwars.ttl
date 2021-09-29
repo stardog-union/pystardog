@@ -54,6 +54,10 @@
     :appearsIn :NewHope , :Empire , :Jedi ;
     :primaryFunction 'Astromech' .
 
+:rick a :Droid ;
+    :id 2002 ;
+    :name 'Rick βüãäoñr' .
+
 :NewHope a :Episode ;
 	:name "A New Hope" ;
     :index 4 .
