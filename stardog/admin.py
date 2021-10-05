@@ -1533,17 +1533,30 @@ class VirtualGraph(object):
         r = self.client.get(self.path + '/database')
         return r.text
 
+    def mappings_string(self, syntax='STARDOG'):
+        """ Returns graph mappings as RDF
+        Args:
+          syntax (str): The desired RDF syntax of the mappings (STARDOG, R2RML, or SMS2).
+            Defaults to 'STARDOG'
+
+        :return: Mappings in given content type
+        :rtype: string
+        """
+        r = self.client.get(f"{self.path}/mappingsString/{syntax}")
+        return r.content
+
+
     # Should test this. The docs state the path is /mappingsString, but this one goes to /mappings.
     # Either the docs, or this implementation is wrong.
     def mappings(self, content_type=content_types.TURTLE):
-        """Gets the Virtual Graph mappings.
+        """Gets the Virtual Graph mappings (Deprecated, see mappings_string instead).
 
         Args:
           content_type (str): Content type for results.
             Defaults to 'text/turtle'
 
-        Returns:
-          str: Mappings in given content type
+        :return: Mappings in given content type
+        :rtype: bytes
         """
         r = self.client.get(
             self.path + '/mappings', headers={'Accept': content_type})
