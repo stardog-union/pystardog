@@ -16,7 +16,13 @@ class Connection(object):
     Stardog database
     """
 
-    def __init__(self, database, endpoint=None, username=None, password=None, auth=None):
+    def __init__(self,
+                 database,
+                 endpoint=None,
+                 username=None,
+                 password=None,
+                 auth=None,
+                 session=None):
         """Initializes a connection to a Stardog database.
 
         Args:
@@ -27,12 +33,19 @@ class Connection(object):
           password (str, optional): Password to use in the connection
           auth (requests.auth.AuthBase, optional): requests Authentication object.
             Defaults to `None`
+          session (requests.session.Session, optional): requests Session object.
+            Defaults to `None`
 
         Examples:
           >>> conn = Connection('db', endpoint='http://localhost:9999',
                                 username='admin', password='admin')
         """
-        self.client = client.Client(endpoint, database, username, password, auth=auth)
+        self.client = client.Client(endpoint,
+                                    database,
+                                    username,
+                                    password,
+                                    auth=auth,
+                                    session=session)
         self.transaction = None
 
     def docs(self):
