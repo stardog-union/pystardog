@@ -8,12 +8,15 @@ import stardog.exceptions as exceptions
 
 
 @pytest.fixture()
-def conn(conn_string, proxies):
+def conn(conn_string, proxies, ssl_verify):
     if len(proxies):
         # create external session and configure connection
         session = requests.Session()
         # e.g. set proxies
         session.proxies.update(proxies)
+        # or optionally disable ssl_verification
+        # if MITM acting proxy or mysql connector doesn't support it
+        session.verify = ssl_verify
     else:
         session = None
     with connection.Connection('newtest', **conn_string, session=session) as conn:
