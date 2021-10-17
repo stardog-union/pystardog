@@ -17,7 +17,6 @@ class Client(object):
                  username=None,
                  password=None,
                  session=None,
-                 proxies=None,
                  auth=None):
         self.url = endpoint if endpoint else self.DEFAULT_ENDPOINT
 
@@ -30,11 +29,6 @@ class Client(object):
 
         if session is None:
             self.session = requests.Session()
-            if proxies is not None:
-                if isinstance(proxies, dict) and any([key in proxies.keys() for key in ('http', 'https')]):
-                    self.session.proxies.update(proxies)
-                else:
-                    raise TypeError(f"{proxies=} must be a dict of `'scheme': 'scheme://hostname'` item(s).")
         elif isinstance(session, requests.session.Session):
             # allows using e.g. proxy configuration defined explicitly
             # besides standard environment variables like http_proxy, https_proxy, no_proxy and curl_ca_bundle
