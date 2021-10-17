@@ -8,8 +8,15 @@ import stardog.exceptions as exceptions
 
 
 @pytest.fixture()
-def conn(conn_string):
-    with connection.Connection('newtest', **conn_string) as conn:
+def conn(conn_string, proxies):
+    if len(proxies):
+        # create external session and configure connection
+        session = requests.Session()
+        # e.g. set proxies
+        session.proxies.update(proxies)
+    else:
+        session = None
+    with connection.Connection('newtest', **conn_string, session=session) as conn:
         yield conn
 
 
