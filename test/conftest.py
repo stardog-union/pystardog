@@ -7,6 +7,8 @@ def pytest_addoption(parser):
     parser.addoption("--username", action="store", default="admin")
     parser.addoption("--passwd", action="store", default="admin")
     parser.addoption("--endpoint", action="store", default="http://localhost:5820")
+    parser.addoption("--http_proxy", action="store", default=None)
+    parser.addoption("--https_proxy", action="store", default=None)
 
 @pytest.fixture
 def conn_string(pytestconfig):
@@ -17,6 +19,16 @@ def conn_string(pytestconfig):
     }
     return conn
 
+@pytest.fixture
+def proxies(pytestconfig):
+    proxies = {}
+    for protocol in ('http', 'https'):
+        proxy_url = pytestconfig.getoption(f"{protocol}_proxy")
+        if proxy_url is not None \
+        and isinstance(proxy_url, str) \
+        and proxy_url.startswith(protocol):
+            proxies.update({protocol: proxy_url})
+    return proxies
 
 @pytest.fixture
 def bulkload_content():
