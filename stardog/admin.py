@@ -422,7 +422,7 @@ class Admin(object):
         Returns:
           VirtualGraph: The VirtualGraph object
         """
-        return VirtualGraph(name, self.client)
+        return VirtualGraph(name.replace('virtual://', ''), self.client)
 
     def virtual_graphs(self):
         """Retrieves all virtual graphs.
@@ -432,7 +432,7 @@ class Admin(object):
         """
         r = self.client.get('/admin/virtual_graphs')
         virtual_graphs = r.json()['virtual_graphs']
-        return list(map(lambda name: VirtualGraph(name, self.client), virtual_graphs))
+        return list(map(lambda name: VirtualGraph(name.replace('virtual://', ''), self.client), virtual_graphs))
 
     #TODO
     # def virtual_graphs_info(self):
