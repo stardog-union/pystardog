@@ -16,6 +16,7 @@ class Client(object):
                  database=None,
                  username=None,
                  password=None,
+                 session=None,
                  auth=None):
         self.url = endpoint if endpoint else self.DEFAULT_ENDPOINT
 
@@ -26,7 +27,15 @@ class Client(object):
         if database:
             self.url = '{}/{}'.format(self.url, database)
 
-        self.session = requests.Session()
+        if session is None:
+            self.session = requests.Session()
+        elif isinstance(session, requests.session.Session):
+            # allows using e.g. proxy configuration defined explicitly
+            # besides standard environment variables like http_proxy, https_proxy, no_proxy and curl_ca_bundle
+            self.session = session
+        else:
+            raise TypeError(f"{type(session)=} must be a valid requests.session.Session object.")
+
         if auth is None:
             auth = requests.auth.HTTPBasicAuth(self.username, password if password else self.DEFAULT_PASSWORD)
         self.session.auth = auth
