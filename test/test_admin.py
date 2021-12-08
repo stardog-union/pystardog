@@ -866,4 +866,16 @@ def test_add_and_delete_namespaces(admin):
     with pytest.raises(Exception, match="Namespace does not exists for this database"):
         db.remove_namespace("non-existent-ns")
 
+    # tests insertion of a pair of namespaces that is a substring of the first
+    db.add_namespace("testnspace", "my:test:IRI")
+    db.add_namespace("testns", "my:test:IRI")
+
+    assert len(db.namespaces()) == 8
+
+    # tests removal of the correct namespace, even if a similar namespace exists
+    db.remove_namespace("testns")
+    db.remove_namespace("testnspace")
+
+    assert len(db.namespaces()) == 6
+
     db.drop()
