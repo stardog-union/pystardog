@@ -27,6 +27,7 @@ def get_node_ip(node_hostname):
         stdout=subprocess.PIPE)
     return node_ip.stdout
 
+
 def get_current_node_count(admin):
     return len(admin.cluster_info()['nodes'])
 
@@ -787,3 +788,5 @@ def test_add_and_delete_namespaces(admin):
         db.remove_namespace("non-existent-ns")
 
     db.drop()
+
+

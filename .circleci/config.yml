@@ -1,5 +1,35 @@
+version: 2.1
+
 jobs:
-  build:
+  single_node_tests:
+    docker:
+      - image: cimg/base:2020.01
+
+    steps:
+      - checkout
+
+      - run:
+          name: Install debugging utils
+          command: |
+            sudo apt-get update -y
+
+      - run:
+          name: Pull license
+          command: |
+            echo ${pystardog_license} | base64 --decode  > ~/project/dockerfiles/stardog-license-key.bin
+
+      - setup_remote_docker:
+          version: 20.10.11
+
+      - run:
+          name: Start containers and run single node test that are not compatible with cluster
+          no_output_timeout: 15m
+          command: |
+            set -x
+            docker-compose -f docker-compose.single-node.yml up --exit-code-from tests-single-node
+
+
+  cluster_tests:
     docker:
       - image: cimg/base:2020.01
 
@@ -15,12 +45,18 @@ jobs:
           command: |
             echo ${pystardog_license} | base64 --decode  > ~/project/dockerfiles/stardog-license-key.bin
 
-      - setup_remote_docker
+      - setup_remote_docker:
+          version: 20.10.11
 
       - run:
-          name: Start containers and run tests
+          name: Start containers and cluster tests
           no_output_timeout: 15m
           command: |
             set -x
-            docker-compose up --exit-code-from tests
+            docker-compose -f docker-compose.cluster.yml up --exit-code-from tests
 
+workflows:
+  build_and_run_cluster_tests:
+    jobs:
+      - single_node_tests
+      - cluster_tests

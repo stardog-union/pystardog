@@ -944,7 +944,9 @@ class Database(object):
 
         The database must be offline.
         """
-        self.client.post(self.path + '/repair')
+        r = self.client.post(self.path + '/repair')
+        return r.status_code == 200
+
 
     def backup(self, *, to=None):
         """Create a backup of a database on the server.

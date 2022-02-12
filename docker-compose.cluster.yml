@@ -102,7 +102,6 @@ services:
       - STARDOG_USER=${STARDOG_USER}
       - STARDOG_PASS=${STARDOG_PASS}
 
-
   # two mysql servers are used instead of one so we can simulate multiple datasources.
   mysql-music:
     build:
