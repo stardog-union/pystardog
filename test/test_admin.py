@@ -1,5 +1,4 @@
 import pytest
-import datetime
 import os
 from time import sleep
 import subprocess
@@ -29,21 +28,6 @@ def get_node_ip(node_hostname):
 
 def get_current_node_count(admin):
     return len(admin.cluster_info()['nodes'])
-
-# This is currently used to work around
-# https://github.com/stardog-union/pystardog/issues/63
-# Although it could potentially be useful in the future.
-def wait_nodes_to_rejoin(node_count_expected, admin):
-    retries = 0
-    while True:
-        if get_current_node_count(admin) == node_count_expected:
-            return
-        else:
-            retries += 1
-            sleep(1)
-            if retries >= 20:
-                raise Exception("Took too long for cluster to come up")
-
 
 def wait_standby_node_to_join(admin):
     standby_node_ip = get_node_ip(STARDOG_HOSTNAME_STANDBY).decode("utf-8").strip() + ':5820'
@@ -246,14 +230,7 @@ def test_databases(admin, conn_string, bulkload_content):
     # verify
     db.verify()
 
-    # repair
-    db.offline()
-    db.repair()
-    db.online()
-
-    current_node_count = get_current_node_count(admin)
-    bl = admin.new_database('bulkload', {}, *bulkload_content)
-    wait_nodes_to_rejoin(current_node_count, admin)
+    bl = admin.new_database('bulkload', {}, *bulkload_content, copy_to_server=True)
 
     with connection.Connection(
             'bulkload', **conn_string) as c:
@@ -267,59 +244,6 @@ def test_databases(admin, conn_string, bulkload_content):
 
     assert len(admin.databases()) == 0
 
-def test_backup_and_restore(admin, conn_string):
-    def check_db_for_contents(dbname, num_results):
-        with connection.Connection(
-                dbname, **conn_string) as c:
-            q = c.select('select * where { ?s ?p ?o }')
-            assert len(q['results']['bindings']) == num_results
-
-    # determine the path to the backups
-    now = datetime.datetime.now()
-    date = now.strftime('%Y-%m-%d')
-    # This only makes sense if stardog server is running in the same server. Recommended STARDOG_HOME
-    # should be /var/opt/stardog which I am setting as default in case of hitting a remote server.
-    stardog_home = os.getenv('STARDOG_HOME', '/var/opt/stardog')
-    restore_from = os.path.join(
-        f"{stardog_home}", '.backup', 'backup_db', f"{date}")
-
-    # make a db with test data loaded
-    db = admin.new_database(
-        'backup_db', {}, content.File('test/data/starwars.ttl'))
-
-    db.backup()
-    db.drop()
-
-    # data is back after restore
-    try:
-        admin.restore(from_path=restore_from)
-    except Exception as e:
-        raise Exception(str(e) + ". Check whether $STARDOG_HOME is set")
-    check_db_for_contents('backup_db', 90)
-
-    # error if attempting to restore over an existing db without force
-    with pytest.raises(
-            exceptions.StardogException,
-            match='Database already exists'):
-        admin.restore(from_path=restore_from)
-
-    # restore to a new db
-    admin.restore(from_path=restore_from, name='backup_db2')
-    check_db_for_contents('backup_db2', 90)
-
-    # force to overwrite existing
-    db.drop()
-    db = admin.new_database('backup_db')
-    check_db_for_contents('backup_db', 0)
-    admin.restore(from_path=restore_from, force=True)
-    check_db_for_contents('backup_db', 90)
-
-    # the backup location can be specified
-    db.backup(to=os.path.join(stardog_home, 'backuptest'))
-
-    # clean up
-    db.drop()
-    admin.database('backup_db2').drop()
 
 def test_users(admin, conn_string):
     assert len(admin.users()) == len(DEFAULT_USERS)
@@ -638,9 +562,7 @@ def test_cache_ng_datasets(admin, bulkload_content, cache_target_info):
     cache_target = admin.new_cache_target(cache_target_name, cache_target_hostname, cache_target_port, cache_target_username, cache_target_password)
     wait_for_creating_cache_target(admin, cache_target_name)
 
-    current_node_count = get_current_node_count(admin)
-    bl = admin.new_database('bulkload', {}, *bulkload_content)
-    wait_nodes_to_rejoin(current_node_count, admin)
+    bl = admin.new_database('bulkload', {}, *bulkload_content, copy_to_server=True)
 
     assert len(admin.cached_graphs()) == 0
     cached_graph_name = 'cache://cached-ng'
@@ -714,10 +636,7 @@ def test_cache_query_datasets(admin, bulkload_content, cache_target_info):
     cache_target = admin.new_cache_target(cache_target_name, cache_target_hostname, cache_target_port, cache_target_username, cache_target_password)
     wait_for_creating_cache_target(admin, cache_target_name)
 
-    current_node_count = get_current_node_count(admin)
-    bl = admin.new_database('bulkload', {}, *bulkload_content)
-    wait_nodes_to_rejoin(current_node_count, admin)
-
+    bl = admin.new_database('bulkload', {}, *bulkload_content, copy_to_server=True)
 
     assert len(admin.cached_queries()) == 0
 
@@ -787,3 +706,5 @@ def test_add_and_delete_namespaces(admin):
         db.remove_namespace("non-existent-ns")
 
     db.drop()
+
+

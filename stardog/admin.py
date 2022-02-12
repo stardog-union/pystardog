@@ -103,7 +103,7 @@ class Admin(object):
         databases = r.json()['databases']
         return list(map(lambda name: Database(name, self.client), databases))
 
-    def new_database(self, name, options=None, *contents):
+    def new_database(self, name, options=None, *contents, **kwargs):
         """Creates a new database.
 
         Args:
@@ -112,6 +112,8 @@ class Admin(object):
           *contents (Content or (Content, str), optional): Datasets
             to perform bulk-load with. Named graphs are made with tuples of
             Content and the name.
+          **kwargs: Allows to set copy_to_server. If true, sends the files to the Stardog server,
+            and replicates them to the rest of nodes.
 
         Returns:
             Database: The database object
@@ -132,7 +134,7 @@ class Admin(object):
         """
         fmetas = []
         params = []
-
+        copy_to_server = kwargs.get("copy_to_server", False)
         with contextlib2.ExitStack() as stack:
             for c in contents:
                 content = c[0] if isinstance(c, tuple) else c
@@ -156,7 +158,8 @@ class Admin(object):
             meta = {
                 'dbname': name,
                 'options': options if options else {},
-                'files': fmetas
+                'files': fmetas,
+                'copyToServer': copy_to_server
             }
 
             params.append(('root', (None, json.dumps(meta), 'application/json')))
@@ -944,7 +947,9 @@ class Database(object):
 
         The database must be offline.
         """
-        self.client.post(self.path + '/repair')
+        r = self.client.post(self.path + '/repair')
+        return r.status_code == 200
+
 
     def backup(self, *, to=None):
         """Create a backup of a database on the server.

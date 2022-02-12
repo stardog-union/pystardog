@@ -3,9 +3,10 @@ import stardog.content as content
 import stardog.content_types as content_types
 import os
 
-STARDOG_HOSTNAME_NODE_1 = os.environ['STARDOG_HOSTNAME_NODE_1']
-STARDOG_HOSTNAME_CACHE = os.environ['STARDOG_HOSTNAME_CACHE']
-STARDOG_HOSTNAME_STANDBY = os.environ['STARDOG_HOSTNAME_STANDBY']
+# STARDOG_ENDPOINT = os.environ.get('STARDOG_ENDPOINT', None)
+STARDOG_HOSTNAME_NODE_1 = os.environ.get('STARDOG_HOSTNAME_NODE_1', None)
+STARDOG_HOSTNAME_CACHE = os.environ.get('STARDOG_HOSTNAME_CACHE', None)
+STARDOG_HOSTNAME_STANDBY = os.environ.get('STARDOG_HOSTNAME_STANDBY', None)
 
 def pytest_addoption(parser):
     parser.addoption("--username", action="store", default="admin")
