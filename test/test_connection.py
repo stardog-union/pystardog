@@ -299,8 +299,14 @@ def test_icv(conn):
 
     # check/violations/convert
     assert not icv.is_valid(constraints)
+    conn.begin()
     assert len(icv.explain_violations(constraints)) == 14
+    # Need to be in a transaction to run explain_violatins, otherwise we might get "Cannot query against a closed connection"
+    conn.commit()
+
     assert 'SELECT DISTINCT' in icv.convert(constraints)
+
+
 
     # add/remove/clear
     icv.add(constraints)
@@ -341,7 +347,7 @@ def test_icv(conn):
 def test_graphql(conn_string):
     with stardog.admin.Admin(**conn_string) as admin:
         db = admin.new_database('graphql', {},
-                            content.File('test/data/starwars.ttl'))
+                            content.File('test/data/starwars.ttl'), copy_to_server=True)
 
     with connection.Connection(
             'graphql', **conn_string) as c:
