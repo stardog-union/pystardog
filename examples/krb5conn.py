@@ -4,8 +4,8 @@ from requests_kerberos import HTTPKerberosAuth
 
 def main():
     connection_details = {
-        'endpoint': 'http://localhost:5820',
-        'auth': HTTPKerberosAuth()
+        "endpoint": "http://localhost:5820",
+        "auth": HTTPKerberosAuth(),
     }
     with stardog.Admin(**connection_details) as admin:
         users = admin.users()

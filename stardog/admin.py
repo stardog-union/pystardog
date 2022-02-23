@@ -41,9 +41,8 @@ class Admin(object):
         self.client = client.Client(endpoint, None, username, password, auth=auth)
 
     def shutdown(self):
-        """Shuts down the server.
-        """
-        self.client.post('/admin/shutdown')
+        """Shuts down the server."""
+        self.client.post("/admin/shutdown")
 
     def alive(self):
         """
@@ -51,9 +50,8 @@ class Admin(object):
         :return: Returns True if server is alive
         :rtype: bool
         """
-        r = self.client.get('/admin/alive')
+        r = self.client.get("/admin/alive")
         return r.status_code == 200
-
 
     def healthcheck(self):
         """
@@ -61,15 +59,13 @@ class Admin(object):
         :return: Returns true if server is able to accept traffic
         :rtype: bool
         """
-        r = self.client.get('/admin/healthcheck')
+        r = self.client.get("/admin/healthcheck")
         return r.status_code == 200
 
     def get_prometheus_metrics(self):
-        """
-        """
-        r = self.client.get('/admin/status/prometheus')
+        """ """
+        r = self.client.get("/admin/status/prometheus")
         return r.text
-
 
     def get_server_metrics(self):
         """
@@ -78,9 +74,8 @@ class Admin(object):
         :return: Server metrics
         :rtype: dict
         """
-        r = self.client.get('/admin/status')
+        r = self.client.get("/admin/status")
         return r.json()
-
 
     def database(self, name):
         """Retrieves an object representing a database.
@@ -99,8 +94,8 @@ class Admin(object):
         Returns:
           list[Database]: A list of database objects
         """
-        r = self.client.get('/admin/databases')
-        databases = r.json()['databases']
+        r = self.client.get("/admin/databases")
+        databases = r.json()["databases"]
         return list(map(lambda name: Database(name, self.client), databases))
 
     def new_database(self, name, options=None, *contents, **kwargs):
@@ -145,25 +140,33 @@ class Admin(object):
                 # all get properly closed at the end
                 data = stack.enter_context(content.data())
                 fname = content.name
-                fmeta = {'filename': fname}
+                fmeta = {"filename": fname}
 
                 if context:
-                    fmeta['context'] = context
+                    fmeta["context"] = context
 
                 fmetas.append(fmeta)
-                params.append((fname, (fname, data, content.content_type, {
-                    'Content-Encoding': content.content_encoding
-                })))
+                params.append(
+                    (
+                        fname,
+                        (
+                            fname,
+                            data,
+                            content.content_type,
+                            {"Content-Encoding": content.content_encoding},
+                        ),
+                    )
+                )
 
             meta = {
-                'dbname': name,
-                'options': options if options else {},
-                'files': fmetas,
-                'copyToServer': copy_to_server
+                "dbname": name,
+                "options": options if options else {},
+                "files": fmetas,
+                "copyToServer": copy_to_server,
             }
 
-            params.append(('root', (None, json.dumps(meta), 'application/json')))
-            self.client.post('/admin/databases', files=params)
+            params.append(("root", (None, json.dumps(meta), "application/json")))
+            self.client.post("/admin/databases", files=params)
             return Database(name, self.client)
 
     def restore(self, from_path, *, name=None, force=False):
@@ -185,25 +188,21 @@ class Admin(object):
         See Also:
           https://www.stardog.com/docs/#_restore_a_database_from_a_backup
         """
-        params = {
-            'from': from_path,
-            'force': force
-        }
+        params = {"from": from_path, "force": force}
         if name:
-            params['name'] = name
+            params["name"] = name
 
-        self.client.put('/admin/restore', params=params)
+        self.client.put("/admin/restore", params=params)
 
     def backup_all(self, location=None):
         """
         Create a backup of all databases on the server
         """
-        url = '/admin/databases/backup_all'
+        url = "/admin/databases/backup_all"
         if location is not None:
-            params = urllib.parse.urlencode({'to': location})
-            url = f'{url}?{params}'
+            params = urllib.parse.urlencode({"to": location})
+            url = f"{url}?{params}"
         self.client.put(url)
-
 
     def get_all_metadata_properties(self):
         """
@@ -211,7 +210,7 @@ class Admin(object):
         :return: Metadata properties
         :rtype: dict
         """
-        r = self.client.get('/admin/config_properties')
+        r = self.client.get("/admin/config_properties")
         return r.json()
 
     def query(self, id):
@@ -223,7 +222,7 @@ class Admin(object):
         Returns:
             dict: Query information
         """
-        r = self.client.get('/admin/queries/{}'.format(id))
+        r = self.client.get("/admin/queries/{}".format(id))
         return r.json()
 
     def queries(self):
@@ -232,8 +231,8 @@ class Admin(object):
         Returns:
           dict: Query information
         """
-        r = self.client.get('/admin/queries')
-        return r.json()['queries']
+        r = self.client.get("/admin/queries")
+        return r.json()["queries"]
 
     def kill_query(self, id):
         """Kills a running query.
@@ -241,7 +240,7 @@ class Admin(object):
         Args:
           id (str): ID of the query to kill
         """
-        self.client.delete('/admin/queries/{}'.format(id))
+        self.client.delete("/admin/queries/{}".format(id))
 
     def stored_query(self, name):
         """Retrieves a Stored Query.
@@ -260,9 +259,10 @@ class Admin(object):
         Returns:
           list[StoredQuery]: A list of StoredQuery objects
         """
-        r = self.client.get('/admin/queries/stored',
-                            headers={'Accept': 'application/json'})
-        query_names = [q['name'] for q in r.json()['queries']]
+        r = self.client.get(
+            "/admin/queries/stored", headers={"Accept": "application/json"}
+        )
+        query_names = [q["name"] for q in r.json()["queries"]]
         return list(map(lambda name: StoredQuery(name, self.client), query_names))
 
     def new_stored_query(self, name, query, options=None):
@@ -285,17 +285,13 @@ class Admin(object):
         if options is None:
             options = {}
 
-        meta = {
-            'name': name,
-            'query': query,
-            'creator': self.client.username
-        }
+        meta = {"name": name, "query": query, "creator": self.client.username}
         meta.update(options)
 
-        self.client.post('/admin/queries/stored', json=meta)
+        self.client.post("/admin/queries/stored", json=meta)
         return StoredQuery(name, self.client)
 
-    #TODO
+    # TODO
     # def update_stored_query(self):
     #     """
     #     Add stored query, overwriting if a query with that name already exists
@@ -304,12 +300,10 @@ class Admin(object):
     #     """
 
     def clear_stored_queries(self):
-        """Remove all stored queries on the server.
-        """
-        self.client.delete('/admin/queries/stored')
+        """Remove all stored queries on the server."""
+        self.client.delete("/admin/queries/stored")
 
-
-    #TODO
+    # TODO
     # def new_stored_function(self):
     #     """
     #     Adds Stored Function
@@ -317,7 +311,7 @@ class Admin(object):
     #     :return:
     #     """
 
-    #TODO
+    # TODO
     # def stored_function(self):
     #     """
     #     Get Stored function
@@ -325,7 +319,7 @@ class Admin(object):
     #     :return:
     #     """
 
-    #TODO
+    # TODO
     # def stored_functions(self):
     #     """
     #     Retrieve all stored functions on the server, or optionally just the function specified in the query string parameter
@@ -333,7 +327,7 @@ class Admin(object):
     #     :return:
     #     """
 
-    #TODO: Note this can delete all, or a specific stored function passed as a paramter.
+    # TODO: Note this can delete all, or a specific stored function passed as a paramter.
     #  We might need to discuss if we are going to support both methods separatly, or depending if no param is passed, then delete all stored functions.
     # def delete_stored_functions(self):
     #     """
@@ -359,8 +353,8 @@ class Admin(object):
         Returns:
           list[User]: A list of User objects
         """
-        r = self.client.get('/admin/users')
-        users = r.json()['users']
+        r = self.client.get("/admin/users")
+        users = r.json()["users"]
         return list(map(lambda name: User(name, self.client), users))
 
     def new_user(self, username, password, superuser=False):
@@ -375,12 +369,12 @@ class Admin(object):
           User: The new User object
         """
         meta = {
-            'username': username,
-            'password': list(password),
-            'superuser': superuser,
+            "username": username,
+            "password": list(password),
+            "superuser": superuser,
         }
 
-        self.client.post('/admin/users', json=meta)
+        self.client.post("/admin/users", json=meta)
         return self.user(username)
 
     def role(self, name):
@@ -400,8 +394,8 @@ class Admin(object):
         Returns:
           list[Role]: A list of Role objects
         """
-        r = self.client.get('/admin/roles')
-        roles = r.json()['roles']
+        r = self.client.get("/admin/roles")
+        roles = r.json()["roles"]
         return list(map(lambda name: Role(name, self.client), roles))
 
     def new_role(self, name):
@@ -413,7 +407,7 @@ class Admin(object):
         Returns:
           Role: The new Role object
         """
-        self.client.post('/admin/roles', json={'rolename': name})
+        self.client.post("/admin/roles", json={"rolename": name})
         return Role(name, self.client)
 
     def virtual_graph(self, name):
@@ -433,11 +427,11 @@ class Admin(object):
         Returns:
           list[VirtualGraph]: A list of VirtualGraph objects
         """
-        r = self.client.get('/admin/virtual_graphs')
-        virtual_graphs = r.json()['virtual_graphs']
+        r = self.client.get("/admin/virtual_graphs")
+        virtual_graphs = r.json()["virtual_graphs"]
         return list(map(lambda name: VirtualGraph(name, self.client), virtual_graphs))
 
-    #TODO
+    # TODO
     # def virtual_graphs_info(self):
     #     """
     #     List Virtual Graphs Info
@@ -445,7 +439,6 @@ class Admin(object):
     #
     #     :return:
     #     """
-
 
     def import_virtual_graph(self, db, mappings, named_graph, remove_all, options):
         """Import (materialize) a virtual graph directly into the local knowledge graph.
@@ -466,16 +459,15 @@ class Admin(object):
 
         if mappings:
             with mappings.data() as data:
-                mappings = data.read().decode() if hasattr(data, 'read') else data
+                mappings = data.read().decode() if hasattr(data, "read") else data
         meta = {
-            'db': db,
-            'mappings': mappings,
-            'named_graph': named_graph,
-            'remove_all': remove_all,
-            'options': options
+            "db": db,
+            "mappings": mappings,
+            "named_graph": named_graph,
+            "remove_all": remove_all,
+            "options": options,
         }
-        r = self.client.post('/admin/virtual_graphs/import_db', json=meta)
-
+        r = self.client.post("/admin/virtual_graphs/import_db", json=meta)
 
     def new_virtual_graph(self, name, mappings, options=None, datasource=None, db=None):
         """Creates a new Virtual Graph.
@@ -499,22 +491,22 @@ class Admin(object):
 
         if mappings:
             with mappings.data() as data:
-                mappings = data.read().decode() if hasattr(data, 'read') else data
+                mappings = data.read().decode() if hasattr(data, "read") else data
 
         meta = {}
-        meta['name'] = name
-        meta['mappings'] = mappings
+        meta["name"] = name
+        meta["mappings"] = mappings
         if options is not None:
-            meta['options'] = options
+            meta["options"] = options
         if datasource is not None:
-            meta['data_source'] = datasource
+            meta["data_source"] = datasource
         if db is not None:
-            meta['db'] = db
+            meta["db"] = db
 
-        self.client.post('/admin/virtual_graphs', json=meta)
+        self.client.post("/admin/virtual_graphs", json=meta)
         return VirtualGraph(name, self.client)
 
-    #TODO
+    # TODO
     # def virtual_graph_import_file(self):
     #     """
     #     Import a CSV or JSON file as a virtual graph into the knowledge graph.
@@ -540,8 +532,8 @@ class Admin(object):
         Returns:
           list[DataSources]: A list of DataSources
         """
-        r = self.client.get('/admin/data_sources')
-        data_sources = r.json()['data_sources']
+        r = self.client.get("/admin/data_sources")
+        data_sources = r.json()["data_sources"]
         return list(map(lambda name: DataSource(name, self.client), data_sources))
 
     def datasources_info(self):
@@ -551,8 +543,8 @@ class Admin(object):
           list: A list of data sources info
         """
 
-        r = self.client.get('/admin/data_sources/list')
-        return r.json()['data_sources']
+        r = self.client.get("/admin/data_sources/list")
+        return r.json()["data_sources"]
 
     def new_datasource(self, name, options):
         """Creates a new DataSource.
@@ -568,12 +560,9 @@ class Admin(object):
         if options is None:
             options = {}
 
-        meta = {
-            "name": name,
-            "options": options
-        }
+        meta = {"name": name, "options": options}
 
-        self.client.post('/admin/data_sources', json=meta)
+        self.client.post("/admin/data_sources", json=meta)
         return DataSource(name, self.client)
 
     def get_server_properties(self):
@@ -583,10 +572,10 @@ class Admin(object):
             dict: Server properties
         """
 
-        r = self.client.get('/admin/properties')
+        r = self.client.get("/admin/properties")
         return r.json()
 
-    #TODO
+    # TODO
     # def set_server_properties(self):
     #     """
     #     Set the value of specific server properties
@@ -600,7 +589,7 @@ class Admin(object):
         Returns:
           bool: The connection state
         """
-        self.client.get('/admin/users/valid')
+        self.client.get("/admin/users/valid")
 
     def cluster_list_standby_nodes(self):
         """
@@ -608,14 +597,14 @@ class Admin(object):
         :return: Returns the registry ID for the standby nodes.
         :rtype: dict
         """
-        r = self.client.get('/admin/cluster/standby/registry')
+        r = self.client.get("/admin/cluster/standby/registry")
         return r.json()
 
     def cluster_join(self):
         """
         Instruct a standby node to join its cluster as a full node
         """
-        self.client.put('/admin/cluster/standby/join')
+        self.client.put("/admin/cluster/standby/join")
 
     def standby_node_pause_status(self):
         """
@@ -624,7 +613,7 @@ class Admin(object):
         :return: Pause status of a standby node, possible values are: "WAITING", "SYNCING", "PAUSING", "PAUSED"
         :rtype: Dict
         """
-        r = self.client.get('/admin/cluster/standby/pause')
+        r = self.client.get("/admin/cluster/standby/pause")
         return r.json()
 
     def standby_node_pause(self, pause):
@@ -636,11 +625,10 @@ class Admin(object):
         :rtype: bool
         """
         if pause:
-            r = self.client.put('/admin/cluster/standby/pause?pause=true')
+            r = self.client.put("/admin/cluster/standby/pause?pause=true")
         else:
-            r = self.client.put('/admin/cluster/standby/pause?pause=false')
+            r = self.client.put("/admin/cluster/standby/pause?pause=false")
         return r.status_code == 200
-
 
     def cluster_revoke_standby_access(self, registry_id):
         """
@@ -648,19 +636,19 @@ class Admin(object):
         Args:
           *registry_id: (string): Id of the standby node to stop syncing.
         """
-        self.client.delete('/admin/cluster/standby/registry/' + registry_id)
+        self.client.delete("/admin/cluster/standby/registry/" + registry_id)
 
     def cluster_start_readonly(self):
         """
         Start read only mode
         """
-        self.client.put('/admin/cluster/readonly')
+        self.client.put("/admin/cluster/readonly")
 
     def cluster_stop_readonly(self):
         """
         Stops read only mode
         """
-        self.client.delete('/admin/cluster/readonly')
+        self.client.delete("/admin/cluster/readonly")
 
     def cluster_coordinator_check(self):
         """
@@ -668,10 +656,10 @@ class Admin(object):
         :return: True if the node is a coordinator, false if not.
         :rtype: Bool
         """
-        r = self.client.get('/admin/cluster/coordinator')
+        r = self.client.get("/admin/cluster/coordinator")
         return r.status_code == 200
 
-    #TODO:
+    # TODO:
     # def cluster_diagnostics_report(self):
     #     """
     #     Get cluster diagnostics report
@@ -688,7 +676,7 @@ class Admin(object):
         :return: Nodes of the cluster and extra information
         :rtype: dict
         """
-        r = self.client.get('/admin/cluster/status')
+        r = self.client.get("/admin/cluster/status")
         return r.json()
 
     def cluster_info(self):
@@ -698,7 +686,7 @@ class Admin(object):
         :return: Nodes of the cluster
         :rtype: dict
         """
-        r = self.client.get('/admin/cluster')
+        r = self.client.get("/admin/cluster")
         return r.json()
 
     def cluster_shutdown(self):
@@ -707,9 +695,8 @@ class Admin(object):
         :return: True if the cluster got shutdown successfully.
         :rtype: bool
         """
-        r = self.client.post('/admin/shutdownAll')
+        r = self.client.post("/admin/shutdownAll")
         return r.status_code == 200
-
 
     def cache(self, name):
         """Retrieve an object representing a cached dataset.
@@ -727,7 +714,7 @@ class Admin(object):
         Returns:
           list[str]: List of statuses
         """
-        return self.client.post('/admin/cache/status', json=names).json()
+        return self.client.post("/admin/cache/status", json=names).json()
 
     def cached_queries(self):
         """Retrieves all cached queries.
@@ -735,8 +722,8 @@ class Admin(object):
         Returns:
           list[Cache]: A list of Cache objects
         """
-        r = self.client.get('/admin/cache/queries')
-        cache_names = [cache_name['name'] for cache_name in r.json()]
+        r = self.client.get("/admin/cache/queries")
+        cache_names = [cache_name["name"] for cache_name in r.json()]
         return list(map(lambda name: Cache(name, self.client), cache_names))
 
     def cached_graphs(self):
@@ -745,12 +732,13 @@ class Admin(object):
         Returns:
           list[Cache]: A list of Cache objects
         """
-        r = self.client.get('/admin/cache/graphs')
-        cache_names = [cache_name['name'] for cache_name in r.json()]
+        r = self.client.get("/admin/cache/graphs")
+        cache_names = [cache_name["name"] for cache_name in r.json()]
         return list(map(lambda name: Cache(name, self.client), cache_names))
 
-
-    def new_cached_query(self, name, target, query, database, refresh_script=None, register_only=False):
+    def new_cached_query(
+        self, name, target, query, database, refresh_script=None, register_only=False
+    ):
         """Creates a new cached query.
 
         Args:
@@ -769,23 +757,30 @@ class Admin(object):
         """
 
         params = {
-            'name': name,
-            'target': target,
-            'database': database,
-            'query': query,
-
+            "name": name,
+            "target": target,
+            "database": database,
+            "query": query,
         }
 
         if refresh_script:
-            params['refreshScript'] = refresh_script
+            params["refreshScript"] = refresh_script
 
         if register_only:
-            params['registerOnly'] = True
+            params["registerOnly"] = True
 
-        self.client.post('/admin/cache', json=params)
+        self.client.post("/admin/cache", json=params)
         return Cache(name, self.client)
 
-    def new_cached_graph(self, name, target, graph, database=None, refresh_script=None, register_only=False):
+    def new_cached_graph(
+        self,
+        name,
+        target,
+        graph,
+        database=None,
+        refresh_script=None,
+        register_only=False,
+    ):
         """Creates a new cached graph.
 
         Args:
@@ -801,22 +796,21 @@ class Admin(object):
           Cache: The new Cache"""
 
         params = {
-            'name': name,
-            'target': target,
-            'graph': graph,
+            "name": name,
+            "target": target,
+            "graph": graph,
         }
 
         if database:
-            params['database'] = database
+            params["database"] = database
 
         if refresh_script:
-            params['refreshScript'] = refresh_script
+            params["refreshScript"] = refresh_script
 
         if register_only:
-            params['registerOnly'] = True
+            params["registerOnly"] = True
 
-
-        self.client.post('/admin/cache', json=params)
+        self.client.post("/admin/cache", json=params)
         return Cache(name, self.client)
 
     def cache_targets(self):
@@ -825,12 +819,14 @@ class Admin(object):
         Returns:
           list[CacheTarget]: A list of CacheTarget objects
         """
-        r = self.client.get('/admin/cache/target')
+        r = self.client.get("/admin/cache/target")
         return list(
-            map(lambda target: CacheTarget(target['name'], self.client), r.json())
+            map(lambda target: CacheTarget(target["name"], self.client), r.json())
         )
 
-    def new_cache_target(self, name, hostname, port, username, password, use_existing_db=False):
+    def new_cache_target(
+        self, name, hostname, port, username, password, use_existing_db=False
+    ):
         """Creates a new cache target.
 
         Args:
@@ -845,17 +841,17 @@ class Admin(object):
           CacheTarget: The new CacheTarget
         """
         params = {
-            'name': name,
-            'hostname': hostname,
-            'port': port,
-            'username': username,
-            'password': password,
+            "name": name,
+            "hostname": hostname,
+            "port": port,
+            "username": username,
+            "password": password,
         }
 
         if use_existing_db:
-            params['useExistingDb'] = True
+            params["useExistingDb"] = True
 
-        self.client.post('/admin/cache/target', json=params)
+        self.client.post("/admin/cache/target", json=params)
         return CacheTarget(name, self.client)
 
     def __enter__(self):
@@ -882,16 +878,15 @@ class Database(object):
         """
         self.database_name = name
         self.client = client
-        self.path = '/admin/databases/{}'.format(name)
+        self.path = "/admin/databases/{}".format(name)
 
     @property
     def name(self):
-        """The name of the database.
-        """
+        """The name of the database."""
         return self.database_name
 
     def get_options(self, *options):
-        """ Get the value of specific metadata options for a database
+        """Get the value of specific metadata options for a database
 
         Args:
           *options (str): Database option names
@@ -905,16 +900,16 @@ class Database(object):
         # transform into {'option': None} dict
         meta = dict([(x, None) for x in options])
 
-        r = self.client.put(self.path + '/options', json=meta)
+        r = self.client.put(self.path + "/options", json=meta)
         return r.json()
 
     def get_all_options(self):
-        """ Get the value of every metadata option for a database
+        """Get the value of every metadata option for a database
 
         :return: Dict detailing all database metadata
         :rtype: Dict
         """
-        r = self.client.get(self.path + '/options')
+        r = self.client.get(self.path + "/options")
         return r.json()
 
     def set_options(self, options):
@@ -929,27 +924,24 @@ class Database(object):
             >>> db.set_options({'spatial.enabled': False})
         """
 
-        r = self.client.post(self.path + '/options', json=options)
+        r = self.client.post(self.path + "/options", json=options)
         return r.status_code == 200
 
     def optimize(self):
-        """Optimizes a database.
-        """
-        self.client.put(self.path + '/optimize')
+        """Optimizes a database."""
+        self.client.put(self.path + "/optimize")
 
     def verify(self):
-        """verifies a database.
-        """
-        self.client.post(self.path + '/verify')
+        """verifies a database."""
+        self.client.post(self.path + "/verify")
 
     def repair(self):
         """Attempt to recover a corrupted database.
 
         The database must be offline.
         """
-        r = self.client.post(self.path + '/repair')
+        r = self.client.post(self.path + "/repair")
         return r.status_code == 200
-
 
     def backup(self, *, to=None):
         """Create a backup of a database on the server.
@@ -961,18 +953,16 @@ class Database(object):
         See Also:
           https://www.stardog.com/docs/#_backup_a_database
         """
-        params = {'to': to} if to else {}
-        self.client.put(self.path + '/backup', params=params)
+        params = {"to": to} if to else {}
+        self.client.put(self.path + "/backup", params=params)
 
     def online(self):
-        """Sets a database to online state.
-        """
-        self.client.put(self.path + '/online')
+        """Sets a database to online state."""
+        self.client.put(self.path + "/online")
 
     def offline(self):
-        """Sets a database to offline state.
-        """
-        self.client.put(self.path + '/offline')
+        """Sets a database to offline state."""
+        self.client.put(self.path + "/offline")
 
     def copy(self, to):
         """Makes a copy of this database under another name.
@@ -985,12 +975,11 @@ class Database(object):
         Returns:
           Database: The new Database
         """
-        self.client.put(self.path + '/copy', params={'to': to})
+        self.client.put(self.path + "/copy", params={"to": to})
         return Database(to, self.client)
 
     def drop(self):
-        """Drops the database.
-        """
+        """Drops the database."""
         self.client.delete(self.path)
 
     def namespaces(self):
@@ -1000,8 +989,8 @@ class Database(object):
         :return: A dict listing the prefixes and IRIs of the stored namespaces
         :rtype: Dict
         """
-        r = self.client.get(f'/{self.database_name}/namespaces')
-        return r.json()['namespaces']
+        r = self.client.get(f"/{self.database_name}/namespaces")
+        return r.json()["namespaces"]
 
     def import_namespaces(self, content):
         """
@@ -1017,18 +1006,19 @@ class Database(object):
         """
 
         with content.data() as data:
-            r = self.client.post('/' + self.database_name + '/namespaces',
+            r = self.client.post(
+                "/" + self.database_name + "/namespaces",
                 data=data,
                 headers={
-                 'Content-Type': content.content_type,
-                 'Content-Encoding': content.content_encoding
-                }
+                    "Content-Type": content.content_type,
+                    "Content-Encoding": content.content_encoding,
+                },
             )
 
         return r.json()
 
     def add_namespace(self, prefix, iri):
-        """ Adds a specific namespace to a database
+        """Adds a specific namespace to a database
         :return: True if the operation succeeded.
         :rtype: Bool
         """
@@ -1036,17 +1026,19 @@ class Database(object):
         # easy way to check if a namespace already exists
         current_namespaces = self.namespaces()
         for namespace in current_namespaces:
-            if prefix in namespace['prefix']:
-                raise Exception(f"Namespace already exists for this database: {namespace}")
+            if prefix in namespace["prefix"]:
+                raise Exception(
+                    f"Namespace already exists for this database: {namespace}"
+                )
 
-        namespaces = self.get_options("database.namespaces")['database.namespaces']
+        namespaces = self.get_options("database.namespaces")["database.namespaces"]
         namespace_to_append = f"{prefix}={iri}"
         namespaces.append(namespace_to_append)
-        result  = self.set_options({'database.namespaces': namespaces})
+        result = self.set_options({"database.namespaces": namespaces})
         return result
 
     def remove_namespace(self, prefix):
-        """ Removes a specific namespace from a database
+        """Removes a specific namespace from a database
         :return: True if the operation succeeded.
         :rtype: Bool
         """
@@ -1054,11 +1046,13 @@ class Database(object):
         # easy way to check if a namespace already exists
         current_namespaces = self.namespaces()
         for namespace in current_namespaces:
-            if prefix in namespace['prefix']:
-                namespaces = self.get_options("database.namespaces")['database.namespaces']
+            if prefix in namespace["prefix"]:
+                namespaces = self.get_options("database.namespaces")[
+                    "database.namespaces"
+                ]
                 namespace_to_remove = f"{prefix}={namespace['name']}"
                 namespaces.remove(namespace_to_remove)
-                result = self.set_options({'database.namespaces': namespaces})
+                result = self.set_options({"database.namespaces": namespaces})
                 return result
 
         raise Exception(f"Namespace does not exists for this database: {namespace}")
@@ -1085,55 +1079,48 @@ class StoredQuery(object):
         """
         self.query_name = name
         self.client = client
-        self.path = '/admin/queries/stored/{}'.format(name)
+        self.path = "/admin/queries/stored/{}".format(name)
         self.details = {}
         self.__refresh()
 
     def __refresh(self):
-        details = self.client.get(self.path, headers={'Accept': 'application/json'})
-        self.details.update(details.json()['queries'][0])
+        details = self.client.get(self.path, headers={"Accept": "application/json"})
+        self.details.update(details.json()["queries"][0])
 
     @property
     def name(self):
-        """The name of the stored query.
-        """
+        """The name of the stored query."""
         return self.query_name
 
     @property
     def description(self):
-        """The description of the stored query.
-        """
-        return self.details['description']
+        """The description of the stored query."""
+        return self.details["description"]
 
     @property
     def creator(self):
-        """The creator of the stored query.
-        """
-        return self.details['creator']
+        """The creator of the stored query."""
+        return self.details["creator"]
 
     @property
     def database(self):
-        """The database the stored query applies to.
-        """
-        return self.details['database']
+        """The database the stored query applies to."""
+        return self.details["database"]
 
     @property
     def query(self):
-        """The text of the stored query.
-        """
-        return self.details['query']
+        """The text of the stored query."""
+        return self.details["query"]
 
     @property
     def shared(self):
-        """The value of the shared property.
-        """
-        return self.details['shared']
+        """The value of the shared property."""
+        return self.details["shared"]
 
     @property
     def reasoning(self):
-        """The value of the reasoning property.
-        """
-        return self.details['reasoning']
+        """The value of the reasoning property."""
+        return self.details["reasoning"]
 
     def update(self, **options):
         """Updates the Stored Query.
@@ -1146,17 +1133,16 @@ class StoredQuery(object):
 
             >>> stored_query.update(description='this query finds all the relevant...')
         """
-        options['name'] = self.query_name
-        for opt in ['query', 'creator']:
+        options["name"] = self.query_name
+        for opt in ["query", "creator"]:
             if opt not in options:
                 options[opt] = self.__getattribute__(opt)
 
-        self.client.put('/admin/queries/stored', json=options)
+        self.client.put("/admin/queries/stored", json=options)
         self.__refresh()
 
     def delete(self):
-        """Deletes the Stored Query.
-        """
+        """Deletes the Stored Query."""
         self.client.delete(self.path)
 
 
@@ -1177,12 +1163,11 @@ class User(object):
         """
         self.username = name
         self.client = client
-        self.path = '/admin/users/{}'.format(name)
+        self.path = "/admin/users/{}".format(name)
 
     @property
     def name(self):
-        """str: The user name.
-        """
+        """str: The user name."""
         return self.username
 
     def set_password(self, password):
@@ -1191,7 +1176,7 @@ class User(object):
         Args:
           password (str)
         """
-        self.client.put(self.path + '/pwd', json={'password': password})
+        self.client.put(self.path + "/pwd", json={"password": password})
 
     def is_enabled(self):
         """Checks if the user is enabled.
@@ -1199,8 +1184,8 @@ class User(object):
         Returns:
           bool: User activation state
         """
-        r = self.client.get(self.path + '/enabled')
-        return bool(r.json()['enabled'])
+        r = self.client.get(self.path + "/enabled")
+        return bool(r.json()["enabled"])
 
     def set_enabled(self, enabled):
         """Enables or disables the user.
@@ -1208,7 +1193,7 @@ class User(object):
         Args:
           enabled (bool): Desired User state
         """
-        self.client.put(self.path + '/enabled', json={'enabled': enabled})
+        self.client.put(self.path + "/enabled", json={"enabled": enabled})
 
     def is_superuser(self):
         """Checks if the user is a super user.
@@ -1216,8 +1201,8 @@ class User(object):
         Returns:
           bool: Superuser state
         """
-        r = self.client.get(self.path + '/superuser')
-        return bool(r.json()['superuser'])
+        r = self.client.get(self.path + "/superuser")
+        return bool(r.json()["superuser"])
 
     def roles(self):
         """Gets all the User's roles.
@@ -1225,8 +1210,8 @@ class User(object):
         Returns:
           list[Role]
         """
-        r = self.client.get(self.path + '/roles')
-        roles = r.json()['roles']
+        r = self.client.get(self.path + "/roles")
+        roles = r.json()["roles"]
         return list(map(lambda name: Role(name, self.client), roles))
 
     def add_role(self, role):
@@ -1239,7 +1224,7 @@ class User(object):
             >>> user.add_role('reader')
             >>> user.add_role(admin.role('reader'))
         """
-        self.client.post(self.path + '/roles', json={'rolename': role})
+        self.client.post(self.path + "/roles", json={"rolename": role})
 
     def set_roles(self, *roles):
         """Sets the roles of the user.
@@ -1251,7 +1236,7 @@ class User(object):
             >>> user.set_roles('reader', admin.role('writer'))
         """
         roles = list(map(self.__rolename, roles))
-        self.client.put(self.path + '/roles', json={'roles': roles})
+        self.client.put(self.path + "/roles", json={"roles": roles})
 
     def remove_role(self, role):
         """Removes a role from the user.
@@ -1263,11 +1248,10 @@ class User(object):
             >>> user.remove_role('reader')
             >>> user.remove_role(admin.role('reader'))
         """
-        self.client.delete(self.path + '/roles/' + role)
+        self.client.delete(self.path + "/roles/" + role)
 
     def delete(self):
-        """Deletes the user.
-        """
+        """Deletes the user."""
         self.client.delete(self.path)
 
     def permissions(self):
@@ -1279,8 +1263,8 @@ class User(object):
         Returns:
           dict: User permissions
         """
-        r = self.client.get('/admin/permissions/user/{}'.format(self.name))
-        return r.json()['permissions']
+        r = self.client.get("/admin/permissions/user/{}".format(self.name))
+        return r.json()["permissions"]
 
     def add_permission(self, action, resource_type, resource):
         """Add a permission to the user.
@@ -1298,12 +1282,11 @@ class User(object):
             >>> user.add_permission('write', '*', '*')
         """
         meta = {
-            'action': action,
-            'resource_type': resource_type,
-            'resource': [resource]
+            "action": action,
+            "resource_type": resource_type,
+            "resource": [resource],
         }
-        self.client.put(
-            '/admin/permissions/user/{}'.format(self.name), json=meta)
+        self.client.put("/admin/permissions/user/{}".format(self.name), json=meta)
 
     def remove_permission(self, action, resource_type, resource):
         """Removes a permission from the user.
@@ -1321,13 +1304,14 @@ class User(object):
             >>> user.remove_permission('write', '*', '*')
         """
         meta = {
-            'action': action,
-            'resource_type': resource_type,
-            'resource': [resource]
+            "action": action,
+            "resource_type": resource_type,
+            "resource": [resource],
         }
 
         self.client.post(
-            '/admin/permissions/user/{}/delete'.format(self.name), json=meta)
+            "/admin/permissions/user/{}/delete".format(self.name), json=meta
+        )
 
     def effective_permissions(self):
         """Gets the user's effective permissions.
@@ -1335,8 +1319,8 @@ class User(object):
         Returns:
           dict: User effective permissions
         """
-        r = self.client.get('/admin/permissions/effective/user/' + self.name)
-        return r.json()['permissions']
+        r = self.client.get("/admin/permissions/effective/user/" + self.name)
+        return r.json()["permissions"]
 
     def __rolename(self, role):
         return role.name if isinstance(role, Role) else role
@@ -1359,12 +1343,11 @@ class Role(object):
         """
         self.role_name = name
         self.client = client
-        self.path = '/admin/roles/{}'.format(name)
+        self.path = "/admin/roles/{}".format(name)
 
     @property
     def name(self):
-        """The name of the Role.
-        """
+        """The name of the Role."""
         return self.role_name
 
     def users(self):
@@ -1373,8 +1356,8 @@ class Role(object):
         Returns:
           list[User]
         """
-        r = self.client.get(self.path + '/users')
-        users = r.json()['users']
+        r = self.client.get(self.path + "/users")
+        users = r.json()["users"]
         return list(map(lambda name: User(name, self.client), users))
 
     def delete(self, force=None):
@@ -1383,7 +1366,7 @@ class Role(object):
         Args:
           force (bool): Force deletion of the role
         """
-        self.client.delete(self.path, params={'force': force})
+        self.client.delete(self.path, params={"force": force})
 
     def permissions(self):
         """Gets the role permissions.
@@ -1394,8 +1377,8 @@ class Role(object):
         Returns:
           dict: Role permissions
         """
-        r = self.client.get('/admin/permissions/role/{}'.format(self.name))
-        return r.json()['permissions']
+        r = self.client.get("/admin/permissions/role/{}".format(self.name))
+        return r.json()["permissions"]
 
     def add_permission(self, action, resource_type, resource):
         """Adds a permission to the role.
@@ -1413,13 +1396,12 @@ class Role(object):
             >>> role.add_permission('write', '*', '*')
         """
         meta = {
-            'action': action,
-            'resource_type': resource_type,
-            'resource': [resource]
+            "action": action,
+            "resource_type": resource_type,
+            "resource": [resource],
         }
 
-        self.client.put(
-            '/admin/permissions/role/{}'.format(self.name), json=meta)
+        self.client.put("/admin/permissions/role/{}".format(self.name), json=meta)
 
     def remove_permission(self, action, resource_type, resource):
         """Removes a permission from the role.
@@ -1437,13 +1419,14 @@ class Role(object):
             >>> role.remove_permission('write', '*', '*')
         """
         meta = {
-            'action': action,
-            'resource_type': resource_type,
-            'resource': [resource]
+            "action": action,
+            "resource_type": resource_type,
+            "resource": [resource],
         }
 
         self.client.post(
-            '/admin/permissions/role/{}/delete'.format(self.name), json=meta)
+            "/admin/permissions/role/{}/delete".format(self.name), json=meta
+        )
 
     def __repr__(self):
         return self.name
@@ -1466,13 +1449,12 @@ class VirtualGraph(object):
         """
 
         self.graph_name = name
-        self.path = '/admin/virtual_graphs/{}'.format(name)
+        self.path = "/admin/virtual_graphs/{}".format(name)
         self.client = client
 
     @property
     def name(self):
-        """The name of the virtual graph.
-        """
+        """The name of the virtual graph."""
         return self.graph_name
 
     def update(self, name, mappings, options={}, datasource=None, db=None):
@@ -1489,24 +1471,23 @@ class VirtualGraph(object):
         """
         if mappings:
             with mappings.data() as data:
-                mappings = data.read().decode() if hasattr(data, 'read') else data
+                mappings = data.read().decode() if hasattr(data, "read") else data
 
         meta = {}
-        meta['name'] = name
-        meta['mappings'] = mappings
+        meta["name"] = name
+        meta["mappings"] = mappings
         if options is not None:
-            meta['options'] = options
+            meta["options"] = options
         if datasource is not None:
-            meta['data_source'] = datasource
+            meta["data_source"] = datasource
         if db is not None:
-            meta['db'] = db
+            meta["db"] = db
 
         self.client.put(self.path, json=meta)
         self.graph_name = name
 
     def delete(self):
-        """Deletes the Virtual Graph.
-        """
+        """Deletes the Virtual Graph."""
         self.client.delete(self.path)
 
     def options(self):
@@ -1515,8 +1496,8 @@ class VirtualGraph(object):
         Returns:
           dict: Options
         """
-        r = self.client.get(self.path + '/options')
-        return r.json()['options']
+        r = self.client.get(self.path + "/options")
+        return r.json()["options"]
 
     def info(self):
         """Gets Virtual Graph info.
@@ -1525,8 +1506,8 @@ class VirtualGraph(object):
           dict: Info
         """
 
-        r = self.client.get(self.path + '/info')
-        return r.json()['info']
+        r = self.client.get(self.path + "/info")
+        return r.json()["info"]
 
     def get_database(self):
         """Gets database associated with the VirtualGraph.
@@ -1535,11 +1516,11 @@ class VirtualGraph(object):
           string: Database name
         """
 
-        r = self.client.get(self.path + '/database')
+        r = self.client.get(self.path + "/database")
         return r.text
 
-    def mappings_string(self, syntax='STARDOG'):
-        """ Returns graph mappings as RDF
+    def mappings_string(self, syntax="STARDOG"):
+        """Returns graph mappings as RDF
         Args:
           syntax (str): The desired RDF syntax of the mappings (STARDOG, R2RML, or SMS2).
             Defaults to 'STARDOG'
@@ -1549,7 +1530,6 @@ class VirtualGraph(object):
         """
         r = self.client.get(f"{self.path}/mappingsString/{syntax}")
         return r.content
-
 
     # Should test this. The docs state the path is /mappingsString, but this one goes to /mappings.
     # Either the docs, or this implementation is wrong.
@@ -1563,8 +1543,7 @@ class VirtualGraph(object):
         :return: Mappings in given content type
         :rtype: bytes
         """
-        r = self.client.get(
-            self.path + '/mappings', headers={'Accept': content_type})
+        r = self.client.get(self.path + "/mappings", headers={"Accept": content_type})
         return r.content
 
     def available(self):
@@ -1573,17 +1552,16 @@ class VirtualGraph(object):
         Returns:
           bool: Availability state
         """
-        r = self.client.get(self.path + '/available')
-        return bool(r.json()['available'])
+        r = self.client.get(self.path + "/available")
+        return bool(r.json()["available"])
 
-    #TODO
+    # TODO
     # def online(self):
     #     """
     #     Online virtual graph
     #     https://stardog-union.github.io/http-docs/#operation/onlineVG
     #     :return:
     #     """
-
 
     def __repr__(self):
         return self.name
@@ -1606,13 +1584,12 @@ class DataSource(object):
         """
 
         self.data_source_name = name
-        self.path = '/admin/data_sources/{}'.format(name)
+        self.path = "/admin/data_sources/{}".format(name)
         self.client = client
 
     @property
     def name(self):
-        """The name of the data source.
-        """
+        """The name of the data source."""
         return self.data_source_name
 
     def available(self):
@@ -1621,41 +1598,35 @@ class DataSource(object):
         Returns:
           bool: Availability state
         """
-        r = self.client.get(self.path + '/available')
+        r = self.client.get(self.path + "/available")
         return bool(r.json())
 
     def refresh_count(self, meta=None):
-        """Refresh table row-count estimates
-        """
+        """Refresh table row-count estimates"""
 
         if meta is None:
             meta = {}
 
-        self.client.post(self.path + '/refresh_counts', json=meta)
+        self.client.post(self.path + "/refresh_counts", json=meta)
 
     def update(self, options=None):
-        """Update data source
-        """
+        """Update data source"""
         if options is None:
             options = {}
 
-        meta = {
-            "options": options
-        }
+        meta = {"options": options}
 
         self.client.put(self.path, json=meta)
 
     def delete(self):
-        """Deletes a data source
-        """
+        """Deletes a data source"""
 
         self.client.delete(self.path)
 
     def online(self):
-        """Online a data source
-        """
+        """Online a data source"""
 
-        self.client.post(self.path + '/online')
+        self.client.post(self.path + "/online")
 
     def info(self):
         """Get data source info
@@ -1664,36 +1635,33 @@ class DataSource(object):
           dict: Info
         """
 
-        r = self.client.get(self.path + '/info')
-        return r.json()['info']
+        r = self.client.get(self.path + "/info")
+        return r.json()["info"]
 
     def refresh_metadata(self, meta=None):
-        """Refresh metadata
-        """
+        """Refresh metadata"""
 
         if meta is None:
             meta = {}
 
-        self.client.post(self.path + '/refresh_metadata', json=meta)
+        self.client.post(self.path + "/refresh_metadata", json=meta)
 
     def share(self):
-        """Share data source
-        """
+        """Share data source"""
 
-        self.client.post(self.path + '/share')
+        self.client.post(self.path + "/share")
 
     def get_options(self):
-        """Get data source options
-        """
+        """Get data source options"""
 
-        r = self.client.get(self.path + '/options')
-        return r.json()['options']
+        r = self.client.get(self.path + "/options")
+        return r.json()["options"]
 
     def __repr__(self):
         return self.name
 
 
-#TODO
+# TODO
 # We could get rid of this class, and the delete method here as admin.delete_stored_functions() can take a single stored function
 # and mimic this behaviour. This is intentionally put here in case more methods are added to StoredFunctions
 # in the future.
@@ -1709,6 +1677,7 @@ class DataSource(object):
 #         https://stardog-union.github.io/http-docs/#operation/deleteStoredFunctionNamed
 #         :return:
 #        """
+
 
 class Cache(object):
     """Cached data
@@ -1733,16 +1702,16 @@ class Cache(object):
     def drop(self):
         """Drops the cache."""
         url_encoded_name = urllib.parse.quote_plus(self.name)
-        self.client.delete('/admin/cache/{}'.format(url_encoded_name))
+        self.client.delete("/admin/cache/{}".format(url_encoded_name))
 
     def refresh(self):
         """Refreshes the cache."""
         url_encoded_name = urllib.parse.quote_plus(self.name)
-        self.client.post('/admin/cache/refresh/{}'.format(url_encoded_name))
+        self.client.post("/admin/cache/refresh/{}".format(url_encoded_name))
 
     def status(self):
         """Retrieves the status of the cache."""
-        r = self.client.post('/admin/cache/status', json=[self.name])
+        r = self.client.post("/admin/cache/status", json=[self.name])
         return r.json()
 
     def __repr__(self):
@@ -1750,8 +1719,8 @@ class Cache(object):
 
 
 class CacheTarget(object):
-    """Cache Target Server
-    """
+    """Cache Target Server"""
+
     def __init__(self, name, client):
         """Initializes a cache target.
 
@@ -1759,7 +1728,7 @@ class CacheTarget(object):
         constructing manually.
         """
         self.cache_target_name = name
-        self.path = '/admin/cache/target/{}'.format(name)
+        self.path = "/admin/cache/target/{}".format(name)
         self.client = client
 
     @property
@@ -1768,7 +1737,7 @@ class CacheTarget(object):
         return self.cache_target_name
 
     def info(self):
-        """ Get info for the cache target
+        """Get info for the cache target
 
         Returns:
           dict: Info
@@ -1778,7 +1747,7 @@ class CacheTarget(object):
 
     def orphan(self):
         """Orphans the cache target but do not destroy its contents."""
-        self.client.delete(self.path + '/orphan')
+        self.client.delete(self.path + "/orphan")
 
     def remove(self):
         """Removes the cache target and destroy its contents."""
@@ -1787,8 +1756,10 @@ class CacheTarget(object):
     def __wait_for_registering_cache_target(self):
         retries = 0
         while True:
-            r = self.client.get('/admin/cache/target')
-            cache_target_info = next((t for t in r.json() if t['name'] == self.name), {})
+            r = self.client.get("/admin/cache/target")
+            cache_target_info = next(
+                (t for t in r.json() if t["name"] == self.name), {}
+            )
             if not cache_target_info:
                 retries += 1
                 sleep(1)
