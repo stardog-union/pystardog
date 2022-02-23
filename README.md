@@ -40,6 +40,14 @@ Docker and docker-compose are also required.
 
 ```
 
+## Format
+To run a format of all the files
+```shell script
+virtualenv -p $(which python3) venv
+. venv/bin/activate
+pip install -r test-requirements.txt
+```
+
 ## Quick Example
 
 ```python

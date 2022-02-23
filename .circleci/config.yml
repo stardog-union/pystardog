@@ -1,6 +1,17 @@
 version: 2.1
 
 jobs:
+  format:
+    docker:
+      - image: python:3.9
+    steps:
+      - checkout
+      - run:
+          name: Formatter
+          command: |
+            pip install -r test-requirements.txt
+            black --check .
+
   single_node_tests:
     docker:
       - image: cimg/base:2020.01
@@ -47,5 +58,6 @@ jobs:
 workflows:
   build_and_run_cluster_tests:
     jobs:
+      - format
       - single_node_tests
       - cluster_tests

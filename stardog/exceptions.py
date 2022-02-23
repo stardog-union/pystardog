@@ -1,10 +1,10 @@
 class StardogException(Exception):
-    """General Stardog Exceptions
-    """
+    """General Stardog Exceptions"""
+
     pass
 
 
 class TransactionException(StardogException):
-    """Transaction Exceptions
-    """
+    """Transaction Exceptions"""
+
     pass

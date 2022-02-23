@@ -7,17 +7,19 @@ from .. import exceptions as exceptions
 
 class Client(object):
 
-    DEFAULT_ENDPOINT = 'http://localhost:5820'
-    DEFAULT_USERNAME = 'admin'
-    DEFAULT_PASSWORD = 'admin'
+    DEFAULT_ENDPOINT = "http://localhost:5820"
+    DEFAULT_USERNAME = "admin"
+    DEFAULT_PASSWORD = "admin"
 
-    def __init__(self,
-                 endpoint=None,
-                 database=None,
-                 username=None,
-                 password=None,
-                 session=None,
-                 auth=None):
+    def __init__(
+        self,
+        endpoint=None,
+        database=None,
+        username=None,
+        password=None,
+        session=None,
+        auth=None,
+    ):
         self.url = endpoint if endpoint else self.DEFAULT_ENDPOINT
 
         # XXX this might not be right when the auth object is used.  Ideally we could drop storing this
@@ -25,7 +27,7 @@ class Client(object):
         self.username = username if username else self.DEFAULT_USERNAME
 
         if database:
-            self.url = '{}/{}'.format(self.url, database)
+            self.url = "{}/{}".format(self.url, database)
 
         if session is None:
             self.session = requests.Session()
@@ -34,10 +36,14 @@ class Client(object):
             # besides standard environment variables like http_proxy, https_proxy, no_proxy and curl_ca_bundle
             self.session = session
         else:
-            raise TypeError(f"{type(session)=} must be a valid requests.session.Session object.")
+            raise TypeError(
+                f"{type(session)=} must be a valid requests.session.Session object."
+            )
 
         if auth is None:
-            auth = requests.auth.HTTPBasicAuth(self.username, password if password else self.DEFAULT_PASSWORD)
+            auth = requests.auth.HTTPBasicAuth(
+                self.username, password if password else self.DEFAULT_PASSWORD
+            )
         self.session.auth = auth
 
     def post(self, path, **kwargs):
@@ -61,11 +67,13 @@ class Client(object):
                 msg = request.json()
             except ValueError:
                 # sometimes errors come as strings
-                msg = {'message': request.text}
+                msg = {"message": request.text}
 
-            raise exceptions.StardogException('[{}] {}: {}'.format(
-                request.status_code, msg.get('code', ''), msg.get(
-                    'message', '')))
+            raise exceptions.StardogException(
+                "[{}] {}: {}".format(
+                    request.status_code, msg.get("code", ""), msg.get("message", "")
+                )
+            )
         return request
 
     def _multipart(self, response):
