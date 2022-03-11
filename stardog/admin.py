@@ -1026,8 +1026,10 @@ class Database(object):
         # easy way to check if a namespace already exists
         current_namespaces = self.namespaces()
         for namespace in current_namespaces:
-            if prefix == namespace['prefix']:
-                raise Exception(f"Namespace already exists for this database: {namespace}")
+            if prefix == namespace["prefix"]:
+                raise Exception(
+                    f"Namespace already exists for this database: {namespace}"
+                )
 
         namespaces = self.get_options("database.namespaces")["database.namespaces"]
         namespace_to_append = f"{prefix}={iri}"
@@ -1044,8 +1046,10 @@ class Database(object):
         # easy way to check if a namespace already exists
         current_namespaces = self.namespaces()
         for namespace in current_namespaces:
-            if prefix == namespace['prefix']:
-                namespaces = self.get_options("database.namespaces")['database.namespaces']
+            if prefix == namespace["prefix"]:
+                namespaces = self.get_options("database.namespaces")[
+                    "database.namespaces"
+                ]
                 namespace_to_remove = f"{prefix}={namespace['name']}"
                 namespaces.remove(namespace_to_remove)
                 result = self.set_options({"database.namespaces": namespaces})
