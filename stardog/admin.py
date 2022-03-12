@@ -1026,7 +1026,7 @@ class Database(object):
         # easy way to check if a namespace already exists
         current_namespaces = self.namespaces()
         for namespace in current_namespaces:
-            if prefix in namespace["prefix"]:
+            if prefix == namespace["prefix"]:
                 raise Exception(
                     f"Namespace already exists for this database: {namespace}"
                 )
@@ -1046,7 +1046,7 @@ class Database(object):
         # easy way to check if a namespace already exists
         current_namespaces = self.namespaces()
         for namespace in current_namespaces:
-            if prefix in namespace["prefix"]:
+            if prefix == namespace["prefix"]:
                 namespaces = self.get_options("database.namespaces")[
                     "database.namespaces"
                 ]
