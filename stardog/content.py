@@ -9,20 +9,15 @@ from . import content_types as content_types
 
 
 class Content(object):
-    """Content base class.
-    """
+    """Content base class."""
+
     pass
 
 
 class Raw(Content):
-    """User-defined content.
-    """
+    """User-defined content."""
 
-    def __init__(self,
-                 content,
-                 content_type=None,
-                 content_encoding=None,
-                 name=None):
+    def __init__(self, content, content_type=None, content_encoding=None, name=None):
         """Initializes a Raw object.
 
         Args:
@@ -47,14 +42,9 @@ class Raw(Content):
 
 
 class File(Content):
-    """File-based content.
-    """
+    """File-based content."""
 
-    def __init__(self,
-                 fname,
-                 content_type=None,
-                 content_encoding=None,
-                 name=None):
+    def __init__(self, fname, content_type=None, content_encoding=None, name=None):
         """Initializes a File object.
 
         Args:
@@ -78,19 +68,14 @@ class File(Content):
 
     @contextlib.contextmanager
     def data(self):
-        with open(self.fname, 'rb') as f:
+        with open(self.fname, "rb") as f:
             yield f
 
 
 class URL(Content):
-    """Url-based content.
-    """
+    """Url-based content."""
 
-    def __init__(self,
-                 url,
-                 content_type=None,
-                 content_encoding=None,
-                 name=None):
+    def __init__(self, url, content_type=None, content_encoding=None, name=None):
         """Initializes a URL object.
 
         Args:

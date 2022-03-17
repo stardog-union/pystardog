@@ -34,7 +34,18 @@ To run the tests locally, a valid Stardog license is required and placed in the 
 Docker and docker-compose are also required.
 
 ```shell script
-docker-compose up --exit-code-from tests
+ docker-compose -f docker-compose.single-node.yml up --exit-code-from tests-single-node
+
+ docker-compose -f docker-compose.cluster.yml up --exit-code-from tests
+
+```
+
+## Format
+To run a format of all the files
+```shell script
+virtualenv -p $(which python3) venv
+. venv/bin/activate
+pip install -r test-requirements.txt
 ```
 
 ## Quick Example
