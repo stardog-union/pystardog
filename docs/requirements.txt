@@ -1,0 +1,4 @@
+Sphinx==4.4.0
+sphinx-rtd-theme==1.0.0
+contextlib2==21.6.0
+requests-toolbelt==0.9.1
