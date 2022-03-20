@@ -1523,7 +1523,7 @@ class VirtualGraph(object):
         """Returns graph mappings as RDF
         Args:
           syntax (str): The desired RDF syntax of the mappings (STARDOG, R2RML, or SMS2).
-            Defaults to 'STARDOG'
+          Defaults to 'STARDOG'
 
         :return: Mappings in given content type
         :rtype: string
@@ -1538,7 +1538,7 @@ class VirtualGraph(object):
 
         Args:
           content_type (str): Content type for results.
-            Defaults to 'text/turtle'
+          Defaults to 'text/turtle'
 
         :return: Mappings in given content type
         :rtype: bytes
