@@ -24,8 +24,8 @@ pystardog is on PyPI so all you need is: `pip install pystardog`
 Documentation is readable at [Read the
 Docs](http://pystardog.readthedocs.io) or can be built using Sphinx:
 
-    pip install -r requirements.txt
     cd docs
+    pip install -r requirements.txt
     make html
 
 ## Tests
@@ -35,7 +35,6 @@ Docker and docker-compose are also required.
 
 ```shell script
  docker-compose -f docker-compose.single-node.yml up --exit-code-from tests-single-node
-
  docker-compose -f docker-compose.cluster.yml up --exit-code-from tests
 
 ```
@@ -46,6 +45,7 @@ To run a format of all the files
 virtualenv -p $(which python3) venv
 . venv/bin/activate
 pip install -r test-requirements.txt
+black .
 ```
 
 ## Quick Example
