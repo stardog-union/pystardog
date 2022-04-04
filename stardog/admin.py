@@ -1069,7 +1069,7 @@ class StoredQuery(object):
         https://www.stardog.com/docs/#_managing_stored_queries
     """
 
-    def __init__(self, name, client):
+    def __init__(self, name, client, details=None):
         """Initializes a stored query.
 
         Use :meth:`stardog.admin.Admin.stored_query`,
@@ -1080,8 +1080,13 @@ class StoredQuery(object):
         self.query_name = name
         self.client = client
         self.path = "/admin/queries/stored/{}".format(name)
-        self.details = {}
-        self.__refresh()
+        # if details is valid type and not empty set details
+        # and skip refresh
+        if details is not None and isinstance(details, dict):
+            self.details = details
+        else:
+            self.details = {}
+            self.__refresh()
 
     def __refresh(self):
         details = self.client.get(self.path, headers={"Accept": "application/json"})
