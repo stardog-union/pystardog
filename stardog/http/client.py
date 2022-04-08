@@ -31,13 +31,13 @@ class Client(object):
 
         if session is None:
             self.session = requests.Session()
-        elif isinstance(session, requests.session.Session):
+        elif isinstance(session, requests.Session):
             # allows using e.g. proxy configuration defined explicitly
             # besides standard environment variables like http_proxy, https_proxy, no_proxy and curl_ca_bundle
             self.session = session
         else:
             raise TypeError(
-                f"{type(session)=} must be a valid requests.session.Session object."
+                f"type(session) = {type(session)} must be a valid requests.Session object."
             )
 
         if auth is None:
