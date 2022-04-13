@@ -139,6 +139,22 @@ def admin(conn_string):
         yield admin
 
 
+@pytest.fixture()
+def datasource_music(admin, music_options):
+    ds = admin.new_datasource("newtest", music_options)
+    yield ds
+    ds.delete()
+
+
+@pytest.fixture()
+def virtual_graph_music(admin, datasource_music):
+    vg = admin.new_virtual_graph(
+        "test_vg", mappings="", datasource=datasource_music.name
+    )
+    yield vg
+    vg.delete()
+
+
 ##############
 # Admin tests#
 ##############
@@ -731,7 +747,7 @@ def test_cache_vg_datasets(admin, music_options, cache_target_info):
 
     # creating a VG using empty mappings, and specifying a datasource
     ds = admin.new_datasource("music", music_options)
-    admin.new_virtual_graph("test_vg", mappings="", datasource=ds.name)
+    vg = admin.new_virtual_graph("test_vg", mappings="", datasource=ds.name)
 
     cache_target = admin.new_cache_target(
         cache_target_name,
@@ -750,8 +766,8 @@ def test_cache_vg_datasets(admin, music_options, cache_target_info):
     }
 
     with stardog.admin.Admin(**conn_string_cache) as admin_cache_target:
-        ds = admin_cache_target.new_datasource("music", music_options)
-        vg = admin_cache_target.new_virtual_graph(
+        ds_cached = admin_cache_target.new_datasource("music", music_options)
+        vg_cached = admin_cache_target.new_virtual_graph(
             "test_vg", mappings="", datasource=ds.name
         )
 
@@ -879,3 +895,64 @@ def test_add_and_delete_namespaces(admin):
     assert len(db.namespaces()) == 6
 
     db.drop()
+
+
+def test_database_exists_in_databases_list(admin):
+    db = admin.new_database("my_db")
+    all_databases = admin.databases()
+    assert db in all_databases
+    db.drop()
+
+
+def test_datasource_exists_in_datasource_list(admin, datasource_music):
+    all_datasources = admin.datasources()
+    assert datasource_music in all_datasources
+
+
+@pytest.mark.skip(
+    reason="We need to get sorted whether we want users to deal with prefix:// for vg/ds operations"
+)
+def test_vg_exists_in_vg_list(admin, virtual_graph_music):
+    all_vgs = admin.virtual_graphs()
+    assert virtual_graph_music in all_vgs
+
+
+def test_user_exists_in_user_list(admin):
+    user = admin.new_user("username", "password", False)
+    all_users = admin.users()
+    assert user in all_users
+    user.delete()
+
+
+def test_role_exists_in_role_list(admin):
+    role = admin.new_role("myrole")
+    all_roles = admin.roles()
+    assert role in all_roles
+    role.delete()
+
+
+def test_stored_query_in_stored_query_list(admin):
+    query = "select * where { ?s ?p ?o . }"
+    stored_query = admin.new_stored_query("everything", query)
+    assert stored_query in admin.stored_queries()
+
+
+def test_cache_target_in_cache_target_list(admin, cache_target_info):
+    cache_target_name = cache_target_info["target_name"]
+    cache_target_hostname = cache_target_info["hostname"]
+    cache_target_port = cache_target_info["port"]
+    cache_target_username = cache_target_info["username"]
+    cache_target_password = cache_target_info["password"]
+
+    cache_targets = admin.cache_targets()
+    assert len(cache_targets) == 0
+
+    cache_target = admin.new_cache_target(
+        cache_target_name,
+        cache_target_hostname,
+        cache_target_port,
+        cache_target_username,
+        cache_target_password,
+    )
+    wait_for_creating_cache_target(admin, cache_target_name)
+    assert cache_target in admin.cache_targets()

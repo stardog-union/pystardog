@@ -1060,6 +1060,9 @@ class Database(object):
     def __repr__(self):
         return self.name
 
+    def __eq__(self, other):
+        return self.name == other.name
+
 
 class StoredQuery(object):
     """Stored Query
@@ -1144,6 +1147,9 @@ class StoredQuery(object):
     def delete(self):
         """Deletes the Stored Query."""
         self.client.delete(self.path)
+
+    def __eq__(self, other):
+        return self.name == other.name
 
 
 class User(object):
@@ -1325,6 +1331,9 @@ class User(object):
     def __rolename(self, role):
         return role.name if isinstance(role, Role) else role
 
+    def __eq__(self, other):
+        return self.name == other.name
+
 
 class Role(object):
     """Role
@@ -1430,6 +1439,9 @@ class Role(object):
 
     def __repr__(self):
         return self.name
+
+    def __eq__(self, other):
+        return self.name == other.name
 
 
 class VirtualGraph(object):
@@ -1566,6 +1578,9 @@ class VirtualGraph(object):
     def __repr__(self):
         return self.name
 
+    def __eq__(self, other):
+        return self.name == other.name
+
 
 class DataSource(object):
     """Initializes a DataSource
@@ -1660,6 +1675,9 @@ class DataSource(object):
     def __repr__(self):
         return self.name
 
+    def __eq__(self, other):
+        return self.name == other.name
+
 
 # TODO
 # We could get rid of this class, and the delete method here as admin.delete_stored_functions() can take a single stored function
@@ -1716,6 +1734,9 @@ class Cache(object):
 
     def __repr__(self):
         return self.name
+
+    def __eq__(self, other):
+        return self.name == other.name
 
 
 class CacheTarget(object):
@@ -1774,3 +1795,6 @@ class CacheTarget(object):
 
     def __repr__(self):
         return self.name
+
+    def __eq__(self, other):
+        return self.name == other.name
