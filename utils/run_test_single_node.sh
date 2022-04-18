@@ -1,7 +1,5 @@
 #!/bin/bash -x
 
-ls -lha
-pwd
 source ./utils/wait.sh
 
 wait_for_start_single_node ${STARDOG_ENDPOINT}  5820
