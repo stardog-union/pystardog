@@ -404,3 +404,12 @@ def test_graphql(conn_string):
         assert len(gql.schemas()) == 0
 
     db.drop()
+
+
+def test_invalid_request_session(conn_string):
+    session = "im an invalid session"
+    with pytest.raises(
+        Exception,
+        match=f"type\(session\) = {type(session)} must be a valid requests\.Session object.",
+    ):
+        connection.Connection("somevaliddb", **conn_string, session=session)
