@@ -269,8 +269,10 @@ class Admin(object):
         r = self.client.get(
             "/admin/queries/stored", headers={"Accept": "application/json"}
         )
-        query_names = [q["name"] for q in r.json()["queries"]]
-        return list(map(lambda name: StoredQuery(name, self.client), query_names))
+        queries = r.json()["queries"]
+        return list(
+            map(lambda query: StoredQuery(query["name"], self.client, query), queries)
+        )
 
     def new_stored_query(self, name, query, options=None):
         """Creates a new Stored Query.
@@ -1249,7 +1251,7 @@ class StoredQuery(object):
         https://www.stardog.com/docs/#_managing_stored_queries
     """
 
-    def __init__(self, name, client):
+    def __init__(self, name, client, details=None):
         """Initializes a stored query.
 
         Use :meth:`stardog.admin.Admin.stored_query`,
@@ -1260,8 +1262,13 @@ class StoredQuery(object):
         self.query_name = name
         self.client = client
         self.path = "/admin/queries/stored/{}".format(name)
-        self.details = {}
-        self.__refresh()
+
+        # We only need to call __refresh() if the details are not provided
+        if details is not None and isinstance(details, dict):
+            self.details = details
+        else:
+            self.details = {}
+            self.__refresh()
 
     def __refresh(self):
         details = self.client.get(self.path, headers={"Accept": "application/json"})
