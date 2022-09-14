@@ -1,5 +1,7 @@
 """Administer a Stardog server.
+
 """
+
 
 import json
 import contextlib2
@@ -551,9 +553,9 @@ class Admin(object):
         if input_file:
             if input_file.separator is not None:
                 if options is None:
-                    options = { 'csv.separator': mappings.syntax }
+                    options = { 'csv.separator': input_file.separator }
                 else:
-                    options['mappings.syntax'] = mappings.syntax
+                    options['csv.seperator'] = input_file.separator
 
         payload = {'database': db, 'mappings': mappings}
 
@@ -565,18 +567,19 @@ class Admin(object):
         if named_graph is not None:
             payload['named_graph'] = named_graph
 
-        if input_file_type is not None:
-            payload['input_file_type'] = input_file_type
+        payload['input_file_type'] = input_file.input_type
 
-        r = self.client.post(
-            '/admin/virtual_graphs/import',
-            data=payload,
-            files={'input_file': (
-                os.path.basename(input_file),
-                open(input_file, "r"),
-                "application/json" if suffix == '.json' else "text/csv",
-            )}
-        )
+        with input_file.data() as data:
+            r = self.client.post(
+                '/admin/virtual_graphs/import',
+                data=payload,
+                files={'input_file': (
+                    input_file.name,
+                    data,
+                    input_file.content_type,
+                    input_file.content_encoding
+                )}
+            )
 
         return r.ok
     

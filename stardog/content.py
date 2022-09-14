@@ -71,6 +71,7 @@ class File(Content):
         with open(self.fname, "rb") as f:
             yield f
 
+
 class MappingRaw(Content):
     """User-defined Mapping.
     """
@@ -107,6 +108,7 @@ TO {
     def data(self):
         yield self.raw
 
+
 class MappingFile(Content):
     """File-based content.
     """
@@ -137,13 +139,16 @@ class MappingFile(Content):
         with open(self.fname, 'rb') as f:
             yield f
 
+
 class ImportFile(Content):
     """File-based content.
     """
 
     def __init__(self,
                  fname,
-                 input_file_type=None,
+                 input_type=None,
+                 content_type=None,
+                 content_encoding=None,
                  separator=None,
                  name=None):
         """Initializes a File object.
@@ -160,14 +165,17 @@ class ImportFile(Content):
           >>> MappingFile('data.json')
         """
         self.fname = fname
-        if input_file_type is None or separator is None:
-            (d_input_file_type,d_separator) = content_types.guess_import_format(fname)
+        (self.content_encoding, self.content_type, d_input_type, d_separator) = content_types.guess_import_format(fname)
 
-            if input_file_type is None:
-                input_file_type = d_input_file_type
-                
-            if separator is None:
-                separator = d_separator
+        if input_type is None:
+            self.input_type = d_input_type
+        else:
+            self.input_type = input_type
+
+        if separator is None:
+            self.separator = d_separator
+        else:
+            self.separator = separator
 
         self.name = name if name else os.path.basename(fname)
 

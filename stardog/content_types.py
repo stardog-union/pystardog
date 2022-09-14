@@ -43,10 +43,10 @@ _MAPPING_EXTENSIONS = {
 }
 
 #Import filename extension and their type, and seperator
-_IMPORT_EXTENSION = {
-    'csv': ( 'DELIMITED', ','  ),
-    'tsv': ( 'DELIMITED', "\t" ),
-    'json': ( 'JSON', None)
+_IMPORT_EXTENSIONS = {
+    'csv': ( CSV, 'DELIMITED', ','),
+    'tsv': ( TSV, 'DELIMITED', "\t"),
+    'json': ('application/json', 'JSON', None)
 }
 
 
@@ -97,6 +97,7 @@ def guess_mapping_format(fname):
 
     return syntax
 
+
 def guess_import_format(fname):
     """
     Guess import syntax from filename
@@ -108,7 +109,17 @@ def guess_import_format(fname):
     Returns
             (input_file_type,seperator)
     """
-    return _get_extension(fname)
+    extension = _get_extension(fname)
+
+    content_encoding = _COMPRESSION_EXTENSIONS.get(extension)
+    if content_encoding:
+        # remove encoding extension
+        extension = _get_extension(fname[: -len(extension) - 1])
+
+    # get content type
+    (content_type, input_type, separator) = _IMPORT_EXTENSIONS.get(extension)
+
+    return content_encoding, content_type, input_type, separator
 
 
 def guess_mapping_format_from_content(content):
