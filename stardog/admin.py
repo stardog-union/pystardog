@@ -484,36 +484,102 @@ class Admin(object):
 
         Examples:
             >>> admin.new_virtual_graph(
+                  'users', MappingFile('mappings.sms'),
+                  {'jdbc.driver': 'com.mysql.jdbc.Driver'}
+                )
+            >>> admin.new_virtual_graph(
+                  'users', MappingFile('mappings.ttl','SMS2'),
+                  {'jdbc.driver': 'com.mysql.jdbc.Driver'}
+                )
+            >>> admin.new_virtual_graph(  #DEPRECATED
                   'users', File('mappings.ttl'),
                   {'jdbc.driver': 'com.mysql.jdbc.Driver'}
                 )
         """
 
         if mappings:
+            if mappings.syntax is not None:
+                if options is None:
+                    options = { 'mappings.syntax': mappings.syntax }
+                else:
+                    options['mappings.syntax'] = mappings.syntax
             with mappings.data() as data:
-                mappings = data.read().decode() if hasattr(data, "read") else data
+                mappings = data.read().decode() if hasattr(data, 'read') else data
 
-        meta = {}
-        meta["name"] = name
-        meta["mappings"] = mappings
+        meta = {'name': name, 'mappings': mappings}
         if options is not None:
-            meta["options"] = options
-        if datasource is not None:
-            meta["data_source"] = datasource
-        if db is not None:
-            meta["db"] = db
+            meta['options'] = options
 
-        self.client.post("/admin/virtual_graphs", json=meta)
+        if datasource is not None:
+            meta['data_source'] = datasource
+        if db is not None:
+            meta['db'] = db
+
+        self.client.post('/admin/virtual_graphs', json=meta)
         return VirtualGraph(name, self.client)
 
-    # TODO
-    # def virtual_graph_import_file(self):
-    #     """
-    #     Import a CSV or JSON file as a virtual graph into the knowledge graph.
-    #     https://stardog-union.github.io/http-docs/#operation/importFileVG
-    #     :return:
-    #     """
-    #     return
+
+    def import_file(self, db, mappings, input_file, options=None, named_graph=None):
+        """Import a JSON or CSV file.
+
+        Args:
+          db (str): Name of the database to import the data
+          mappings (MappingRaw or MappingFile): New mapping contents.
+          input_file(ImportFile):
+          options (dict, Optional): Options for the new csv import.
+          named_graph (str, Optional): The namegraph to associate it too
+
+        Returns:
+            r.ok
+
+        Examples:
+            >>> admin.import_file(
+                  'mydb', File('mappings.ttl'),
+                  'test.csv'
+                )
+        """
+
+        if mappings:
+            if mappings.syntax is not None:
+                if options is None:
+                    options = { 'mappings.syntax': mappings.syntax }
+                else:
+                    options['mappings.syntax'] = mappings.syntax
+            with mappings.data() as data:
+                mappings = data.read().decode() if hasattr(data, 'read') else data
+
+        if input_file:
+            if input_file.separator is not None:
+                if options is None:
+                    options = { 'csv.separator': mappings.syntax }
+                else:
+                    options['mappings.syntax'] = mappings.syntax
+
+        payload = {'database': db, 'mappings': mappings}
+
+        if options is not None:
+            payload["options"] = "\n".join(["%s=%s" % (k, v) for (k, v) in options.items()])
+        else:
+            payload["options"] = ""
+
+        if named_graph is not None:
+            payload['named_graph'] = named_graph
+
+        if input_file_type is not None:
+            payload['input_file_type'] = input_file_type
+
+        r = self.client.post(
+            '/admin/virtual_graphs/import',
+            data=payload,
+            files={'input_file': (
+                os.path.basename(input_file),
+                open(input_file, "r"),
+                "application/json" if suffix == '.json' else "text/csv",
+            )}
+        )
+
+        return r.ok
+    
 
     def datasource(self, name):
         """Retrieves an object representing a DataSource.

@@ -71,6 +71,112 @@ class File(Content):
         with open(self.fname, "rb") as f:
             yield f
 
+class MappingRaw(Content):
+    """User-defined Mapping.
+    """
+
+    def __init__(self,
+                 content,
+                 syntax=None,
+                 name=None):
+        """Initializes a Raw object.
+
+        Args:
+          content (str): Mapping in raw form
+          syntax (str, optional): Whether it r2rml or sms type.
+            It will be automatically detected from the filename, if possible otherwise it will default to system default
+          name (str, optional): Object name
+
+        Examples:
+          >>> MappingRaw('''MAPPING
+FROM SQL {
+  SELECT *
+  FROM `benchmark`.`person`
+}
+TO {
+  ?subject rdf:type :person
+} WHERE {
+  BIND(template("http://api.stardog.com/person/nr={nr}") AS ?subject)
+}''')
+        """
+        self.raw = content
+        self.syntax = syntax if syntax is not None else content_types.guess_mapping_format_from_content(content)
+        self.name = name
+
+    @contextlib.contextmanager
+    def data(self):
+        yield self.raw
+
+class MappingFile(Content):
+    """File-based content.
+    """
+
+    def __init__(self,
+                 fname,
+                 syntax=None,
+                 name=None):
+        """Initializes a File object.
+
+        Args:
+          fname (str): Filename
+          syntax (str, optional): Whether it r2rml or sms type.
+            It will be automatically detected from the filename, if possible otherwise it will default to system default
+
+        Examples:
+          >>> MappingFile('data.sms')
+          >>> MappingFile('data.sms2')
+          >>> MappingFile('data.rq')
+          >>> MappingFile('data.r2rml')
+        """
+        self.fname = fname
+        self.syntax = syntax if syntax is not None else content_types.guess_mapping_format(fname)
+        self.name = name if name else os.path.basename(fname)
+
+    @contextlib.contextmanager
+    def data(self):
+        with open(self.fname, 'rb') as f:
+            yield f
+
+class ImportFile(Content):
+    """File-based content.
+    """
+
+    def __init__(self,
+                 fname,
+                 input_file_type=None,
+                 separator=None,
+                 name=None):
+        """Initializes a File object.
+
+        Args:
+          fname (str): Filename
+          syntax (str, optional): Whether it r2rml or sms type.
+            It will be automatically detected from the filename, if possible otherwise it will default to system default
+
+        Examples:
+          >>> ImportFile('data.csv')
+          >>> ImportFile('data.tsv')
+          >>> ImportFile('data.txt','DELIMITED',"\t" )
+          >>> MappingFile('data.json')
+        """
+        self.fname = fname
+        if input_file_type is None or separator is None:
+            (d_input_file_type,d_separator) = content_types.guess_import_format(fname)
+
+            if input_file_type is None:
+                input_file_type = d_input_file_type
+                
+            if separator is None:
+                separator = d_separator
+
+        self.name = name if name else os.path.basename(fname)
+
+    @contextlib.contextmanager
+    def data(self):
+        with open(self.fname, 'rb') as f:
+            yield f
+
+
 
 class URL(Content):
     """Url-based content."""
