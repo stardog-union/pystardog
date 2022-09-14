@@ -33,20 +33,15 @@ _RDF_EXTENSIONS = {
     "trix": TRIX,
     "json": LD_JSON,
     "jsonld": LD_JSON,
-}		
-#Mapping filename extensions and their mapping syntax
-_MAPPING_EXTENSIONS = {
-    'rq': 'SMS2',
-    'sms': 'SMS2',
-    'sms2': 'SMS2',
-    'r2rml': 'R2RML'
 }
+# Mapping filename extensions and their mapping syntax
+_MAPPING_EXTENSIONS = {"rq": "SMS2", "sms": "SMS2", "sms2": "SMS2", "r2rml": "R2RML"}
 
-#Import filename extension and their type, and seperator
+# Import filename extension and their type, and seperator
 _IMPORT_EXTENSIONS = {
-    'csv': ( CSV, 'DELIMITED', ','),
-    'tsv': ( TSV, 'DELIMITED', "\t"),
-    'json': ('application/json', 'JSON', None)
+    "csv": (CSV, "DELIMITED", ","),
+    "tsv": (TSV, "DELIMITED", "\t"),
+    "json": ("application/json", "JSON", None),
 }
 
 
@@ -133,8 +128,8 @@ def guess_mapping_format_from_content(content):
     Returns
             syntax
     """
-    regex = re.compile('MAPPING.*?FROM',re.DOTALL|re.IGNORECASE)
-    syntax = 'SMS2' if regex.match(content) else None
+    regex = re.compile("MAPPING.*?FROM", re.DOTALL | re.IGNORECASE)
+    syntax = "SMS2" if regex.match(content) else None
 
     return syntax
 

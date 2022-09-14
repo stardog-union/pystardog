@@ -502,24 +502,23 @@ class Admin(object):
         if mappings:
             if mappings.syntax is not None:
                 if options is None:
-                    options = { 'mappings.syntax': mappings.syntax }
+                    options = {"mappings.syntax": mappings.syntax}
                 else:
-                    options['mappings.syntax'] = mappings.syntax
+                    options["mappings.syntax"] = mappings.syntax
             with mappings.data() as data:
-                mappings = data.read().decode() if hasattr(data, 'read') else data
+                mappings = data.read().decode() if hasattr(data, "read") else data
 
-        meta = {'name': name, 'mappings': mappings}
+        meta = {"name": name, "mappings": mappings}
         if options is not None:
-            meta['options'] = options
+            meta["options"] = options
 
         if datasource is not None:
-            meta['data_source'] = datasource
+            meta["data_source"] = datasource
         if db is not None:
-            meta['db'] = db
+            meta["db"] = db
 
-        self.client.post('/admin/virtual_graphs', json=meta)
+        self.client.post("/admin/virtual_graphs", json=meta)
         return VirtualGraph(name, self.client)
-
 
     def import_file(self, db, mappings, input_file, options=None, named_graph=None):
         """Import a JSON or CSV file.
@@ -544,45 +543,48 @@ class Admin(object):
         if mappings:
             if mappings.syntax is not None:
                 if options is None:
-                    options = { 'mappings.syntax': mappings.syntax }
+                    options = {"mappings.syntax": mappings.syntax}
                 else:
-                    options['mappings.syntax'] = mappings.syntax
+                    options["mappings.syntax"] = mappings.syntax
             with mappings.data() as data:
-                mappings = data.read().decode() if hasattr(data, 'read') else data
+                mappings = data.read().decode() if hasattr(data, "read") else data
 
         if input_file:
             if input_file.separator is not None:
                 if options is None:
-                    options = { 'csv.separator': input_file.separator }
+                    options = {"csv.separator": input_file.separator}
                 else:
-                    options['csv.seperator'] = input_file.separator
+                    options["csv.seperator"] = input_file.separator
 
-        payload = {'database': db, 'mappings': mappings}
+        payload = {"database": db, "mappings": mappings}
 
         if options is not None:
-            payload["options"] = "\n".join(["%s=%s" % (k, v) for (k, v) in options.items()])
+            payload["options"] = "\n".join(
+                ["%s=%s" % (k, v) for (k, v) in options.items()]
+            )
         else:
             payload["options"] = ""
 
         if named_graph is not None:
-            payload['named_graph'] = named_graph
+            payload["named_graph"] = named_graph
 
-        payload['input_file_type'] = input_file.input_type
+        payload["input_file_type"] = input_file.input_type
 
         with input_file.data() as data:
             r = self.client.post(
-                '/admin/virtual_graphs/import',
+                "/admin/virtual_graphs/import",
                 data=payload,
-                files={'input_file': (
-                    input_file.name,
-                    data,
-                    input_file.content_type,
-                    input_file.content_encoding
-                )}
+                files={
+                    "input_file": (
+                        input_file.name,
+                        data,
+                        input_file.content_type,
+                        input_file.content_encoding,
+                    )
+                },
             )
 
         return r.ok
-    
 
     def datasource(self, name):
         """Retrieves an object representing a DataSource.

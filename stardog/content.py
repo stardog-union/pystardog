@@ -73,35 +73,35 @@ class File(Content):
 
 
 class MappingRaw(Content):
-    """User-defined Mapping.
-    """
+    """User-defined Mapping."""
 
-    def __init__(self,
-                 content,
-                 syntax=None,
-                 name=None):
+    def __init__(self, content, syntax=None, name=None):
         """Initializes a Raw object.
 
-        Args:
-          content (str): Mapping in raw form
-          syntax (str, optional): Whether it r2rml or sms type.
-            It will be automatically detected from the filename, if possible otherwise it will default to system default
-          name (str, optional): Object name
+                Args:
+                  content (str): Mapping in raw form
+                  syntax (str, optional): Whether it r2rml or sms type.
+                    It will be automatically detected from the filename, if possible otherwise it will default to system default
+                  name (str, optional): Object name
 
-        Examples:
-          >>> MappingRaw('''MAPPING
-FROM SQL {
-  SELECT *
-  FROM `benchmark`.`person`
-}
-TO {
-  ?subject rdf:type :person
-} WHERE {
-  BIND(template("http://api.stardog.com/person/nr={nr}") AS ?subject)
-}''')
+                Examples:
+                  >>> MappingRaw('''MAPPING
+        FROM SQL {
+          SELECT *
+          FROM `benchmark`.`person`
+        }
+        TO {
+          ?subject rdf:type :person
+        } WHERE {
+          BIND(template("http://api.stardog.com/person/nr={nr}") AS ?subject)
+        }''')
         """
         self.raw = content
-        self.syntax = syntax if syntax is not None else content_types.guess_mapping_format_from_content(content)
+        self.syntax = (
+            syntax
+            if syntax is not None
+            else content_types.guess_mapping_format_from_content(content)
+        )
         self.name = name
 
     @contextlib.contextmanager
@@ -110,13 +110,9 @@ TO {
 
 
 class MappingFile(Content):
-    """File-based content.
-    """
+    """File-based content."""
 
-    def __init__(self,
-                 fname,
-                 syntax=None,
-                 name=None):
+    def __init__(self, fname, syntax=None, name=None):
         """Initializes a File object.
 
         Args:
@@ -131,26 +127,29 @@ class MappingFile(Content):
           >>> MappingFile('data.r2rml')
         """
         self.fname = fname
-        self.syntax = syntax if syntax is not None else content_types.guess_mapping_format(fname)
+        self.syntax = (
+            syntax if syntax is not None else content_types.guess_mapping_format(fname)
+        )
         self.name = name if name else os.path.basename(fname)
 
     @contextlib.contextmanager
     def data(self):
-        with open(self.fname, 'rb') as f:
+        with open(self.fname, "rb") as f:
             yield f
 
 
 class ImportFile(Content):
-    """File-based content.
-    """
+    """File-based content."""
 
-    def __init__(self,
-                 fname,
-                 input_type=None,
-                 content_type=None,
-                 content_encoding=None,
-                 separator=None,
-                 name=None):
+    def __init__(
+        self,
+        fname,
+        input_type=None,
+        content_type=None,
+        content_encoding=None,
+        separator=None,
+        name=None,
+    ):
         """Initializes a File object.
 
         Args:
@@ -165,7 +164,12 @@ class ImportFile(Content):
           >>> MappingFile('data.json')
         """
         self.fname = fname
-        (self.content_encoding, self.content_type, d_input_type, d_separator) = content_types.guess_import_format(fname)
+        (
+            self.content_encoding,
+            self.content_type,
+            d_input_type,
+            d_separator,
+        ) = content_types.guess_import_format(fname)
 
         if input_type is None:
             self.input_type = d_input_type
@@ -181,9 +185,8 @@ class ImportFile(Content):
 
     @contextlib.contextmanager
     def data(self):
-        with open(self.fname, 'rb') as f:
+        with open(self.fname, "rb") as f:
             yield f
-
 
 
 class URL(Content):
