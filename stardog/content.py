@@ -139,7 +139,7 @@ class MappingFile(Content):
 
 
 class ImportFile(Content):
-    """File-based content."""
+    """File-based content for Delimited and JSON file."""
 
     def __init__(
         self,
