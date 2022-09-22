@@ -431,7 +431,12 @@ class Admin(object):
         """
         r = self.client.get("/admin/virtual_graphs")
         virtual_graphs = r.json()["virtual_graphs"]
-        return list(map(lambda name: VirtualGraph(name, self.client), virtual_graphs))
+        return list(
+            map(
+                lambda name: VirtualGraph(name.replace("virtual://", ""), self.client),
+                virtual_graphs,
+            )
+        )
 
     # TODO
     # def virtual_graphs_info(self):
@@ -442,8 +447,7 @@ class Admin(object):
     #     :return:
     #     """
 
-
-    #deprecated
+    # deprecated
     def import_virtual_graph(self, db, mappings, named_graph, remove_all, options):
         """Import (materialize) a virtual graph directly into the local knowledge graph.
 
@@ -461,13 +465,17 @@ class Admin(object):
                 )
         """
 
-        #we kept the interface to be backward
-        self.materialize_virtual_graph(db,mappings,None,named_graph, remove_all, options)
+        # we kept the interface to be backward
+        self.materialize_virtual_graph(
+            db, mappings, None, named_graph, remove_all, options
+        )
 
-    #As indicated in the CLI, this is the new recommend way to load import virtual graph is by using COPY using the datasource.
-    #Python does not support method overloading therefore, we kept the import_virtual graph name for the original code, and the
-    #new one is called materialize_virtual_graph
-    def materialize_virtual_graph(self, db, mappings, datasource, options=None,  named_graph=None, remove_all=False):
+    # As indicated in the CLI, this is the new recommend way to load import virtual graph is by using COPY using the datasource.
+    # Python does not support method overloading therefore, we kept the import_virtual graph name for the original code, and the
+    # new one is called materialize_virtual_graph
+    def materialize_virtual_graph(
+        self, db, mappings, datasource, options=None, named_graph=None, remove_all=False
+    ):
         """Import (materialize) a virtual graph directly into the local knowledge graph.
 
         Args:
@@ -479,7 +487,7 @@ class Admin(object):
           options (dict, optional): Options for the new virtual graph, https://docs.stardog.com/virtual-graphs/virtual-graph-configuration#virtual-graph-properties
 
         Examples:
-            >>> admin.import_virtual_graph(
+            >>> admin.materialize_virtual_graph(
                   'db-name', mappings=File('mappings.ttl'),
                   named_graph='my-graph'
                 )
@@ -490,14 +498,14 @@ class Admin(object):
                 if options is None:
                     options = {"mappings.syntax": mappings.syntax}
                 else:
-                    options["mappings.syntax"] = mappings.syntax
+                    options = {"mappings.syntax": mappings.syntax}
             with mappings.data() as data:
                 mappings = data.read().decode() if hasattr(data, "read") else data
 
         meta = {
             "db": db,
             "mappings": mappings,
-            "data_source" : datasource,
+            "data_source": datasource,
             "named_graph": named_graph,
             "remove_all": remove_all,
             "options": options,
@@ -576,7 +584,7 @@ class Admin(object):
                 if options is None:
                     options = {"mappings.syntax": mappings.syntax}
                 else:
-                    options["mappings.syntax"] = mappings.syntax
+                    options = {"mappings.syntax": mappings.syntax}
             with mappings.data() as data:
                 mappings = data.read().decode() if hasattr(data, "read") else data
 
