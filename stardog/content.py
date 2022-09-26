@@ -32,9 +32,11 @@ class Raw(Content):
 
         """
         self.raw = content
-        self.content_type = content_type
-        self.content_encoding = content_encoding
         self.name = name
+
+        (c_enc, c_type) = content_types.guess_rdf_format(name)
+        self.content_type = content_type if content_type else c_type
+        self.content_encoding = content_encoding if content_encoding else c_enc
 
     @contextlib.contextmanager
     def data(self):
@@ -81,7 +83,7 @@ class MappingRaw(Content):
                 Args:
                   content (str): Mapping in raw form
                   syntax (str, optional): Whether it r2rml or sms type.
-                    It will be automatically detected from the filename, if possible otherwise it will default to system default
+                    If not provided, it will try to detect it from name if provided, otherwise from the content itselft
                   name (str, optional): Object name
 
                 Examples:
@@ -97,12 +99,16 @@ class MappingRaw(Content):
         }''')
         """
         self.raw = content
-        self.syntax = (
-            syntax
-            if syntax is not None
-            else content_types.guess_mapping_format_from_content(content)
-        )
         self.name = name
+
+        c_syntax = None
+        if name:
+            c_syntax = content_types.guess_mapping_format(fname)
+
+        if c_syntax is None:
+            c_syntax = content_types.guess_mapping_format_from_content(content)
+
+        self.syntax = syntax if syntax else c_syntax
 
     @contextlib.contextmanager
     def data(self):
@@ -127,9 +133,7 @@ class MappingFile(Content):
           >>> MappingFile('data.r2rml')
         """
         self.fname = fname
-        self.syntax = (
-            syntax if syntax is not None else content_types.guess_mapping_format(fname)
-        )
+        self.syntax = syntax if syntax else content_types.guess_mapping_format(fname)
         self.name = name if name else os.path.basename(fname)
 
     @contextlib.contextmanager
@@ -138,23 +142,65 @@ class MappingFile(Content):
             yield f
 
 
+class ImportRaw(Content):
+    """User-defined content."""
+
+    def __init__(self, content, input_type=None, separator=None, content_type=None, content_encoding=None, name=None):
+        """Initializes a Raw object.
+
+        Args:
+          content (obj): Object representing the content (e.g., str, file)
+          input_type (str): DELIMITED or JSON
+          seperator (str): Required if it's  DELIMITED CONTENT
+          content_type (str, optional): Content type
+          content_encoding (str, optional): Content encoding
+          name (str, optional): Object name
+          
+          if name is provided like a pseudo filename, ie data.csv, data.tsv, or data.json, it will auto-detect most 
+          required parameter, otherwise you must specify them. 
+
+        Examples:
+          >>> ImportRaw('a,b,c',  name='data.csv')
+          >>> ImportRaw('a\tb\tc', name='data.tsv')
+          >>> ImportRaw({'foo':'bar'}, name='data.json')
+
+        """
+        self.raw = content
+        self.name = name
+
+        (c_enc, c_type, c_input_type, c_separator) = content_types.guess_import_format(name)
+
+        self.content_type = content_type if content_type else c_type
+        self.content_encoding = content_encoding if content_encoding else c_enc
+        self.input_type = input_type if input_type else c_input_type
+        self.separator = separator if separator else c_separator
+
+    @contextlib.contextmanager
+    def data(self):
+        yield self.raw
+
+
 class ImportFile(Content):
     """File-based content for Delimited and JSON file."""
 
     def __init__(
-        self,
-        fname,
-        input_type=None,
-        content_type=None,
-        content_encoding=None,
-        separator=None,
-        name=None,
+            self,
+            fname,
+            input_type=None,
+            content_type=None,
+            content_encoding=None,
+            separator=None,
+            name=None,
     ):
         """Initializes a File object.
 
         Args:
           fname (str): Filename
-          syntax (str, optional): Whether it r2rml or sms type.
+          input_type (str): DELIMITED or JSON
+          seperator (str): Required if it's  DELIMITED CONTENT
+          content_type (str, optional): Content type
+          content_encoding (str, optional): Content encoding
+          name (str, optional): Object name
             It will be automatically detected from the filename, if possible otherwise it will default to system default
 
         Examples:
@@ -163,23 +209,15 @@ class ImportFile(Content):
           >>> ImportFile('data.txt','DELIMITED',"\t" )
           >>> MappingFile('data.json')
         """
-        self.fname = fname
-        (
-            self.content_encoding,
-            self.content_type,
-            d_input_type,
-            d_separator,
-        ) = content_types.guess_import_format(fname)
+        
+        self.fname = fname 
+        
+        (c_enc, c_type, c_input_type, c_separator) = content_types.guess_import_format(fname)
 
-        if input_type is None:
-            self.input_type = d_input_type
-        else:
-            self.input_type = input_type
-
-        if separator is None:
-            self.separator = d_separator
-        else:
-            self.separator = separator
+        self.content_type = content_type if content_type else c_type
+        self.content_encoding = content_encoding if content_encoding else c_enc
+        self.input_type = input_type if input_type else c_input_type
+        self.separator = separator if separator else c_separator
 
         self.name = name if name else os.path.basename(fname)
 

@@ -565,7 +565,7 @@ class Admin(object):
         Args:
           db (str): Name of the database to import the data
           mappings (MappingRaw or MappingFile): New mapping contents.
-          input_file(ImportFile):
+          input_file(ImportFile or ImportRaw):
           options (dict, Optional): Options for the new csv import.
           named_graph (str, Optional): The namegraph to associate it too
 
@@ -1675,7 +1675,7 @@ class VirtualGraph(object):
           bool: Availability state
         """
         r = self.client.get(self.path + "/available")
-        return bool(r.json()["available"])
+        return bool(r.json())
 
     # TODO
     # def online(self):
