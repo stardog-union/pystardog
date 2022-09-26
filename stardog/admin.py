@@ -716,8 +716,18 @@ class Admin(object):
         """
         return self.client.post("/admin/cache/status", json=names).json()
 
-    def cached_queries(self):
+    def cached_status(self):
         """Retrieves all cached queries.
+
+        Returns:
+          list[Cache]: A list of Cache objects
+        """
+        r = self.client.get("/admin/cache/status")
+        cache_names = [cache_name["name"] for cache_name in r.json()]
+        return list(map(lambda name: Cache(name, self.client), cache_names))
+
+    def cached_queries(self):
+        """Retrieves all cached queries. This method is deprecated in Stardog 8+
 
         Returns:
           list[Cache]: A list of Cache objects

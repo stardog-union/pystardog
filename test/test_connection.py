@@ -299,6 +299,10 @@ def test_unicode(conn):
     )
 
 
+@pytest.mark.skip(
+    reason="Stardog 8 deprecated OWL constraints, which all these tests are depending on. need to update the tests"
+    "https://github.com/stardog-union/pystardog/issues/112"
+)
 def test_icv(conn):
 
     conn.begin()
@@ -313,7 +317,7 @@ def test_icv(conn):
     assert not icv.is_valid(constraints)
     conn.begin()
     assert len(icv.explain_violations(constraints)) == 14
-    # Need to be in a transaction to run explain_violatins, otherwise we might get "Cannot query against a closed connection"
+    # Need to be in a transaction to run explain_violations, otherwise we might get "Cannot query against a closed connection"
     conn.commit()
 
     assert "SELECT DISTINCT" in icv.convert(constraints)
