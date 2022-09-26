@@ -6,11 +6,12 @@
 version: "3.3"
 services:
   zoo1:
-    image: zookeeper:${ZOO_TAG}
+    image: bitnami/zookeeper:${ZOO_TAG}
     container_name: zkn1
     environment:
         ZOO_MY_ID: 1
         ZOO_SERVERS: server.1=0.0.0.0:2888:3888
+        ALLOW_ANONYMOUS_LOGIN: "yes"
 
   sd1:
     build:
@@ -42,20 +43,23 @@ services:
     depends_on:
       - zoo1
 
-  sdstandby:
-    build:
-      context: dockerfiles/
-      dockerfile: dockerfile-stardog
-      args:
-        - TAG=${STARDOG_TAG}
-        - NODE_TYPE=standby
-        - SSH_USER=${SSH_USER}
-        - SSH_PASS=${SSH_PASS}
-    container_name: ${STARDOG_HOSTNAME_STANDBY}
-    entrypoint: ["/bin/bash", "-c"]
-    command: ["/var/start-standby.sh"]
-    depends_on:
-      - zoo1
+
+# Disabled as we need to figure out why these are failing
+# https://github.com/stardog-union/pystardog/issues/111
+#  sdstandby:
+#    build:
+#      context: dockerfiles/
+#      dockerfile: dockerfile-stardog
+#      args:
+#        - TAG=${STARDOG_TAG}
+#        - NODE_TYPE=standby
+#        - SSH_USER=${SSH_USER}
+#        - SSH_PASS=${SSH_PASS}
+#    container_name: ${STARDOG_HOSTNAME_STANDBY}
+#    entrypoint: ["/bin/bash", "-c"]
+#    command: ["/var/start-standby.sh"]
+#    depends_on:
+#      - zoo1
 
   sdcache1:
     build:
