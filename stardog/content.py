@@ -145,7 +145,15 @@ class MappingFile(Content):
 class ImportRaw(Content):
     """User-defined content."""
 
-    def __init__(self, content, input_type=None, separator=None, content_type=None, content_encoding=None, name=None):
+    def __init__(
+        self,
+        content,
+        input_type=None,
+        separator=None,
+        content_type=None,
+        content_encoding=None,
+        name=None,
+    ):
         """Initializes a Raw object.
 
         Args:
@@ -155,9 +163,9 @@ class ImportRaw(Content):
           content_type (str, optional): Content type
           content_encoding (str, optional): Content encoding
           name (str, optional): Object name
-          
-          if name is provided like a pseudo filename, ie data.csv, data.tsv, or data.json, it will auto-detect most 
-          required parameter, otherwise you must specify them. 
+
+          if name is provided like a pseudo filename, ie data.csv, data.tsv, or data.json, it will auto-detect most
+          required parameter, otherwise you must specify them.
 
         Examples:
           >>> ImportRaw('a,b,c',  name='data.csv')
@@ -168,7 +176,9 @@ class ImportRaw(Content):
         self.raw = content
         self.name = name
 
-        (c_enc, c_type, c_input_type, c_separator) = content_types.guess_import_format(name)
+        (c_enc, c_type, c_input_type, c_separator) = content_types.guess_import_format(
+            name
+        )
 
         self.content_type = content_type if content_type else c_type
         self.content_encoding = content_encoding if content_encoding else c_enc
@@ -184,13 +194,13 @@ class ImportFile(Content):
     """File-based content for Delimited and JSON file."""
 
     def __init__(
-            self,
-            fname,
-            input_type=None,
-            content_type=None,
-            content_encoding=None,
-            separator=None,
-            name=None,
+        self,
+        fname,
+        input_type=None,
+        content_type=None,
+        content_encoding=None,
+        separator=None,
+        name=None,
     ):
         """Initializes a File object.
 
@@ -209,10 +219,12 @@ class ImportFile(Content):
           >>> ImportFile('data.txt','DELIMITED',"\t" )
           >>> MappingFile('data.json')
         """
-        
-        self.fname = fname 
-        
-        (c_enc, c_type, c_input_type, c_separator) = content_types.guess_import_format(fname)
+
+        self.fname = fname
+
+        (c_enc, c_type, c_input_type, c_separator) = content_types.guess_import_format(
+            fname
+        )
 
         self.content_type = content_type if content_type else c_type
         self.content_encoding = content_encoding if content_encoding else c_enc
