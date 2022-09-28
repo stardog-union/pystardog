@@ -187,6 +187,9 @@ def test_coordinator_check(admin, conn_string):
         assert admin_coordinator_check.cluster_coordinator_check()
 
 
+@pytest.mark.skip(
+    reason="Stardog 8 made this test fail, needs further investigation: https://github.com/stardog-union/pystardog/issues/111"
+)
 def test_cluster_standby(cluster_standby_node_conn_string):
 
     with stardog.admin.Admin(**cluster_standby_node_conn_string) as admin_standby:
@@ -734,7 +737,7 @@ def test_cache_ng_datasets(admin, bulkload_content, cache_target_info):
     assert cached_graph_status[0]["target"] == cache_target.name
     cached_graph.refresh()
     cached_graph.drop()
-    assert len(admin.cached_queries()) == 0
+    assert len(admin.cached_graphs()) == 0
 
 
 def test_cache_vg_datasets(admin, music_options, cache_target_info):
@@ -785,7 +788,7 @@ def test_cache_vg_datasets(admin, music_options, cache_target_info):
     assert cached_graph_status[0]["target"] == cache_target.name
     cached_graph.refresh()
     cached_graph.drop()
-    assert len(admin.cached_queries()) == 0
+    assert len(admin.cached_graphs()) == 0
 
     cache_target.remove()
     wait_for_cleaning_cache_target(admin, cache_target.name)
@@ -794,6 +797,9 @@ def test_cache_vg_datasets(admin, music_options, cache_target_info):
     ds.delete()
 
 
+@pytest.mark.skip(
+    reason="Caching queries is no longer supported. We are skipping we but should make sure it still works for older SD versions"
+)
 def test_cache_query_datasets(admin, bulkload_content, cache_target_info):
 
     cache_target_name = cache_target_info["target_name"]
