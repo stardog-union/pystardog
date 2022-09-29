@@ -43,23 +43,20 @@ services:
     depends_on:
       - zoo1
 
-
-# Disabled as we need to figure out why these are failing
-# https://github.com/stardog-union/pystardog/issues/111
-#  sdstandby:
-#    build:
-#      context: dockerfiles/
-#      dockerfile: dockerfile-stardog
-#      args:
-#        - TAG=${STARDOG_TAG}
-#        - NODE_TYPE=standby
-#        - SSH_USER=${SSH_USER}
-#        - SSH_PASS=${SSH_PASS}
-#    container_name: ${STARDOG_HOSTNAME_STANDBY}
-#    entrypoint: ["/bin/bash", "-c"]
-#    command: ["/var/start-standby.sh"]
-#    depends_on:
-#      - zoo1
+  sdstandby:
+    build:
+      context: dockerfiles/
+      dockerfile: dockerfile-stardog
+      args:
+        - TAG=${STARDOG_TAG}
+        - NODE_TYPE=standby
+        - SSH_USER=${SSH_USER}
+        - SSH_PASS=${SSH_PASS}
+    container_name: ${STARDOG_HOSTNAME_STANDBY}
+    entrypoint: ["/bin/bash", "-c"]
+    command: ["/var/start-standby.sh"]
+    depends_on:
+      - zoo1
 
   sdcache1:
     build:

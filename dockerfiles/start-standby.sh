@@ -22,6 +22,7 @@ function wait_for_cluster_ready(){
     )
 
 }
+
 wait_for_cluster_ready
 echo "Main cluster ready, starting standby node"
 /var/start.sh
