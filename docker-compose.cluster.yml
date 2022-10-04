@@ -110,7 +110,6 @@ services:
 
   # two mysql servers are used instead of one so we can simulate multiple datasources.
   mysql-music:
-    platform: linux/x86_64
     build:
       context: .
       dockerfile: dockerfiles/dockerfile-mysql-music
@@ -119,7 +118,6 @@ services:
     container_name: pystardog_mysql_music
 
   mysql-videos:
-    platform: linux/x86_64
     build:
       context: .
       dockerfile: dockerfiles/dockerfile-mysql-videos
