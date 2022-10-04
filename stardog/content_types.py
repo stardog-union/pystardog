@@ -44,7 +44,6 @@ _IMPORT_EXTENSIONS = {
     "json": ("application/json", "JSON", None),
 }
 
-
 # Compression filename extensions and their content encodings
 _COMPRESSION_EXTENSIONS = {"gz": "gzip", "zip": "zip", "bz2": "bzip2"}
 
@@ -112,7 +111,11 @@ def guess_import_format(fname):
         extension = _get_extension(fname[: -len(extension) - 1])
 
     # get content type
-    (content_type, input_type, separator) = _IMPORT_EXTENSIONS.get(extension)
+    info = _IMPORT_EXTENSIONS.get(extension)
+
+    content_type = info[0] if info else None
+    input_type = info[1] if info else None
+    separator = info[2] if info else None
 
     return content_encoding, content_type, input_type, separator
 
@@ -129,7 +132,7 @@ def guess_mapping_format_from_content(content):
             syntax
     """
     regex = re.compile("MAPPING.*?FROM", re.DOTALL | re.IGNORECASE)
-    syntax = "SMS2" if regex.match(content) else None
+    syntax = "SMS2" if regex.search(content) else None
 
     return syntax
 

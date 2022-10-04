@@ -280,6 +280,7 @@ def test_backup_all(admin):
     assert "meta" in tmp_backup.stdout
 
 
+# DEPRECATED, test moved to test_integration
 def test_databases(admin, conn_string, bulkload_content):
     assert len(admin.databases()) == 0
 

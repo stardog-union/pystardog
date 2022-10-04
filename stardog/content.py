@@ -46,7 +46,9 @@ class Raw(Content):
 class File(Content):
     """File-based content."""
 
-    def __init__(self, fname, content_type=None, content_encoding=None, name=None):
+    def __init__(
+        self, file=None, content_type=None, content_encoding=None, name=None, fname=None
+    ):
         """Initializes a File object.
 
         Args:
@@ -62,11 +64,20 @@ class File(Content):
           >>> File('data.ttl')
           >>> File('data.doc', 'application/msword')
         """
-        self.fname = fname
-        (c_enc, c_type) = content_types.guess_rdf_format(fname)
+
+        # file as a special meaning in IDE such as pycharm where it shows you a file picker. It helps you find the file
+        # which is important for this type of call, but we need to be backward compatible in case they use fname=
+
+        if fname:
+            file = fname
+
+        assert (file, "Parameter file is required")
+
+        self.fname = file
+        (c_enc, c_type) = content_types.guess_rdf_format(file)
         self.content_type = content_type if content_type else c_type
         self.content_encoding = content_encoding if content_encoding else c_enc
-        self.name = name if name else os.path.basename(fname)
+        self.name = name if name else os.path.basename(file)
 
     @contextlib.contextmanager
     def data(self):
@@ -103,7 +114,7 @@ class MappingRaw(Content):
 
         c_syntax = None
         if name:
-            c_syntax = content_types.guess_mapping_format(fname)
+            c_syntax = content_types.guess_mapping_format(name)
 
         if c_syntax is None:
             c_syntax = content_types.guess_mapping_format_from_content(content)
@@ -118,11 +129,11 @@ class MappingRaw(Content):
 class MappingFile(Content):
     """File-based content."""
 
-    def __init__(self, fname, syntax=None, name=None):
+    def __init__(self, file: str, syntax=None, name=None):
         """Initializes a File object.
 
         Args:
-          fname (str): Filename
+          file (str): Filename
           syntax (str, optional): Whether it r2rml or sms type.
             It will be automatically detected from the filename, if possible otherwise it will default to system default
 
@@ -132,9 +143,9 @@ class MappingFile(Content):
           >>> MappingFile('data.rq')
           >>> MappingFile('data.r2rml')
         """
-        self.fname = fname
-        self.syntax = syntax if syntax else content_types.guess_mapping_format(fname)
-        self.name = name if name else os.path.basename(fname)
+        self.fname = file
+        self.syntax = syntax if syntax else content_types.guess_mapping_format(file)
+        self.name = name if name else os.path.basename(file)
 
     @contextlib.contextmanager
     def data(self):
@@ -195,7 +206,7 @@ class ImportFile(Content):
 
     def __init__(
         self,
-        fname,
+        file,
         input_type=None,
         content_type=None,
         content_encoding=None,
@@ -205,9 +216,9 @@ class ImportFile(Content):
         """Initializes a File object.
 
         Args:
-          fname (str): Filename
+          file (str): Filename
           input_type (str): DELIMITED or JSON
-          seperator (str): Required if it's  DELIMITED CONTENT
+          separator (str): Required if it's  DELIMITED CONTENT
           content_type (str, optional): Content type
           content_encoding (str, optional): Content encoding
           name (str, optional): Object name
@@ -220,10 +231,10 @@ class ImportFile(Content):
           >>> MappingFile('data.json')
         """
 
-        self.fname = fname
+        self.fname = file
 
         (c_enc, c_type, c_input_type, c_separator) = content_types.guess_import_format(
-            fname
+            file
         )
 
         self.content_type = content_type if content_type else c_type
@@ -231,7 +242,7 @@ class ImportFile(Content):
         self.input_type = input_type if input_type else c_input_type
         self.separator = separator if separator else c_separator
 
-        self.name = name if name else os.path.basename(fname)
+        self.name = name if name else os.path.basename(file)
 
     @contextlib.contextmanager
     def data(self):

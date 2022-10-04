@@ -1,0 +1,8 @@
+MAPPING
+FROM CSV {
+}
+TO {
+  ?subject <http://api.stardog.com/person#score> ?score .
+} WHERE {
+  BIND(template("http://api.stardog.com/person/nr={nr}") AS ?subject)
+}
