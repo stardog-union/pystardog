@@ -38,6 +38,9 @@ class TestStardog:
         self.conn = conn
         self.admin = stardog.Admin(**conn)
 
+        if not os.path.isdir("data") and not os.path.islink("data"):
+            os.symlink("test/data","data")
+
     def teardown_method(self, test_method):
         """
         After each test this will destroy all resources on the instance.
