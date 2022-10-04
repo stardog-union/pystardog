@@ -91,13 +91,13 @@
             "properties": {
                 "testOnBorrow": "true",
                 "jdbc.driver": "com.mysql.jdbc.Driver",
-                "jdbc.username": "stardog@stardog-mysql",
-                "jdbc.url": "jdbc:mysql://stardog-mysql.mysql.database.azure.com:3306/benchmark",
-                "jdbc.password": "D0gPack012",
+                "jdbc.username": "mysql",
+                "jdbc.url": "jdbc:mysql://mytest:3306/benchmark",
+                "jdbc.password": "mypasswd",
                 "validationInterval": "1000",
                 "validationQuery": "SELECT 1",
                 "query.translation": "Default",
-                "sql.schema": "fdc_test"
+                "sql.schema": "mine_test"
             },
             "online": true
         }
@@ -128,8 +128,8 @@
             "properties": {
                 "reasoning.schemas": [
                     {
-                        "name": "fdc",
-                        "iri": "http://frontdoorcorp.com/ontologies/fdc#"
+                        "name": "mine",
+                        "iri": "http://guidedog.stardog.com/ontologies/mine#"
                     }
                 ],
                 "spatial.enabled": true,
@@ -162,8 +162,8 @@
                         "iri": "http://www.w3.org/2000/01/rdf-schema#"
                     },
                     {
-                        "name": "fdc",
-                        "iri": "http://frontdoorcorp.com/ontologies/fdc#"
+                        "name": "mine",
+                        "iri": "http://guidedog.stardog.com/ontologies/mine#"
                     },
                     {
                         "name": "geo",

@@ -17,14 +17,13 @@ from stardog.exceptions import StardogException
 
 
 class Resource(Enum):
-    DB = 'db_sd_int_test'
-    DS = 'ds_sd_int_test'
-    VG = 'vg_sd_int_test'
-    NG = 'http://example.org/graph'
+    DB = "db_sd_int_test"
+    DS = "ds_sd_int_test"
+    VG = "vg_sd_int_test"
+    NG = "http://example.org/graph"
 
 
 class TestStardog:
-
     def setup_method(self, test_method):
         """
         Before each test a fresh stardog admin and credential object will be provided, just in case it got corrupted.
@@ -52,7 +51,7 @@ class TestStardog:
             try:
                 db.drop()
             except StardogException as e:
-                if e.stardog_code != '0D0DU2':
+                if e.stardog_code != "0D0DU2":
                     raise e
                 pass
 
@@ -62,7 +61,7 @@ class TestStardog:
             try:
                 vg.delete()
             except StardogException as e:
-                if e.stardog_code != '0D0DU2':
+                if e.stardog_code != "0D0DU2":
                     raise e
                 pass
 
@@ -72,7 +71,7 @@ class TestStardog:
             try:
                 ds.delete()
             except StardogException as e:
-                if e.stardog_code != '0D0DU2':
+                if e.stardog_code != "0D0DU2":
                     raise e
                 pass
 
@@ -84,9 +83,16 @@ class TestStardog:
 
         @rtype: bool
         """
-        return True if 'localhost' in self.conn['endpoint'] and not os.path.exists('./dockerenv') else False
+        return (
+            True
+            if "localhost" in self.conn["endpoint"]
+            and not os.path.exists("./dockerenv")
+            else False
+        )
 
-    def expected_count(self, expected=1, db: str = None, ng: str = 'stardog:context:default') -> bool:
+    def expected_count(
+        self, expected=1, db: str = None, ng: str = "stardog:context:default"
+    ) -> bool:
         db = db if db else self.db_name
 
         with connection.Connection(db, **self.conn) as c:
@@ -126,7 +132,7 @@ class TestStardog:
         try:
             db.drop()
         except StardogException as e:
-            if e.stardog_code != '0D0DU2':
+            if e.stardog_code != "0D0DU2":
                 raise e
             pass
 
@@ -151,7 +157,8 @@ class TestStardog:
             ),
             (content.File("data/example.ttl.zip"), "urn:context"),
             content.URL(
-                "https://www.w3.org/2000/10/rdf-tests/" "RDF-Model-Syntax_1.0/ms_4.1_1.rdf"
+                "https://www.w3.org/2000/10/rdf-tests/"
+                "RDF-Model-Syntax_1.0/ms_4.1_1.rdf"
             ),
         ]
         return contents
@@ -200,7 +207,7 @@ class TestStardog:
         try:
             ds.delete()
         except StardogException as e:
-            if e.stardog_code != '0D0DU2':
+            if e.stardog_code != "0D0DU2":
                 raise e
             pass
 
@@ -226,7 +233,7 @@ class TestStardog:
                 "sql.default.schema": "main",
                 "sql.defaults": "main",
                 "sql.skip.validation": "true",
-                "sql.dialect": "POSTGRESQL"
+                "sql.dialect": "POSTGRESQL",
             }
         else:
             {
@@ -239,7 +246,6 @@ class TestStardog:
 
 
 class TestDatabase(TestStardog):
-
     def test_database_creation(self):
         # create database, validate it created and drop it.
 
@@ -260,7 +266,9 @@ class TestDatabase(TestStardog):
         assert len(self.admin.databases()) == 0
 
     def test_new_with_properties(self):
-        db = self.admin.new_database(self.db_name, {"search.enabled": True, "spatial.enabled": True})
+        db = self.admin.new_database(
+            self.db_name, {"search.enabled": True, "spatial.enabled": True}
+        )
         assert db.get_options("search.enabled", "spatial.enabled") == {
             "search.enabled": True,
             "spatial.enabled": True,
@@ -270,17 +278,11 @@ class TestDatabase(TestStardog):
         db = self.db
 
         # change options
-        assert db.get_options('database.online') == {
-            "database.online": True
-        }
+        assert db.get_options("database.online") == {"database.online": True}
         db.offline()
-        assert db.get_options('database.online') == {
-            "database.online": False
-        }
+        assert db.get_options("database.online") == {"database.online": False}
         db.online()
-        assert db.get_options('database.online') == {
-            "database.online": True
-        }
+        assert db.get_options("database.online") == {"database.online": True}
 
     def test_get_all_options(self):
         db = self.db
@@ -307,11 +309,15 @@ class TestDatabase(TestStardog):
         # this test data_add as well content.Raw and content.File
 
         if self.is_local:
-            self.admin.new_database(self.db_name, {}, *self.bulk_load_content, copy_to_server=True)
-            assert (self.expected_count(6))
-            assert (self.expected_count(1, ng='<urn:context>'))
+            self.admin.new_database(
+                self.db_name, {}, *self.bulk_load_content, copy_to_server=True
+            )
+            assert self.expected_count(6)
+            assert self.expected_count(1, ng="<urn:context>")
         else:
-            pytest.skip("This test does not yet support remote endpoint, file need to be copied over")
+            pytest.skip(
+                "This test does not yet support remote endpoint, file need to be copied over"
+            )
             return
 
 
@@ -331,32 +337,31 @@ class TestDataSource(TestStardog):
 
 
 class TestLoadData(TestStardog):
-
     def setup_class(self):
         self.run_vg_test = True
 
         if self.is_local:
             # Let's check if we have the sqlite driver
-            libpath = os.environ.get('STARDOG_EXT', None)
+            libpath = os.environ.get("STARDOG_EXT", None)
 
             driver_found = False
             if libpath:
-                d = re.compile('sqlite-jdbc')
+                d = re.compile("sqlite-jdbc")
                 for file in os.listdir(libpath):
                     if d.match(file):
                         driver_found = True
 
             if driver_found:
-                if not os.path.exists('/tmp/music.db'):
+                if not os.path.exists("/tmp/music.db"):
                     import sqlite3
                     from sqlite3 import Error
 
                     conn = None
                     try:
-                        conn = sqlite3.connect('/tmp/music.db')
-                        with open('data/music_schema.sql') as f:
+                        conn = sqlite3.connect("/tmp/music.db")
+                        with open("data/music_schema.sql") as f:
                             conn.executescript(f.read())
-                        with open('data/beatles.sql') as f:
+                        with open("data/beatles.sql") as f:
                             conn.executescript(f.read())
                     except Error as e:
                         self.run_vg_test = False
@@ -384,7 +389,7 @@ And install in directory pointed to by STARDOG_EXT and restart server
     def test_data_add_ttl_from_content(self):
         db = self.db
         with self.connection() as c:
-            with open('data/example.ttl') as f:
+            with open("data/example.ttl") as f:
                 c.begin()
                 c.add(stardog.content.Raw(f.read(), name="example.ttl"))
                 c.commit()
@@ -397,25 +402,25 @@ And install in directory pointed to by STARDOG_EXT and restart server
             c.begin()
             c.add(stardog.content.File("data/example.ttl"), graph_uri=self.ng)
             c.commit()
-        assert(self.expected_count(1, ng=f"<{self.ng}>"))
+        assert self.expected_count(1, ng=f"<{self.ng}>")
 
     def test_import_csv_from_file(self):
         db = self.db
         self.admin.import_file(
             db.name,
             stardog.content.MappingFile("data/test_import_delimited.sms"),
-            stardog.content.ImportFile("data/test_import_delimited.csv")
+            stardog.content.ImportFile("data/test_import_delimited.csv"),
         )
         assert self.expected_count(145961)
 
     def test_import_csv_from_content(self):
         db = self.db
-        with open('data/test_import_delimited.csv') as csv:
-            with open('data/test_import_delimited.sms') as sms:
+        with open("data/test_import_delimited.csv") as csv:
+            with open("data/test_import_delimited.sms") as sms:
                 self.admin.import_file(
                     db.name,
                     stardog.content.MappingRaw(sms.read()),
-                    stardog.content.ImportRaw(csv.read(), name='data.csv')
+                    stardog.content.ImportRaw(csv.read(), name="data.csv"),
                 )
                 assert self.expected_count(145961)
 
@@ -427,27 +432,27 @@ And install in directory pointed to by STARDOG_EXT and restart server
             stardog.content.MappingFile("data/test_import_delimited.sms"),
             stardog.content.ImportFile("data/test_import_delimited.csv"),
             None,
-            self.ng
+            self.ng,
         )
-        assert(self.expected_count(145961, ng=f'<{self.ng}>'))
+        assert self.expected_count(145961, ng=f"<{self.ng}>")
 
     def test_import_tsv_from_file(self):
         db = self.db
         self.admin.import_file(
             db.name,
             stardog.content.MappingFile("data/test_import_delimited.sms"),
-            stardog.content.ImportFile("data/test_import_delimited.csv")
+            stardog.content.ImportFile("data/test_import_delimited.csv"),
         )
         assert self.expected_count(145961)
 
     def test_import_tsv_from_content(self):
         db = self.db
-        with open('data/test_import_delimited.csv') as tsv:
-            with open('data/test_import_delimited.sms') as sms:
+        with open("data/test_import_delimited.csv") as tsv:
+            with open("data/test_import_delimited.sms") as sms:
                 self.admin.import_file(
                     db.name,
                     stardog.content.MappingRaw(sms.read()),
-                    stardog.content.ImportRaw(tsv.read(), name='data.csv')
+                    stardog.content.ImportRaw(tsv.read(), name="data.csv"),
                 )
                 assert self.expected_count(145961)
 
@@ -459,27 +464,27 @@ And install in directory pointed to by STARDOG_EXT and restart server
             stardog.content.MappingFile("data/test_import_delimited.sms"),
             stardog.content.ImportFile("data/test_import_delimited.tsv"),
             None,
-            self.ng
+            self.ng,
         )
-        assert self.expected_count(145961, ng=f'<{self.ng}>')
+        assert self.expected_count(145961, ng=f"<{self.ng}>")
 
     def test_import_json_from_file(self):
         db = self.db
         self.admin.import_file(
             db.name,
             stardog.content.MappingFile("data/test_import_json.sms"),
-            stardog.content.ImportFile("data/test_import.json")
+            stardog.content.ImportFile("data/test_import.json"),
         )
         assert self.expected_count(223)
 
     def test_import_json_from_contents(self):
         db = self.db
-        with open('data/test_import.json') as json:
-            with open('data/test_import_json.sms') as sms:
+        with open("data/test_import.json") as json:
+            with open("data/test_import_json.sms") as sms:
                 self.admin.import_file(
                     db.name,
                     stardog.content.MappingRaw(sms.read()),
-                    stardog.content.ImportRaw(json.read(), name="data.json")
+                    stardog.content.ImportRaw(json.read(), name="data.json"),
                 )
                 assert self.expected_count(223)
 
@@ -490,9 +495,9 @@ And install in directory pointed to by STARDOG_EXT and restart server
             stardog.content.MappingFile("data/test_import_json.sms"),
             stardog.content.ImportFile("data/test_import.json"),
             None,
-            'http://example.org/graph'
+            "http://example.org/graph",
         )
-        assert self.expected_count(223, ng=f'<{self.ng}>')
+        assert self.expected_count(223, ng=f"<{self.ng}>")
 
     def test_materialize_graph_from_file(self):
         db = self.db
@@ -502,9 +507,9 @@ And install in directory pointed to by STARDOG_EXT and restart server
                 db.name,
                 stardog.content.MappingFile("data/music_mappings.ttl", "STARDOG"),
                 None,
-                self.music_options
+                self.music_options,
             )
-            assert(self.expected_count(37))
+            assert self.expected_count(37)
         else:
             pytest.skip(self.msg_vg_test)
 
@@ -516,9 +521,9 @@ And install in directory pointed to by STARDOG_EXT and restart server
                 db.name,
                 stardog.content.MappingFile("data/music_mappings.ttl", "STARDOG"),
                 None,
-                self.music_options
+                self.music_options,
             )
-            assert(self.expected_count(37))
+            assert self.expected_count(37)
         else:
             pytest.skip(self.msg_vg_test)
 
@@ -530,9 +535,9 @@ And install in directory pointed to by STARDOG_EXT and restart server
             self.admin.materialize_virtual_graph(
                 db.name,
                 stardog.content.MappingFile("data/music_mappings.ttl", "STARDOG"),
-                ds.name
+                ds.name,
             )
-            assert(self.expected_count(37))
+            assert self.expected_count(37)
         else:
             pytest.skip(self.msg_vg_test)
 
@@ -540,14 +545,14 @@ And install in directory pointed to by STARDOG_EXT and restart server
         db = self.db
 
         if self.run_vg_test:
-            with open('data/music_mappings.ttl') as f:
+            with open("data/music_mappings.ttl") as f:
                 self.admin.materialize_virtual_graph(
                     db.name,
                     stardog.content.MappingRaw(f.read(), "STARDOG"),
                     None,
-                    self.music_options
+                    self.music_options,
                 )
-            assert(self.expected_count(37))
+            assert self.expected_count(37)
         else:
             pytest.skip(self.msg_vg_test)
 
@@ -560,9 +565,9 @@ And install in directory pointed to by STARDOG_EXT and restart server
                 stardog.content.MappingFile("data/music_mappings.ttl", "STARDOG"),
                 None,
                 self.music_options,
-                self.ng
+                self.ng,
             )
-            assert(self.expected_count(37, ng=f'<{self.ng}>'))
+            assert self.expected_count(37, ng=f"<{self.ng}>")
         else:
             pytest.skip(self.msg_vg_test)
 
@@ -576,9 +581,9 @@ And install in directory pointed to by STARDOG_EXT and restart server
                 stardog.content.MappingFile("data/music_mappings.ttl", "STARDOG"),
                 ds.name,
                 None,
-                self.ng
+                self.ng,
             )
-            assert(self.expected_count(37, ng=f'<{self.ng}>'))
+            assert self.expected_count(37, ng=f"<{self.ng}>")
         else:
             pytest.skip(self.msg_vg_test)
 
@@ -586,15 +591,15 @@ And install in directory pointed to by STARDOG_EXT and restart server
         db = self.db
 
         if self.run_vg_test:
-            with open('data/music_mappings.ttl') as f:
+            with open("data/music_mappings.ttl") as f:
                 self.admin.materialize_virtual_graph(
                     db.name,
                     stardog.content.MappingRaw(f.read(), "STARDOG"),
                     None,
                     self.music_options,
-                    self.ng
+                    self.ng,
                 )
-            assert(self.expected_count(37, ng=f'<{self.ng}>'))
+            assert self.expected_count(37, ng=f"<{self.ng}>")
         else:
             pytest.skip(self.msg_vg_test)
 
@@ -607,9 +612,8 @@ And install in directory pointed to by STARDOG_EXT and restart server
                 stardog.content.File("data/music_mappings.ttl"),
                 self.ng,
                 False,
-                self.music_options
+                self.music_options,
             )
-            assert(self.expected_count(37, ng=f'<{self.ng}>'))
+            assert self.expected_count(37, ng=f"<{self.ng}>")
         else:
             pytest.skip(self.msg_vg_test)
-
