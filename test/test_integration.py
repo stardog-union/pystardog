@@ -24,12 +24,16 @@ class Resource(Enum):
 
 
 class TestStardog:
+    is_local = True if "localhost" in os.environ.get("STARDOG_ENDPOINT") and not os.path.exists("/.dockerenv") else False
+
     def setup_method(self, test_method):
         """
         Before each test a fresh stardog admin and credential object will be provided, just in case it got corrupted.
 
         @rtype: None
+
         """
+
         conn = {
             "endpoint": os.environ.get("STARDOG_ENDPOINT", "http://localhost:5820"),
             "username": os.environ.get("STARDOG_USERNAME", "admin"),
@@ -37,6 +41,7 @@ class TestStardog:
         }
         self.conn = conn
         self.admin = stardog.Admin(**conn)
+
 
         if not os.path.isdir("data") and not os.path.islink("data"):
             os.symlink("test/data", "data")
@@ -78,20 +83,7 @@ class TestStardog:
                     raise e
                 pass
 
-    @property
-    def is_local(self) -> bool:
-        """
-        This method will return whether you are running this test against a local version not in docker. For example a
-        simple developer.
-
-        @rtype: bool
-        """
-        return (
-            True
-            if "localhost" in self.conn["endpoint"]
-            and not os.path.exists("./dockerenv")
-            else False
-        )
+        
 
     def expected_count(
         self, expected=1, db: str = None, ng: str = "stardog:context:default"
@@ -166,6 +158,7 @@ class TestStardog:
         ]
         return contents
 
+
     ################################################################################################################
     #
     # Datasource  & VirtualGraph helpers
@@ -227,7 +220,7 @@ class TestStardog:
 
     @property
     def music_options(self):
-        if self.is_local:
+        if TestStardog.is_local:
             return {
                 "jdbc.url": "jdbc:sqlite:/tmp/music.db",
                 "jdbc.username": "whatever",
@@ -239,7 +232,7 @@ class TestStardog:
                 "sql.dialect": "POSTGRESQL",
             }
         else:
-            {
+            return {
                 "jdbc.driver": "com.mysql.jdbc.Driver",
                 "jdbc.username": "user",
                 "jdbc.password": "pass",
@@ -309,19 +302,11 @@ class TestDatabase(TestStardog):
         assert True
 
     def test_bulkload(self):
-        # this test data_add as well content.Raw and content.File
-
-        if self.is_local:
-            self.admin.new_database(
-                self.db_name, {}, *self.bulk_load_content, copy_to_server=True
-            )
-            assert self.expected_count(6)
-            assert self.expected_count(1, ng="<urn:context>")
-        else:
-            pytest.skip(
-                "This test does not yet support remote endpoint, file need to be copied over"
-            )
-            return
+        self.admin.new_database(
+            self.db_name, {}, *self.bulk_load_content, copy_to_server=True
+        )
+        assert self.expected_count(6)
+        assert self.expected_count(1, ng="<urn:context>")
 
 
 class TestDataSource(TestStardog):
@@ -340,10 +325,13 @@ class TestDataSource(TestStardog):
 
 
 class TestLoadData(TestStardog):
+
+
     def setup_class(self):
         self.run_vg_test = True
 
-        if self.is_local:
+
+        if TestStardog.is_local:
             # Let's check if we have the sqlite driver
             libpath = os.environ.get("STARDOG_EXT", None)
 

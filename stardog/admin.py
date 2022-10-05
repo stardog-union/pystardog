@@ -569,11 +569,19 @@ class Admin(object):
         """
 
         if mappings:
-            if mappings.syntax:
+            if hasattr(mappings, "syntax") and mappings.syntax:
                 if options:
                     options["mappings.syntax"] = mappings.syntax
                 else:
                     options = {"mappings.syntax": mappings.syntax}
+            else:
+                if options:
+                    options["mappings.syntax"] = "STARDOG"
+                else:
+                    options = {
+                        "mappings.syntax": "STARDOG"
+                    }  # this is the default of the original method
+
 
             with mappings.data() as data:
                 if hasattr(data, "read"):

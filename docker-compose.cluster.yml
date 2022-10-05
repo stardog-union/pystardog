@@ -95,6 +95,7 @@ services:
       dockerfile: dockerfiles/dockerfile-python
     entrypoint: /bin/bash -c
     command: ["./utils/run_tests.sh"]
+    #command: ["sleep 10000000"]
     container_name: pystardog_tests
     environment:
       - SSH_USER=${SSH_USER}
@@ -102,7 +103,7 @@ services:
       - STARDOG_HOSTNAME_NODE_1=${STARDOG_HOSTNAME_NODE_1}
       - STARDOG_HOSTNAME_CACHE=${STARDOG_HOSTNAME_CACHE}
       - STARDOG_HOSTNAME_STANDBY=${STARDOG_HOSTNAME_STANDBY}
-      - STARDOG_ENDPOINT=${STARDOG_LB}
+      - STARDOG_ENDPOINT=http://${STARDOG_LB}:5820
       - STARDOG_LB=${STARDOG_LB}
       - STARDOG_USER=${STARDOG_USER}
       - STARDOG_PASS=${STARDOG_PASS}
