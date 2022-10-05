@@ -582,7 +582,6 @@ class Admin(object):
                         "mappings.syntax": "STARDOG"
                     }  # this is the default of the original method
 
-
             with mappings.data() as data:
                 if hasattr(data, "read"):
                     r = data.read()

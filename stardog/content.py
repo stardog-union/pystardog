@@ -71,7 +71,7 @@ class File(Content):
         if fname:
             file = fname
 
-        assert (file, "Parameter file is required")
+        assert file, "Parameter file is required"
 
         self.fname = file
         (c_enc, c_type) = content_types.guess_rdf_format(file)

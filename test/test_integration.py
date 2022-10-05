@@ -24,7 +24,12 @@ class Resource(Enum):
 
 
 class TestStardog:
-    is_local = True if "localhost" in os.environ.get("STARDOG_ENDPOINT") and not os.path.exists("/.dockerenv") else False
+    is_local = (
+        True
+        if "localhost" in os.environ.get("STARDOG_ENDPOINT")
+        and not os.path.exists("/.dockerenv")
+        else False
+    )
 
     def setup_method(self, test_method):
         """
@@ -41,7 +46,6 @@ class TestStardog:
         }
         self.conn = conn
         self.admin = stardog.Admin(**conn)
-
 
         if not os.path.isdir("data") and not os.path.islink("data"):
             os.symlink("test/data", "data")
@@ -82,8 +86,6 @@ class TestStardog:
                 if e.stardog_code != "0D0DU2":
                     raise e
                 pass
-
-        
 
     def expected_count(
         self, expected=1, db: str = None, ng: str = "stardog:context:default"
@@ -157,7 +159,6 @@ class TestStardog:
             ),
         ]
         return contents
-
 
     ################################################################################################################
     #
@@ -325,11 +326,8 @@ class TestDataSource(TestStardog):
 
 
 class TestLoadData(TestStardog):
-
-
     def setup_class(self):
         self.run_vg_test = True
-
 
         if TestStardog.is_local:
             # Let's check if we have the sqlite driver
