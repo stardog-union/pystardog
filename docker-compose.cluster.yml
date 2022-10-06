@@ -95,7 +95,6 @@ services:
       dockerfile: dockerfiles/dockerfile-python
     entrypoint: /bin/bash -c
     command: ["./utils/run_tests.sh"]
-    #command: ["sleep 10000000"]
     container_name: pystardog_tests
     environment:
       - SSH_USER=${SSH_USER}

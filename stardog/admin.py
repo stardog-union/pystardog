@@ -568,7 +568,7 @@ class Admin(object):
                 )
         """
 
-        if mappings:
+        if mappings is not None:
             if hasattr(mappings, "syntax") and mappings.syntax:
                 if options:
                     options["mappings.syntax"] = mappings.syntax
@@ -590,13 +590,13 @@ class Admin(object):
                     mappings = data
 
         meta = {"name": name, "mappings": mappings}
-        if options:
+        if options is not None:
             meta["options"] = options
 
-        if datasource:
+        if datasource is not None:
             meta["data_source"] = datasource
 
-        if db:
+        if db is not None:
             meta["db"] = db
 
         self.client.post("/admin/virtual_graphs", json=meta)
@@ -622,7 +622,7 @@ class Admin(object):
                 )
         """
 
-        if mappings:
+        if mappings is not None:
             if mappings.syntax:
                 if options:
                     options = {"mappings.syntax": mappings.syntax}
@@ -636,7 +636,7 @@ class Admin(object):
                 else:
                     mappings = data
 
-        if input_file:
+        if input_file is not None:
             if input_file.separator:
                 if options:
                     options["csv.seperator"] = input_file.separator
@@ -645,14 +645,14 @@ class Admin(object):
 
         payload = {"database": db, "mappings": mappings}
 
-        if options:
+        if options is not None:
             payload["options"] = "\n".join(
                 ["%s=%s" % (k, v) for (k, v) in options.items()]
             )
         else:
             payload["options"] = ""
 
-        if named_graph:
+        if named_graph is not None:
             payload["named_graph"] = named_graph
 
         payload["input_file_type"] = input_file.input_type
