@@ -547,7 +547,9 @@ class Admin(object):
 
         r = self.client.post("/admin/virtual_graphs/import_db", json=meta)
 
-    def new_virtual_graph(self, name, mappings=None, options=None, datasource=None, db=None):
+    def new_virtual_graph(
+        self, name, mappings=None, options=None, datasource=None, db=None
+    ):
         """Creates a new Virtual Graph.
 
         Args:
@@ -575,7 +577,7 @@ class Admin(object):
 
         if mappings is None:
             mappings = ""
-        elif mappings != "": # This check is to be backward compatible if used pass "".
+        elif mappings != "":  # This check is to be backward compatible if used pass "".
             if hasattr(mappings, "syntax") and mappings.syntax:
                 if options:
                     options["mappings.syntax"] = mappings.syntax
