@@ -26,7 +26,7 @@ class Resource(Enum):
 class TestStardog:
     is_local = (
         True
-        if "localhost" in os.environ.get("STARDOG_ENDPOINT")
+        if "localhost" in os.environ.get("STARDOG_ENDPOINT", "http://localhost:5820")
         and not os.path.exists("/.dockerenv")
         else False
     )

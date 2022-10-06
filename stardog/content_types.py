@@ -60,6 +60,10 @@ def guess_rdf_format(fname):
         (tuple)
             (content_encoding, content_type)
     """
+
+    if fname is None:
+        return None, None
+
     extension = _get_extension(fname)
 
     # if compressed, needs content encoding
@@ -71,7 +75,7 @@ def guess_rdf_format(fname):
     # get content type
     content_type = _RDF_EXTENSIONS.get(extension)
 
-    return (content_encoding, content_type)
+    return content_encoding, content_type
 
 
 def guess_mapping_format(fname):
@@ -85,6 +89,10 @@ def guess_mapping_format(fname):
     Returns
             syntax
     """
+
+    if fname is None:
+        return None
+
     extension = _get_extension(fname)
 
     syntax = _MAPPING_EXTENSIONS.get(extension)
@@ -103,6 +111,10 @@ def guess_import_format(fname):
     Returns
             (input_file_type,seperator)
     """
+
+    if fname is None:
+        return None, None, None, None
+
     extension = _get_extension(fname)
 
     content_encoding = _COMPRESSION_EXTENSIONS.get(extension)
