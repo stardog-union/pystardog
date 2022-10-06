@@ -575,13 +575,6 @@ def test_extra_options_should_be_passed_to_vg(admin, music_options):
     ds.delete()
 
 
-def test_missing_params(admin):
-    with pytest.raises(
-        TypeError, match="missing 1 required positional argument: 'mappings'"
-    ):
-        admin.new_virtual_graph("test_vg", datasource="non-existent")
-
-
 def test_should_fail_when_no_datasource_is_passed(admin):
     with pytest.raises(
         exceptions.StardogException, match="Unable to determine data source type"
