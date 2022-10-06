@@ -470,6 +470,9 @@ class Admin(object):
                 )
         """
 
+        if mappings == "":
+            mappings = None
+
         # we kept the interface to be backward
         self.materialize_virtual_graph(
             db, mappings, None, options, named_graph, remove_all
@@ -508,7 +511,9 @@ class Admin(object):
             data_source is not None or options is not None
         ), "Either parameter 'data_source' or 'options' must be provided"
 
-        if mappings:
+        if mappings is None:
+            mappings = ""
+        else:
             if hasattr(mappings, "syntax") and mappings.syntax:
                 if options:
                     options["mappings.syntax"] = mappings.syntax
@@ -542,12 +547,12 @@ class Admin(object):
 
         r = self.client.post("/admin/virtual_graphs/import_db", json=meta)
 
-    def new_virtual_graph(self, name, mappings, options=None, datasource=None, db=None):
+    def new_virtual_graph(self, name, mappings=None, options=None, datasource=None, db=None):
         """Creates a new Virtual Graph.
 
         Args:
           name (str): The name of the virtual graph.
-          mappings (MappingFile or MappingRaw): New mapping contents.
+          mappings (MappingFile or MappingRaw, optional): New mapping contents, if not pass it will autogenerate
           options (dict, Optional): Options for the new virtual graph. If not passed, then a datasource must be specified.
           datasource (str, Optional): Name of the datasource to use. If not passed, options with a datasource must be set.
           db (str, Optional): Name of the database to associate the VG. If not passed, will be associated to all databases.
@@ -568,7 +573,9 @@ class Admin(object):
                 )
         """
 
-        if mappings is not None:
+        if mappings is None:
+            mappings = ""
+        elif mappings != "": # This check is to be backward compatible if used pass "".
             if hasattr(mappings, "syntax") and mappings.syntax:
                 if options:
                     options["mappings.syntax"] = mappings.syntax
