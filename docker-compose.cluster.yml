@@ -6,11 +6,12 @@
 version: "3.3"
 services:
   zoo1:
-    image: zookeeper:${ZOO_TAG}
+    image: bitnami/zookeeper:${ZOO_TAG}
     container_name: zkn1
     environment:
         ZOO_MY_ID: 1
         ZOO_SERVERS: server.1=0.0.0.0:2888:3888
+        ALLOW_ANONYMOUS_LOGIN: "yes"
 
   sd1:
     build:
@@ -98,6 +99,7 @@ services:
       - STARDOG_HOSTNAME_NODE_1=${STARDOG_HOSTNAME_NODE_1}
       - STARDOG_HOSTNAME_CACHE=${STARDOG_HOSTNAME_CACHE}
       - STARDOG_HOSTNAME_STANDBY=${STARDOG_HOSTNAME_STANDBY}
+      - STARDOG_ENDPOINT=http://${STARDOG_LB}:5820
       - STARDOG_LB=${STARDOG_LB}
       - STARDOG_USER=${STARDOG_USER}
       - STARDOG_PASS=${STARDOG_PASS}

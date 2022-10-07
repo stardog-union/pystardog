@@ -6,7 +6,6 @@ from .. import exceptions as exceptions
 
 
 class Client(object):
-
     DEFAULT_ENDPOINT = "http://localhost:5820"
     DEFAULT_USERNAME = "admin"
     DEFAULT_PASSWORD = "admin"
@@ -72,8 +71,11 @@ class Client(object):
             raise exceptions.StardogException(
                 "[{}] {}: {}".format(
                     request.status_code, msg.get("code", ""), msg.get("message", "")
-                )
+                ),
+                request.status_code,
+                msg.get("code"),
             )
+
         return request
 
     def _multipart(self, response):

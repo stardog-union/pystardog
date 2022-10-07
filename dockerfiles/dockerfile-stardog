@@ -6,7 +6,6 @@ RUN wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-${
   && unzip mysql-connector-java-${CONNECTOR_VERSION}.zip \
   && mv mysql-connector-java-${CONNECTOR_VERSION}/mysql-connector-java-${CONNECTOR_VERSION}.jar /tmp/mysql-connector-java.jar
 
-
 FROM stardog/stardog
 
 ARG NODE_TYPE

@@ -299,6 +299,10 @@ def test_unicode(conn):
     )
 
 
+@pytest.mark.skip(
+    reason="Stardog 8 deprecated OWL constraints, which all these tests are depending on. need to update the tests"
+    "https://github.com/stardog-union/pystardog/issues/112"
+)
 def test_icv(conn):
 
     conn.begin()
@@ -313,7 +317,7 @@ def test_icv(conn):
     assert not icv.is_valid(constraints)
     conn.begin()
     assert len(icv.explain_violations(constraints)) == 14
-    # Need to be in a transaction to run explain_violatins, otherwise we might get "Cannot query against a closed connection"
+    # Need to be in a transaction to run explain_violations, otherwise we might get "Cannot query against a closed connection"
     conn.commit()
 
     assert "SELECT DISTINCT" in icv.convert(constraints)
@@ -410,6 +414,51 @@ def test_invalid_request_session(conn_string):
     session = "im an invalid session"
     with pytest.raises(
         Exception,
-        match=f"type\(session\) = {type(session)} must be a valid requests\.Session object.",
+        match=f"type\\(session\\) = {type(session)} must be a valid requests\\.Session object.",
     ):
         connection.Connection("somevaliddb", **conn_string, session=session)
+
+
+def test_icv_reports_with_no_params(conn):
+    icv = conn.icv()
+    res = icv.report()
+    assert res == open("test/data/icv_report.ttl").read()
+
+
+def test_invalid_param_for_icv_report_should_fail(conn):
+    icv = conn.icv()
+    with pytest.raises(Exception, match="Parameter not recognized"):
+        icv.report(**{"invalidKey": "invalidParam"})
+
+
+@pytest.mark.skip(
+    reason="Currently failing in cluster mode: https://stardog.atlassian.net/browse/PLAT-4225"
+)
+def test_accept_more_than_1_param_for_icv_report(conn):
+    icv = conn.icv()
+    res = icv.report(**{"shapes": "valid:uri", "nodes": "valid:iri"})
+    assert res == open("test/data/icv_report.ttl").read()
+
+
+def test_accept_combination_of_valid_and_invalid_param_should_fail_for_icv_report(conn):
+    icv = conn.icv()
+    with pytest.raises(Exception, match="Parameter not recognized"):
+        icv.report(**{"shapes": "valid:uri", "invalidKey": "invalidParam"})
+
+
+def test_icv_report_uri_match(conn):
+    icv = conn.icv()
+    res = icv.report(**{"graph-uri": "valid:uri"})
+    assert res == open("test/data/icv_report.ttl").read()
+
+
+def test_icv_report_shacl_target_class_boolean(conn):
+    icv = conn.icv()
+    res = icv.report(**{"shacl.targetClass.simple": True})
+    assert res == open("test/data/icv_report.ttl").read()
+
+
+def test_icv_reasoning_enabled(conn):
+    icv = conn.icv()
+    res = icv.report(**{"reasoning": True})
+    assert res == open("test/data/icv_report.ttl").read()

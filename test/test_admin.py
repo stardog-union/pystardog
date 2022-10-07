@@ -48,13 +48,23 @@ def wait_standby_node_to_join(admin):
     )
     retries = 0
     while True:
-        if standby_node_ip in admin.cluster_info()["nodes"]:
-            return
-        else:
-            retries += 1
-            sleep(10)
-            if retries >= 50:
-                raise Exception("Took too long for standby node to join the cluster")
+        try:
+            if standby_node_ip in admin.cluster_info()["nodes"]:
+                print(f"current nodes: {admin.cluster_info()['nodes']}")
+                break
+            else:
+                print(
+                    "http call did not fail, but node is still not listed in cluster info"
+                )
+        except Exception as e:
+            print(
+                f"An exception ocurred while connecting to the standby node: {e}, will keep retrying"
+            )
+        print(f"retries for now: {retries}")
+        retries += 1
+        sleep(20)
+        if retries >= 50:
+            raise Exception("Took too long for standby node to join the cluster")
 
 
 def count_records(bd_name, conn_string):
@@ -109,6 +119,7 @@ def admin(conn_string):
 
         # alternatively we could warn somewhere (README, when running the tests, or other places)
         # that this are not intended to run against any other stardog deployment that is not a clean one.
+
         databases = admin.databases()
         if databases:
             for db in admin.databases():
@@ -139,9 +150,27 @@ def admin(conn_string):
         yield admin
 
 
+@pytest.fixture()
+def datasource_music(admin, music_options):
+    ds = admin.new_datasource("newtest", music_options)
+    yield ds
+    ds.delete()
+
+
+@pytest.fixture()
+def virtual_graph_music(admin, datasource_music):
+    vg = admin.new_virtual_graph(
+        "test_vg", mappings="", datasource=datasource_music.name
+    )
+    yield vg
+    vg.delete()
+
+
 ##############
 # Admin tests#
 ##############
+
+
 @pytest.mark.skip(
     reason="Implementation is not well documented, https://stardog.atlassian.net/browse/PLAT-2946"
 )
@@ -171,21 +200,14 @@ def test_coordinator_check(admin, conn_string):
         assert admin_coordinator_check.cluster_coordinator_check()
 
 
-def test_cluster_standby(cluster_standby_node_conn_string):
+# We should pass a standby admin object instead of a connection string.
+def test_cluster_standby(admin, cluster_standby_node_conn_string):
 
     with stardog.admin.Admin(**cluster_standby_node_conn_string) as admin_standby:
-
         assert admin_standby.standby_node_pause(pause=True)
         assert admin_standby.standby_node_pause_status()["STATE"] == "PAUSED"
         assert admin_standby.standby_node_pause(pause=False)
         assert admin_standby.standby_node_pause_status()["STATE"] == "WAITING"
-
-        standby_nodes = admin_standby.cluster_list_standby_nodes()
-        node_id = standby_nodes["standbynodes"][0]
-        # removes a standby node from the registry, i.e from syncing with the rest of the cluster.
-        admin_standby.cluster_revoke_standby_access(standby_nodes["standbynodes"][0])
-        standby_nodes_revoked = admin_standby.cluster_list_standby_nodes()
-        assert node_id not in standby_nodes_revoked["standbynodes"]
 
         # Join a standby node is still allowed even if it's not part of the registry.
         admin_standby.cluster_join()
@@ -196,6 +218,13 @@ def test_cluster_standby(cluster_standby_node_conn_string):
             get_node_ip(STARDOG_HOSTNAME_STANDBY).decode("utf-8").strip() + ":5820"
         )
         assert standby_node_info in admin_standby.cluster_info()["nodes"]
+
+        standby_nodes = admin_standby.cluster_list_standby_nodes()
+        node_id = standby_nodes["standbynodes"][0]
+        # removes a standby node from the registry, i.e from syncing with the rest of the cluster.
+        admin_standby.cluster_revoke_standby_access(standby_nodes["standbynodes"][0])
+        standby_nodes_revoked = admin_standby.cluster_list_standby_nodes()
+        assert node_id not in standby_nodes_revoked["standbynodes"]
 
 
 def test_get_server_metrics(admin):
@@ -261,13 +290,14 @@ def test_backup_all(admin):
     assert "meta" in tmp_backup.stdout
 
 
+# DEPRECATED, test moved to test_integration
 def test_databases(admin, conn_string, bulkload_content):
-    assert len(admin.databases()) == 0
+    current_databases = len(admin.databases())
 
     # create database
     db = admin.new_database("db", {"search.enabled": True, "spatial.enabled": True})
 
-    assert len(admin.databases()) == 1
+    assert len(admin.databases()) == current_databases + 1
     assert db.name == "db"
     assert db.get_options("search.enabled", "spatial.enabled") == {
         "search.enabled": True,
@@ -301,7 +331,7 @@ def test_databases(admin, conn_string, bulkload_content):
     db.drop()
     bl.drop()
 
-    assert len(admin.databases()) == 0
+    assert len(admin.databases()) == current_databases
 
 
 def test_users(admin, conn_string):
@@ -555,13 +585,6 @@ def test_extra_options_should_be_passed_to_vg(admin, music_options):
     ds.delete()
 
 
-def test_missing_params(admin):
-    with pytest.raises(
-        TypeError, match="missing 1 required positional argument: 'mappings'"
-    ):
-        admin.new_virtual_graph("test_vg", datasource="non-existent")
-
-
 def test_should_fail_when_no_datasource_is_passed(admin):
     with pytest.raises(
         exceptions.StardogException, match="Unable to determine data source type"
@@ -718,7 +741,7 @@ def test_cache_ng_datasets(admin, bulkload_content, cache_target_info):
     assert cached_graph_status[0]["target"] == cache_target.name
     cached_graph.refresh()
     cached_graph.drop()
-    assert len(admin.cached_queries()) == 0
+    assert len(admin.cached_graphs()) == 0
 
 
 def test_cache_vg_datasets(admin, music_options, cache_target_info):
@@ -731,7 +754,7 @@ def test_cache_vg_datasets(admin, music_options, cache_target_info):
 
     # creating a VG using empty mappings, and specifying a datasource
     ds = admin.new_datasource("music", music_options)
-    admin.new_virtual_graph("test_vg", mappings="", datasource=ds.name)
+    vg = admin.new_virtual_graph("test_vg", mappings="", datasource=ds.name)
 
     cache_target = admin.new_cache_target(
         cache_target_name,
@@ -750,8 +773,8 @@ def test_cache_vg_datasets(admin, music_options, cache_target_info):
     }
 
     with stardog.admin.Admin(**conn_string_cache) as admin_cache_target:
-        ds = admin_cache_target.new_datasource("music", music_options)
-        vg = admin_cache_target.new_virtual_graph(
+        ds_cached = admin_cache_target.new_datasource("music", music_options)
+        vg_cached = admin_cache_target.new_virtual_graph(
             "test_vg", mappings="", datasource=ds.name
         )
 
@@ -769,7 +792,7 @@ def test_cache_vg_datasets(admin, music_options, cache_target_info):
     assert cached_graph_status[0]["target"] == cache_target.name
     cached_graph.refresh()
     cached_graph.drop()
-    assert len(admin.cached_queries()) == 0
+    assert len(admin.cached_graphs()) == 0
 
     cache_target.remove()
     wait_for_cleaning_cache_target(admin, cache_target.name)
@@ -778,6 +801,9 @@ def test_cache_vg_datasets(admin, music_options, cache_target_info):
     ds.delete()
 
 
+@pytest.mark.skip(
+    reason="Caching queries is no longer supported. We are skipping we but should make sure it still works for older SD versions"
+)
 def test_cache_query_datasets(admin, bulkload_content, cache_target_info):
 
     cache_target_name = cache_target_info["target_name"]
@@ -879,3 +905,64 @@ def test_add_and_delete_namespaces(admin):
     assert len(db.namespaces()) == 6
 
     db.drop()
+
+
+def test_database_exists_in_databases_list(admin):
+    db = admin.new_database("my_db")
+    all_databases = admin.databases()
+    assert db in all_databases
+    db.drop()
+
+
+def test_datasource_exists_in_datasource_list(admin, datasource_music):
+    all_datasources = admin.datasources()
+    assert datasource_music in all_datasources
+
+
+@pytest.mark.skip(
+    reason="We need to get sorted whether we want users to deal with prefix:// for vg/ds operations"
+)
+def test_vg_exists_in_vg_list(admin, virtual_graph_music):
+    all_vgs = admin.virtual_graphs()
+    assert virtual_graph_music in all_vgs
+
+
+def test_user_exists_in_user_list(admin):
+    user = admin.new_user("username", "password", False)
+    all_users = admin.users()
+    assert user in all_users
+    user.delete()
+
+
+def test_role_exists_in_role_list(admin):
+    role = admin.new_role("myrole")
+    all_roles = admin.roles()
+    assert role in all_roles
+    role.delete()
+
+
+def test_stored_query_in_stored_query_list(admin):
+    query = "select * where { ?s ?p ?o . }"
+    stored_query = admin.new_stored_query("everything", query)
+    assert stored_query in admin.stored_queries()
+
+
+def test_cache_target_in_cache_target_list(admin, cache_target_info):
+    cache_target_name = cache_target_info["target_name"]
+    cache_target_hostname = cache_target_info["hostname"]
+    cache_target_port = cache_target_info["port"]
+    cache_target_username = cache_target_info["username"]
+    cache_target_password = cache_target_info["password"]
+
+    cache_targets = admin.cache_targets()
+    assert len(cache_targets) == 0
+
+    cache_target = admin.new_cache_target(
+        cache_target_name,
+        cache_target_hostname,
+        cache_target_port,
+        cache_target_username,
+        cache_target_password,
+    )
+    wait_for_creating_cache_target(admin, cache_target_name)
+    assert cache_target in admin.cache_targets()

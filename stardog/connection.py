@@ -7,6 +7,7 @@ import distutils.util
 from . import content_types as content_types
 from . import exceptions as exceptions
 from .http import client
+import urllib
 
 
 class Connection(object):
@@ -642,7 +643,9 @@ class ICV(object):
         self.client = conn.client
 
     def add(self, content):
-        """Adds integrity constraints to the database.
+        """
+        Deprecated: Connection.add() should be preferred. icv.add() will be removed in the next major version.
+        Adds integrity constraints to the database.
 
         Args:
           content (Content): Data to add
@@ -661,7 +664,9 @@ class ICV(object):
             )
 
     def remove(self, content):
-        """Removes integrity constraints from the database.
+        """
+        Deprecated: Connection.remove() should be preferred. icv.remove() will be removed in the next major version.
+        Removes integrity constraints from the database.
 
         Args:
           content (Content): Data to remove
@@ -717,7 +722,9 @@ class ICV(object):
             return bool(distutils.util.strtobool(r.text))
 
     def explain_violations(self, content, graph_uri=None):
-        """Explains violations of the given integrity constraints.
+        """
+        Deprecated: icv.report() should be preferred. icv.explain_violations() will be removed in the next major version.
+        Explains violations of the given integrity constraints.
 
         Args:
           content (Content): Data to check for violations
@@ -752,7 +759,9 @@ class ICV(object):
             return self.client._multipart(r)
 
     def convert(self, content, graph_uri=None):
-        """Converts given integrity constraints to a SPARQL query.
+        """
+        Deprecated: icv.convert() was meant as a debugging tool, and will be removed in the next major version.
+        Converts given integrity constraints to a SPARQL query.
 
         Args:
           content (Content): Integrity constraints
@@ -777,6 +786,49 @@ class ICV(object):
             )
 
             return r.text
+
+    def report(self, **kwargs):
+        """
+        Produces a SHACL validation report.
+
+        Args (dict):
+          shapes (str, optional): SHACL shapes to validate
+          shacl.shape.graphs (str, optional): SHACL shape graphs to validate
+          nodes (str, optional): SHACL focus node(s) to validate
+          countLimit (str, optional): Maximum number of violations to report
+          shacl.targetClass.simple (boolean, optional): If true, sh:targetClass will be evaluated based on rdf:type triples only, without following rdfs:subClassOf relations
+          shacl.violation.limit.shape (str, optional): number of violation limits per SHACL shapes
+          graph-uri (str, optional): Named Graph
+          reasoning (boolean, optional): Enable Reasoning
+
+
+        Returns:
+          str: SHACL validation report
+
+        Examples:
+          >>> icv.report()
+        """
+
+        accepted_args = [
+            "shapes",
+            "shacl.shape.graphs",
+            "nodes",
+            "countLimit",
+            "shacl.targetClass.simple",
+            "shacl.violation.limit.shape",
+            "graph-uri",
+            "reasoning",
+        ]
+        for arg in kwargs:
+            if arg not in accepted_args:
+                raise Exception("Parameter not recognized")
+
+        kwargs["prettify"] = True
+        params = urllib.parse.urlencode(kwargs)
+        url = f"/icv/report?{params}"
+
+        r = self.client.post(url)
+        return r.text
 
 
 class GraphQL(object):
