@@ -280,6 +280,7 @@ def test_backup_all(admin):
     assert "meta" in tmp_backup.stdout
 
 
+# DEPRECATED, test moved to test_integration
 def test_databases(admin, conn_string, bulkload_content):
     assert len(admin.databases()) == 0
 
@@ -572,13 +573,6 @@ def test_extra_options_should_be_passed_to_vg(admin, music_options):
     assert "mappings.syntax" in vg.options()
     vg.delete()
     ds.delete()
-
-
-def test_missing_params(admin):
-    with pytest.raises(
-        TypeError, match="missing 1 required positional argument: 'mappings'"
-    ):
-        admin.new_virtual_graph("test_vg", datasource="non-existent")
 
 
 def test_should_fail_when_no_datasource_is_passed(admin):

@@ -1,0 +1,307 @@
+{
+    "roles": [
+        {
+            "role": "developer"
+        },
+        {
+            "role": "reader"
+        },
+        {
+            "role": "anonymous"
+        },
+        {
+            "role": "writer"
+        },
+        {
+            "role": "sensitive",
+            "permissions": {
+                "roles": [
+                    {
+                        "name": "developer",
+                        "action": "read"
+                    }
+                ],
+                "users": [
+                    {
+                        "username": "jane",
+                        "action": "read"
+                    }
+                ]
+            }
+        }
+    ],
+    "users": [
+        {
+            "username": "admin",
+            "superuser": true,
+            "password": "admin_2022",
+            "enabled": true
+        },
+        {
+            "username": "test",
+            "password": "test_2022",
+            "enabled": false
+        },
+        {
+            "username": "jane",
+            "roles": [
+                "reader",
+                "writer"
+            ],
+            "password": "jane_2022",
+            "enabled": true
+        },
+        {
+            "username": "standalone",
+            "password": "standalone_2022",
+            "enabled": true
+        },
+        {
+            "username": "john",
+            "roles": [
+                "developer"
+            ],
+            "password": "john_2022",
+            "enabled": true
+        },
+        {
+            "username": "bob",
+            "superuser": true,
+            "password": "bob_2022",
+            "enabled": true
+        }
+    ],
+    "datasources": [
+        {
+            "name": "MYSQL",
+            "permissions": {
+                "roles": [
+                    {
+                        "name": "developer",
+                        "action": "all"
+                    }
+                ],
+                "users": [
+                    {
+                        "username": "jane",
+                        "action": "read"
+                    }
+                ]
+            },
+            "properties": {
+                "testOnBorrow": "true",
+                "jdbc.driver": "com.mysql.jdbc.Driver",
+                "jdbc.username": "mysql",
+                "jdbc.url": "jdbc:mysql://mytest:3306/benchmark",
+                "jdbc.password": "mypasswd",
+                "validationInterval": "1000",
+                "validationQuery": "SELECT 1",
+                "query.translation": "Default",
+                "sql.schema": "mine_test"
+            },
+            "online": true
+        }
+    ],
+    "databases": [
+        {
+            "name": "dbtest",
+            "permissions": {
+                "roles": [
+                    {
+                        "name": "reader",
+                        "action": "read"
+                    },
+                    {
+                        "name": "writer",
+                        "action": "write"
+                    },
+                    {
+                        "name": "writer",
+                        "action": "read"
+                    },
+                    {
+                        "name": "developer",
+                        "action": "all"
+                    }
+                ]
+            },
+            "properties": {
+                "reasoning.schemas": [
+                    {
+                        "name": "mine",
+                        "iri": "http://guidedog.stardog.com/ontologies/mine#"
+                    }
+                ],
+                "spatial.enabled": true,
+                "database.online": true,
+                "query.all.graphs": true,
+                "spatial.use.jts": true,
+                "database.namespaces": [
+                    {
+                        "name": "",
+                        "iri": "http://api.stardog.com/"
+                    },
+                    {
+                        "name": "stardog",
+                        "iri": "tag:stardog:api:"
+                    },
+                    {
+                        "name": "rdf",
+                        "iri": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                    },
+                    {
+                        "name": "owl",
+                        "iri": "http://www.w3.org/2002/07/owl#"
+                    },
+                    {
+                        "name": "xsd",
+                        "iri": "http://www.w3.org/2001/XMLSchema#"
+                    },
+                    {
+                        "name": "rdfs",
+                        "iri": "http://www.w3.org/2000/01/rdf-schema#"
+                    },
+                    {
+                        "name": "mine",
+                        "iri": "http://guidedog.stardog.com/ontologies/mine#"
+                    },
+                    {
+                        "name": "geo",
+                        "iri": "http://www.opengis.net/ont/geosparql#"
+                    },
+                    {
+                        "name": "wgs",
+                        "iri": "http://www.w3.org/2003/01/geo/wgs84_pos#"
+                    },
+                    {
+                        "name": "schema",
+                        "iri": "https://schema.org"
+                    }
+                ]
+            },
+            "properties_of_type_list": {},
+            "named.graphs": [
+                {
+                    "iri": "http://api.stardog.com/ontologies/test",
+                    "name": "0f61d2174c9e65e6bf55826f2920143c",
+                    "permissions": {
+                        "roles": [
+                            {
+                                "name": "developer",
+                                "action": "all"
+                            }
+                        ]
+                    }
+                }
+            ]
+        },
+        {
+            "name": "guidedog",
+            "properties": {
+                "reasoning.schemas": [
+                    {
+                        "name": "guidedog",
+                        "iri": "http://guidedog.stardog.com/ontology#guidedog"
+                    }
+                ],
+                "database.online": true,
+                "database.namespaces": [
+                    {
+                        "name": "",
+                        "iri": "http://api.stardog.com/"
+                    },
+                    {
+                        "name": "stardog",
+                        "iri": "tag:stardog:api:"
+                    },
+                    {
+                        "name": "rdf",
+                        "iri": "http://www.w3.org/1999/02/22-rdf-syntax-ns#"
+                    },
+                    {
+                        "name": "owl",
+                        "iri": "http://www.w3.org/2002/07/owl#"
+                    },
+                    {
+                        "name": "xsd",
+                        "iri": "http://www.w3.org/2001/XMLSchema#"
+                    },
+                    {
+                        "name": "rdfs",
+                        "iri": "http://www.w3.org/2000/01/rdf-schema#"
+                    },
+                    {
+                        "name": "class",
+                        "iri": "http://guidedog.stardog.com/class#"
+                    },
+                    {
+                        "name": "res",
+                        "iri": "http://guidedog.stardog.com/resource#"
+                    },
+                    {
+                        "name": "attr",
+                        "iri": "http://guidedog.stardog.com/attribute#"
+                    },
+                    {
+                        "name": "rel",
+                        "iri": "http://guidedog.stardog.com/relationship#"
+                    },
+                    {
+                        "name": "onto",
+                        "iri": "http://guidedog.stardog.com/ontology#"
+                    },
+                    {
+                        "name": "inst",
+                        "iri": "http://guidedog.stardog.com/installation#"
+                    },
+                    {
+                        "name": "schema",
+                        "iri": "https://schema.org/"
+                    }
+                ]
+            },
+            "properties_of_type_list": {}
+        },
+        {
+            "name": "dbtest2",
+            "properties": {
+                "database.online": true
+            },
+            "properties_of_type_list": {}
+        }
+    ],
+    "virtual.graphs": [
+        {
+            "name": "vgname2",
+            "properties": {
+                "namespaces": "=http://api.stardog.com/\u0002fn=http://www.w3.org/2005/xpath-functions#\u0002owl=http://www.w3.org/2002/07/owl#\u0002rdf=http://www.w3.org/1999/02/22-rdf-syntax-ns#\u0002rdfs=http://www.w3.org/2000/01/rdf-schema#\u0002stardog=tag:stardog:api:\u0002xsd=http://www.w3.org/2001/XMLSchema#",
+                "mappings.syntax": "SMS2"
+            },
+            "datasource": "MYSQL",
+            "database": "dbtest2",
+            "mappings": "MAPPING FROM SQL {\n  SELECT *\n  FROM `benchmark`.`person`\n} TO {\n  ?subject <http://api.stardog.com/person#country> ?country .\n  ?subject <http://api.stardog.com/person#mbox_sha1sum> ?mbox_sha1sum .\n  ?subject <http://api.stardog.com/person#name> ?name .\n  ?subject <http://api.stardog.com/person#nr> ?nr_integer .\n  ?subject <http://api.stardog.com/person#publishDate> ?publishDate_date .\n  ?subject <http://api.stardog.com/person#publisher> ?publisher_integer .\n  ?subject rdf:type :person\n} WHERE {\n  BIND(StrDt(?nr, xsd:integer) AS ?nr_integer)\n  BIND(StrDt(?publishDate, xsd:date) AS ?publishDate_date)\n  BIND(StrDt(?publisher, xsd:integer) AS ?publisher_integer)\n  BIND(template(\"http://api.stardog.com/person/nr={nr}\") AS ?subject)\n}\n",
+            "online": true
+        },
+        {
+            "name": "vgname1",
+            "properties": {
+                "namespaces": "=http://api.stardog.com/\u0002fn=http://www.w3.org/2005/xpath-functions#\u0002owl=http://www.w3.org/2002/07/owl#\u0002rdf=http://www.w3.org/1999/02/22-rdf-syntax-ns#\u0002rdfs=http://www.w3.org/2000/01/rdf-schema#\u0002stardog=tag:stardog:api:\u0002xsd=http://www.w3.org/2001/XMLSchema#",
+                "mappings.syntax": "SMS2"
+            },
+            "datasource": "MYSQL",
+            "database": "dbtest",
+            "mappings": "MAPPING\nFROM SQL {\n  SELECT *\n  FROM `benchmark`.`person`\n}\nTO {\n  ?subject rdf:type :person\n} WHERE {\n  BIND(template(\"http://api.stardog.com/person/nr={nr}\") AS ?subject)\n}\n",
+            "online": true
+        }
+    ],
+    "infra": {
+        "name": "localhost_5820",
+        "properties": {},
+        "installation_type": "StandAlone",
+        "lc_installation_type": "standalone",
+        "alive": true,
+        "online": true,
+        "cache_targets": [],
+        "cache_graphs": []
+    }
+}
