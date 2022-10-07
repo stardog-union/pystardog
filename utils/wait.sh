@@ -12,7 +12,7 @@ function wait_for_start {
     do
       if [[ ${COUNT} -gt 50 ]]; then
           echo "Failed to start Stardog cluster on time"
-          return 1;
+          exit 1;
       fi
       COUNT=$(expr 1 + ${COUNT} )
       sleep 5
@@ -43,12 +43,13 @@ function wait_for_standby_node {
     do
       if [[ ${COUNT} -gt 50 ]]; then
           echo "Failed to start Stardog cluster on time"
-          return 1;
+          exit 1;
       fi
       COUNT=$(expr 1 + ${COUNT} )
       sleep 5
       # wait for standby node to be ready. standby nodes needs to wait for main cluster first.
-      status_code=$(curl -o /dev/null -s -w "%{http_code}\n" http://${HOST}:${PORT}/admin/healthcheck)
+      # Recall that checking healthcheck endpoint will return 503 since the node is still standby, and not part of a cluster, hence we check aliveness
+      status_code=$(curl -o /dev/null -s -w "%{http_code}\n" http://${HOST}:${PORT}/admin/alive)
       if [[ $status_code -eq 200 ]]; then break; fi
 
     done
@@ -67,7 +68,7 @@ function wait_for_start_single_node {
     do
       if [[ ${COUNT} -gt 50 ]]; then
           echo "Failed to start Stardog server on time"
-          return 1;
+          exit 1;
       fi
       COUNT=$(expr 1 + ${COUNT} )
       sleep 5

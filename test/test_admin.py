@@ -48,13 +48,23 @@ def wait_standby_node_to_join(admin):
     )
     retries = 0
     while True:
-        if standby_node_ip in admin.cluster_info()["nodes"]:
-            return
-        else:
-            retries += 1
-            sleep(10)
-            if retries >= 50:
-                raise Exception("Took too long for standby node to join the cluster")
+        try:
+            if standby_node_ip in admin.cluster_info()["nodes"]:
+                print(f"current nodes: {admin.cluster_info()['nodes']}")
+                break
+            else:
+                print(
+                    "http call did not fail, but node is still not listed in cluster info"
+                )
+        except Exception as e:
+            print(
+                f"An exception ocurred while connecting to the standby node: {e}, will keep retrying"
+            )
+        print(f"retries for now: {retries}")
+        retries += 1
+        sleep(20)
+        if retries >= 50:
+            raise Exception("Took too long for standby node to join the cluster")
 
 
 def count_records(bd_name, conn_string):
@@ -109,6 +119,7 @@ def admin(conn_string):
 
         # alternatively we could warn somewhere (README, when running the tests, or other places)
         # that this are not intended to run against any other stardog deployment that is not a clean one.
+
         databases = admin.databases()
         if databases:
             for db in admin.databases():
@@ -158,6 +169,8 @@ def virtual_graph_music(admin, datasource_music):
 ##############
 # Admin tests#
 ##############
+
+
 @pytest.mark.skip(
     reason="Implementation is not well documented, https://stardog.atlassian.net/browse/PLAT-2946"
 )
@@ -187,24 +200,14 @@ def test_coordinator_check(admin, conn_string):
         assert admin_coordinator_check.cluster_coordinator_check()
 
 
-@pytest.mark.skip(
-    reason="Stardog 8 made this test fail, needs further investigation: https://github.com/stardog-union/pystardog/issues/111"
-)
-def test_cluster_standby(cluster_standby_node_conn_string):
+# We should pass a standby admin object instead of a connection string.
+def test_cluster_standby(admin, cluster_standby_node_conn_string):
 
     with stardog.admin.Admin(**cluster_standby_node_conn_string) as admin_standby:
-
         assert admin_standby.standby_node_pause(pause=True)
         assert admin_standby.standby_node_pause_status()["STATE"] == "PAUSED"
         assert admin_standby.standby_node_pause(pause=False)
         assert admin_standby.standby_node_pause_status()["STATE"] == "WAITING"
-
-        standby_nodes = admin_standby.cluster_list_standby_nodes()
-        node_id = standby_nodes["standbynodes"][0]
-        # removes a standby node from the registry, i.e from syncing with the rest of the cluster.
-        admin_standby.cluster_revoke_standby_access(standby_nodes["standbynodes"][0])
-        standby_nodes_revoked = admin_standby.cluster_list_standby_nodes()
-        assert node_id not in standby_nodes_revoked["standbynodes"]
 
         # Join a standby node is still allowed even if it's not part of the registry.
         admin_standby.cluster_join()
@@ -215,6 +218,13 @@ def test_cluster_standby(cluster_standby_node_conn_string):
             get_node_ip(STARDOG_HOSTNAME_STANDBY).decode("utf-8").strip() + ":5820"
         )
         assert standby_node_info in admin_standby.cluster_info()["nodes"]
+
+        standby_nodes = admin_standby.cluster_list_standby_nodes()
+        node_id = standby_nodes["standbynodes"][0]
+        # removes a standby node from the registry, i.e from syncing with the rest of the cluster.
+        admin_standby.cluster_revoke_standby_access(standby_nodes["standbynodes"][0])
+        standby_nodes_revoked = admin_standby.cluster_list_standby_nodes()
+        assert node_id not in standby_nodes_revoked["standbynodes"]
 
 
 def test_get_server_metrics(admin):
@@ -282,12 +292,12 @@ def test_backup_all(admin):
 
 # DEPRECATED, test moved to test_integration
 def test_databases(admin, conn_string, bulkload_content):
-    assert len(admin.databases()) == 0
+    current_databases = len(admin.databases())
 
     # create database
     db = admin.new_database("db", {"search.enabled": True, "spatial.enabled": True})
 
-    assert len(admin.databases()) == 1
+    assert len(admin.databases()) == current_databases + 1
     assert db.name == "db"
     assert db.get_options("search.enabled", "spatial.enabled") == {
         "search.enabled": True,
@@ -321,7 +331,7 @@ def test_databases(admin, conn_string, bulkload_content):
     db.drop()
     bl.drop()
 
-    assert len(admin.databases()) == 0
+    assert len(admin.databases()) == current_databases
 
 
 def test_users(admin, conn_string):
