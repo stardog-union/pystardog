@@ -8,7 +8,7 @@ import urllib
 from time import sleep
 
 from . import content_types as content_types
-from .http import client
+from .http import client as http_client
 
 
 class Admin(object):
@@ -27,6 +27,7 @@ class Admin(object):
         password: object = None,
         auth: object = None,
     ) -> None:
+        # noinspection PyUnresolvedReferences
         """Initializes an admin connection to a Stardog server.
 
         Args:
@@ -39,13 +40,13 @@ class Admin(object):
         auth (requests.auth.AuthBase, optional): requests Authentication object.
             Defaults to `None`
 
-        auth and username/password should not be used together.  If the are the value
+        auth and username/password should not be used together.  If they are the value
         of `auth` will take precedent.
         Examples:
           >>> admin = Admin(endpoint='http://localhost:9999',
                             username='admin', password='admin')
         """
-        self.client = client.Client(endpoint, None, username, password, auth=auth)
+        self.client = http_client.Client(endpoint, None, username, password, auth=auth)
 
     def shutdown(self):
         """Shuts down the server."""
@@ -106,6 +107,7 @@ class Admin(object):
         return list(map(lambda name: Database(name, self.client), databases))
 
     def new_database(self, name, options=None, *contents, **kwargs):
+        # noinspection PyUnresolvedReferences
         """Creates a new database.
 
         Args:
@@ -177,6 +179,7 @@ class Admin(object):
             return Database(name, self.client)
 
     def restore(self, from_path, *, name=None, force=False):
+        # noinspection PyUnresolvedReferences
         """Restore a database.
 
         Args:
@@ -220,16 +223,16 @@ class Admin(object):
         r = self.client.get("/admin/config_properties")
         return r.json()
 
-    def query(self, id):
+    def query(self, query_id):
         """Gets information about a running query.
 
         Args:
-          id (str): Query ID
+          query_id (str): Query ID
 
         Returns:
             dict: Query information
         """
-        r = self.client.get("/admin/queries/{}".format(id))
+        r = self.client.get("/admin/queries/{}".format(query_id))
         return r.json()
 
     def queries(self):
@@ -241,13 +244,13 @@ class Admin(object):
         r = self.client.get("/admin/queries")
         return r.json()["queries"]
 
-    def kill_query(self, id):
+    def kill_query(self, query_id):
         """Kills a running query.
 
         Args:
-          id (str): ID of the query to kill
+          query_id (str): ID of the query to kill
         """
-        self.client.delete("/admin/queries/{}".format(id))
+        self.client.delete("/admin/queries/{}".format(query_id))
 
     def stored_query(self, name):
         """Retrieves a Stored Query.
@@ -275,10 +278,11 @@ class Admin(object):
         )
 
     def new_stored_query(self, name, query, options=None):
+        # noinspection PyUnresolvedReferences
         """Creates a new Stored Query.
 
         Args:
-          name (str): The name of the stored query
+          name (str): The name of the stored query.
           query (str): The query text
           options (dict, optional): Additional options
 
@@ -456,6 +460,7 @@ class Admin(object):
 
     # deprecated
     def import_virtual_graph(self, db, mappings, named_graph, remove_all, options):
+        # noinspection PyUnresolvedReferences
         """Import (materialize) a virtual graph directly into the local knowledge graph.
 
         Args:
@@ -492,6 +497,7 @@ class Admin(object):
         named_graph="tag:stardog:api:context:default",
         remove_all=False,
     ):
+        # noinspection PyUnresolvedReferences
         """Import (materialize) a virtual graph directly into the local knowledge graph.
 
         Args:
@@ -549,9 +555,12 @@ class Admin(object):
 
         r = self.client.post("/admin/virtual_graphs/import_db", json=meta)
 
+        return r
+
     def new_virtual_graph(
         self, name, mappings=None, options=None, datasource=None, db=None
     ):
+        # noinspection PyUnresolvedReferences
         """Creates a new Virtual Graph.
 
         Args:
@@ -614,6 +623,7 @@ class Admin(object):
         return VirtualGraph(name, self.client)
 
     def import_file(self, db, mappings, input_file, options=None, named_graph=None):
+        # noinspection PyUnresolvedReferences
         """Import a JSON or CSV file.
 
         Args:
@@ -803,7 +813,7 @@ class Admin(object):
         """
         Instruct a standby node to stop syncing
         Args:
-          *registry_id: (string): Id of the standby node to stop syncing.
+          *registry_id: (string): ID of the standby node to stop syncing.
         """
         self.client.delete("/admin/cluster/standby/registry/" + registry_id)
 
@@ -861,7 +871,7 @@ class Admin(object):
     def cluster_shutdown(self):
         """
         Shutdown all nodes
-        :return: True if the cluster got shutdown successfully.
+        :return: True if the cluster got shut down successfully.
         :rtype: bool
         """
         r = self.client.post("/admin/shutdownAll")
@@ -1065,6 +1075,7 @@ class Database(object):
         return self.database_name
 
     def get_options(self, *options):
+        # noinspection PyUnresolvedReferences
         """Get the value of specific metadata options for a database
 
         Args:
@@ -1092,6 +1103,7 @@ class Database(object):
         return r.json()
 
     def set_options(self, options):
+        # noinspection PyUnresolvedReferences
         """Sets database options.
 
         The database must be offline.
@@ -1310,6 +1322,7 @@ class StoredQuery(object):
         return self.details["reasoning"]
 
     def update(self, **options):
+        # noinspection PyUnresolvedReferences
         """Updates the Stored Query.
 
         Args:
@@ -1357,7 +1370,7 @@ class User(object):
 
     @property
     def name(self):
-        """str: The user name."""
+        """str: The username."""
         return self.username
 
     def set_password(self, password):
@@ -1386,7 +1399,7 @@ class User(object):
         self.client.put(self.path + "/enabled", json={"enabled": enabled})
 
     def is_superuser(self):
-        """Checks if the user is a super user.
+        """Checks if the user is a superuser.
 
         Returns:
           bool: Superuser state
@@ -1405,6 +1418,7 @@ class User(object):
         return list(map(lambda name: Role(name, self.client), roles))
 
     def add_role(self, role):
+        # noinspection PyUnresolvedReferences
         """Adds an existing role to the user.
 
         Args:
@@ -1417,6 +1431,7 @@ class User(object):
         self.client.post(self.path + "/roles", json={"rolename": role})
 
     def set_roles(self, *roles):
+        # noinspection PyUnresolvedReferences
         """Sets the roles of the user.
 
         Args:
@@ -1429,6 +1444,7 @@ class User(object):
         self.client.put(self.path + "/roles", json={"roles": roles})
 
     def remove_role(self, role):
+        # noinspection PyUnresolvedReferences
         """Removes a role from the user.
 
         Args:
@@ -1457,6 +1473,7 @@ class User(object):
         return r.json()["permissions"]
 
     def add_permission(self, action, resource_type, resource):
+        # noinspection PyUnresolvedReferences
         """Add a permission to the user.
 
         See Also:
@@ -1479,6 +1496,7 @@ class User(object):
         self.client.put("/admin/permissions/user/{}".format(self.name), json=meta)
 
     def remove_permission(self, action, resource_type, resource):
+        # noinspection PyUnresolvedReferences
         """Removes a permission from the user.
 
         See Also:
@@ -1512,7 +1530,8 @@ class User(object):
         r = self.client.get("/admin/permissions/effective/user/" + self.name)
         return r.json()["permissions"]
 
-    def __rolename(self, role):
+    @staticmethod
+    def __rolename(role):
         return role.name if isinstance(role, Role) else role
 
     def __eq__(self, other):
@@ -1574,6 +1593,7 @@ class Role(object):
         return r.json()["permissions"]
 
     def add_permission(self, action, resource_type, resource):
+        # noinspection PyUnresolvedReferences
         """Adds a permission to the role.
 
         See Also:
@@ -1597,6 +1617,7 @@ class Role(object):
         self.client.put("/admin/permissions/role/{}".format(self.name), json=meta)
 
     def remove_permission(self, action, resource_type, resource):
+        # noinspection PyUnresolvedReferences
         """Removes a permission from the role.
 
         See Also:
@@ -1653,13 +1674,16 @@ class VirtualGraph(object):
         """The name of the virtual graph."""
         return self.graph_name
 
-    def update(self, name, mappings, options={}, datasource=None, db=None):
+    def update(self, name, mappings, options=None, datasource=None, db=None):
+        # noinspection PyUnresolvedReferences
         """Updates the Virtual Graph.
 
         Args:
           name (str): The new name
           mappings (Content): New mapping contents
           options (dict): New options
+          datasource (str):
+          db  (str):
 
         Examples:
             >>> vg.update('users', File('mappings.ttl'),
@@ -1669,11 +1693,12 @@ class VirtualGraph(object):
             with mappings.data() as data:
                 mappings = data.read().decode() if hasattr(data, "read") else data
 
-        meta = {}
-        meta["name"] = name
-        meta["mappings"] = mappings
-        if options is not None:
-            meta["options"] = options
+        meta = {
+            "name": name,
+            "mappings": mappings,
+            "options": options if options is not None else {},
+        }
+
         if datasource is not None:
             meta["data_source"] = datasource
         if db is not None:
