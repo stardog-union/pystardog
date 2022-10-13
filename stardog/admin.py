@@ -2,6 +2,8 @@
 
 """
 
+from __future__ import annotations
+
 import json
 import contextlib2
 import urllib
@@ -725,15 +727,12 @@ class Admin(object):
         r = self.client.get("/admin/data_sources/list")
         return r.json()["data_sources"]
 
-    def new_datasource(self, name, options):
+    def new_datasource(self, name: str, options: dict) -> DataSource:
         """Creates a new DataSource.
 
         Args:
           name (str): The name of the data source
           options (dict): Data source options
-
-        Returns:
-          User: The new DataSource object
         """
 
         if options is None:
@@ -1740,14 +1739,14 @@ class VirtualGraph(object):
         r = self.client.get(self.path + "/database")
         return r.text
 
-    def mappings_string(self, syntax="STARDOG"):
+    def mappings_string(self, syntax: str = "STARDOG") -> bytes:
         """Returns graph mappings as RDF
+
         Args:
-          syntax (str): The desired RDF syntax of the mappings (STARDOG, R2RML, or SMS2).
+          syntax: The desired RDF syntax of the mappings (STARDOG, R2RML, or SMS2).
           Defaults to 'STARDOG'
 
         :return: Mappings in given content type
-        :rtype: string
         """
         r = self.client.get(f"{self.path}/mappingsString/{syntax}")
         return r.content
