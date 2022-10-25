@@ -12,11 +12,12 @@ class TestMaterializeGraph:
         from unittest.mock import patch, mock_open
 
         with patch("builtins.open", mock_open(read_data="data")) as mock_file:
-            with requests_mock.Mocker() as m:
+            with requests_mock.Mocker(real_http=True) as m:
                 m.post(
                     "http://localhost:5820/admin/virtual_graphs/import_db",
                     status_code=204,
                 )
+                m.get("http://localhost:5820/admin/alive", status_code=200)
 
                 admin = stardog.admin.Admin("http://localhost:5820", "admin", "admin")
 
@@ -33,12 +34,13 @@ class TestMaterializeGraph:
         from unittest.mock import patch, mock_open
 
         with patch("builtins.open", mock_open(read_data="data")) as mock_file:
-            with requests_mock.Mocker() as m:
+            with requests_mock.Mocker(real_http=True) as m:
                 m.post(
                     "http://localhost:5820/admin/virtual_graphs/import_db",
                     status_code=404,
                     text="Data Source 'ds_sd_int_test' Not Found!",
                 )
+                m.get("http://localhost:5820/admin/alive", status_code=200)
 
                 admin = stardog.admin.Admin("http://localhost:5820", "admin", "admin")
 
@@ -75,6 +77,7 @@ class TestMaterializeGraph:
                     status_code=200,
                     text=text_callback,
                 )
+                m.get("http://localhost:5820/admin/alive", status_code=200)
 
                 admin = stardog.admin.Admin("http://localhost:5820", "admin", "admin")
 
@@ -87,7 +90,9 @@ class TestMaterializeGraph:
                 )
 
     def test_materialize_graph_missing_ds_or_options(self):
-        admin = stardog.admin.Admin("http://localhost:5820", "admin", "admin")
+        with requests_mock.Mocker() as m:
+            m.get("http://localhost:5820/admin/alive", status_code=200)
+            admin = stardog.admin.Admin("http://localhost:5820", "admin", "admin")
 
         try:
             admin.materialize_virtual_graph(
