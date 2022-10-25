@@ -125,32 +125,44 @@ class Connection(object):
         self.client.post("/transaction/commit/{}".format(self.transaction))
         self.transaction = None
 
-    def add(self, content, graph_uri=None):
+    def add(self, content, graph_uri=None, server_side=False):
         """Adds data to the database.
 
-        Args:
-          content (Content): Data to add
-          graph_uri (str, optional): Named graph into which to add the data
-
-        Raises:
-          stardog.exceptions.TransactionException
-            If not currently in a transaction
+        :param content: Data to add to a graph.
+        :type content: Content, str
+        :param graph_uri: Named graph into which to add the data.
+        :type graph_uri: str, optional
+        :param server_side: Whether the file to load lives in the remote server.
+        :type server_side: bool
+        :raises stardog.exceptions.TransactionException If not currently in a transaction
 
         Examples:
-          >>> conn.add(File('example.ttl'), graph_uri='urn:graph')
+            Loads example.ttl from the current directory
+            >>> conn.add(File('example.ttl'), graph_uri='urn:graph')
+
+            Loads /tmp/example.ttl existing in the remote stardog server, and loads it in the default graph.
+            >>> conn.add(File('/tmp/example.ttl'), server_side=True)
         """
         self._assert_in_transaction()
 
-        with content.data() as data:
-            self.client.post(
-                "/{}/add".format(self.transaction),
-                params={"graph-uri": graph_uri},
-                headers={
+        args = {"params": {"graph-uri": graph_uri}}
+
+        if server_side:
+            args["headers"] = {
+                "Content-Type": "application/json",
+            }
+            args["json"] = {
+                "filename": content.fname,
+            }
+            self.client.post("/{}/add".format(self.transaction), **args)
+        else:
+            with content.data() as data:
+                args["headers"] = {
                     "Content-Type": content.content_type,
                     "Content-Encoding": content.content_encoding,
-                },
-                data=data,
-            )
+                }
+                args["data"] = data
+                self.client.post("/{}/add".format(self.transaction), **args)
 
     def remove(self, content, graph_uri=None):
         """Removes data from the database.

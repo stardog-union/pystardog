@@ -375,6 +375,14 @@ And install in directory pointed to by STARDOG_EXT and restart server
             c.commit()
         assert self.expected_count(1)
 
+    def test_data_add_ttl_from_file_server_side(self):
+        db = self.db
+        with self.connection() as c:
+            c.begin()
+            c.add(stardog.content.File("/tmp/example-remote.ttl"), server_side=True)
+            c.commit()
+        assert self.expected_count(1)
+
     def test_data_add_ttl_from_content(self):
         db = self.db
         with self.connection() as c:
