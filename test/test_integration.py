@@ -124,10 +124,11 @@ class TestStardog:
 
         @rtype: stardog.admin.Database
         """
-        db = self.admin.database(self.db_name)
+        # db = self.admin.database(self.db_name)
 
         try:
-            db.drop()
+            # db.drop()
+            db = self.admin.database(self.db_name)
         except StardogException as e:
             if e.stardog_code != "0D0DU2":
                 raise e
@@ -172,12 +173,11 @@ class TestStardog:
 
         @rtype: stardog.admin.DataSource
         """
-        ds = self.admin.datasource(self.ds_name)
 
         try:
-            ds.delete()
+            self.admin.datasource(self.ds_name)
         except StardogException as e:
-            if e.http_code != 404:
+            if e.http_code != 400:
                 raise e
             pass
 
@@ -199,10 +199,9 @@ class TestStardog:
 
         @rtype: stardog.admin.VirtualGraph
         """
-        ds = self.admin.virtual_graph(self.db_name)
 
         try:
-            ds.delete()
+            self.admin.virtual_graph(self.db_name)
         except StardogException as e:
             if e.stardog_code != "0D0DU2":
                 raise e
@@ -308,6 +307,11 @@ class TestDatabase(TestStardog):
         )
         assert self.expected_count(6)
         assert self.expected_count(1, ng="<urn:context>")
+
+    def test_non_existent_db(self):
+        # test non-existent db
+        with pytest.raises(StardogException, match="does not exist"):
+            self.admin.database("not_real_db")
 
 
 class TestDataSource(TestStardog):

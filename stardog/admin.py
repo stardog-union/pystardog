@@ -7,6 +7,8 @@ import contextlib2
 import urllib
 from time import sleep
 
+from stardog.exceptions import StardogException
+
 from . import content_types as content_types
 from .http import client
 
@@ -46,6 +48,8 @@ class Admin(object):
                             username='admin', password='admin')
         """
         self.client = client.Client(endpoint, None, username, password, auth=auth)
+        # ensure the server is alive and at the specified location
+        self.alive()
 
     def shutdown(self):
         """Shuts down the server."""
@@ -1059,6 +1063,9 @@ class Database(object):
         self.client = client
         self.path = "/admin/databases/{}".format(name)
 
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(self.path + "/options")
+
     @property
     def name(self):
         """The name of the database."""
@@ -1263,6 +1270,9 @@ class StoredQuery(object):
         self.client = client
         self.path = "/admin/queries/stored/{}".format(name)
 
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(self.path)
+
         # We only need to call __refresh() if the details are not provided
         if details is not None and isinstance(details, dict):
             self.details = details
@@ -1354,6 +1364,8 @@ class User(object):
         self.username = name
         self.client = client
         self.path = "/admin/users/{}".format(name)
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(self.path)
 
     @property
     def name(self):
@@ -1537,6 +1549,8 @@ class Role(object):
         self.role_name = name
         self.client = client
         self.path = "/admin/roles/{}".format(name)
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(f"{self.path}/users")
 
     @property
     def name(self):
@@ -1647,6 +1661,9 @@ class VirtualGraph(object):
         self.graph_name = name
         self.path = "/admin/virtual_graphs/{}".format(name)
         self.client = client
+
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(f"{self.path}/info")
 
     @property
     def name(self):
@@ -1785,6 +1802,9 @@ class DataSource(object):
         self.data_source_name = name
         self.path = "/admin/data_sources/{}".format(name)
         self.client = client
+
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(f"{self.path}/info")
 
     @property
     def name(self):
