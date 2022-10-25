@@ -105,6 +105,7 @@ venv.bak/
 # macos stuff
 .idea/
 .DS_Store
+.vscode
 
 # sd license files
 stardog-license-key.bin

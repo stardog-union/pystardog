@@ -337,6 +337,10 @@ def test_databases(admin, conn_string, bulkload_content):
 def test_users(admin, conn_string):
     assert len(admin.users()) == len(DEFAULT_USERS)
 
+    # test non-existent user
+    with pytest.raises(exceptions.StardogException, match="User .* does not exist"):
+        admin.user("not a real user")
+
     # new user
     user = admin.new_user("username", "password", False)
 
@@ -392,6 +396,10 @@ def test_users(admin, conn_string):
 
 def test_roles(admin):
     assert len(admin.roles()) == len(DEFAULT_ROLES)
+
+    # test non-existent role
+    with pytest.raises(exceptions.StardogException, match="Role .* does not exist"):
+        admin.role("not a real role")
 
     # users
     role = admin.role("reader")
@@ -636,6 +644,13 @@ def test_import(admin, conn_string, music_options, videos_options):
     )
     # if no mapping is specified, videos db generates a graph with 800 triples. adding un-mapped music sums up to 879.
     assert 879 == count_records(bd.name, conn_string)
+
+
+def test_data_source_does_not_exist(admin, music_options):
+    with pytest.raises(
+        exceptions.StardogException, match="There is no data source with name"
+    ):
+        admin.datasource("not a real data source")
 
 
 def test_data_source(admin, music_options):
