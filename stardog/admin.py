@@ -762,7 +762,8 @@ class Admin(object):
         Returns:
           bool: The connection state
         """
-        self.client.get("/admin/users/valid")
+        r = self.client.get("/admin/users/valid")
+        return r.status_code == 200
 
     def cluster_list_standby_nodes(self):
         """
@@ -1691,10 +1692,16 @@ class VirtualGraph(object):
         meta["mappings"] = mappings
         if options is not None:
             meta["options"] = options
+
         if datasource is not None:
             meta["data_source"] = datasource
+        else:
+            meta["data_source"] = self.get_datasource()
+
         if db is not None:
             meta["db"] = db
+        else:
+            meta["db"] = self.get_database()
 
         self.client.put(self.path, json=meta)
         self.graph_name = name
@@ -1722,6 +1729,15 @@ class VirtualGraph(object):
         r = self.client.get(self.path + "/info")
         return r.json()["info"]
 
+    # should return object or name?
+    def get_datasource(self):
+        """Gets datasource associated with the VG
+
+        :return: datasource name
+        """
+        return self.info()["data_source"].replace("data-source://", "")
+
+    # should return object or name?
     def get_database(self):
         """Gets database associated with the VirtualGraph.
 

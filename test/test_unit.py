@@ -2,9 +2,7 @@ import pytest
 import requests
 import requests_mock
 
-import stardog.exceptions
-from stardog import content
-from stardog.content_types import *
+from stardog import admin, content, exceptions, content_types
 
 
 class TestMaterializeGraph:
@@ -19,11 +17,11 @@ class TestMaterializeGraph:
                 )
                 m.get("http://localhost:5820/admin/alive", status_code=200)
 
-                admin = stardog.admin.Admin("http://localhost:5820", "admin", "admin")
+                sd_admin = admin.Admin("http://localhost:5820", "admin", "admin")
 
-                admin.materialize_virtual_graph(
+                sd_admin.materialize_virtual_graph(
                     "db_test",
-                    stardog.content.MappingFile("test.sms2"),
+                    content.MappingFile("test.sms2"),
                     "ds_test",
                     None,
                     None,
@@ -42,17 +40,17 @@ class TestMaterializeGraph:
                 )
                 m.get("http://localhost:5820/admin/alive", status_code=200)
 
-                admin = stardog.admin.Admin("http://localhost:5820", "admin", "admin")
+                sd_admin = admin.Admin("http://localhost:5820", "admin", "admin")
 
                 try:
-                    admin.materialize_virtual_graph(
+                    sd_admin.materialize_virtual_graph(
                         "db_test",
-                        stardog.content.MappingFile("test.sms2"),
+                        content.MappingFile("test.sms2"),
                         "ds_test",
                         None,
                         None,
                     )
-                except stardog.exceptions.StardogException as e:
+                except exceptions.StardogException as e:
                     if e.http_code == 404:
                         assert True
                         return
@@ -79,11 +77,11 @@ class TestMaterializeGraph:
                 )
                 m.get("http://localhost:5820/admin/alive", status_code=200)
 
-                admin = stardog.admin.Admin("http://localhost:5820", "admin", "admin")
+                sd_admin = admin.Admin("http://localhost:5820", "admin", "admin")
 
-                admin.materialize_virtual_graph(
+                sd_admin.materialize_virtual_graph(
                     "db_test",
-                    stardog.content.MappingFile("test.sms2"),
+                    content.MappingFile("test.sms2"),
                     "ds_test",
                     None,
                     None,
@@ -92,12 +90,12 @@ class TestMaterializeGraph:
     def test_materialize_graph_missing_ds_or_options(self):
         with requests_mock.Mocker() as m:
             m.get("http://localhost:5820/admin/alive", status_code=200)
-            admin = stardog.admin.Admin("http://localhost:5820", "admin", "admin")
+            sd_admin = admin.Admin("http://localhost:5820", "admin", "admin")
 
         try:
-            admin.materialize_virtual_graph(
+            sd_admin.materialize_virtual_graph(
                 "db_test",
-                stardog.content.MappingFile("test.sms2"),
+                content.MappingFile("test.sms2"),
             )
         except AssertionError as e:
             assert True
@@ -108,64 +106,115 @@ class TestMaterializeGraph:
 
 class TestContentType:
     def test_guess_rdf_format(self):
-        assert guess_rdf_format("test.ttl") == (None, TURTLE)
-        assert guess_rdf_format("test.rdf") == (None, RDF_XML)
-        assert guess_rdf_format("test.rdfs") == (None, RDF_XML)
-        assert guess_rdf_format("test.owl") == (None, RDF_XML)
-        assert guess_rdf_format("test.xml") == (None, RDF_XML)
-        assert guess_rdf_format("test.nt") == (None, NTRIPLES)
-        assert guess_rdf_format("test.n3") == (None, N3)
-        assert guess_rdf_format("test.nq") == (None, NQUADS)
-        assert guess_rdf_format("test.nquads") == (None, NQUADS)
-        assert guess_rdf_format("test.trig") == (None, TRIG)
-        assert guess_rdf_format("test.trix") == (None, TRIX)
-        assert guess_rdf_format("test.json") == (None, LD_JSON)
-        assert guess_rdf_format("test.jsonld") == (None, LD_JSON)
+        assert content_types.guess_rdf_format("test.ttl") == (
+            None,
+            content_types.TURTLE,
+        )
+        assert content_types.guess_rdf_format("test.rdf") == (
+            None,
+            content_types.RDF_XML,
+        )
+        assert content_types.guess_rdf_format("test.rdfs") == (
+            None,
+            content_types.RDF_XML,
+        )
+        assert content_types.guess_rdf_format("test.owl") == (
+            None,
+            content_types.RDF_XML,
+        )
+        assert content_types.guess_rdf_format("test.xml") == (
+            None,
+            content_types.RDF_XML,
+        )
+        assert content_types.guess_rdf_format("test.nt") == (
+            None,
+            content_types.NTRIPLES,
+        )
+        assert content_types.guess_rdf_format("test.n3") == (None, content_types.N3)
+        assert content_types.guess_rdf_format("test.nq") == (None, content_types.NQUADS)
+        assert content_types.guess_rdf_format("test.nquads") == (
+            None,
+            content_types.NQUADS,
+        )
+        assert content_types.guess_rdf_format("test.trig") == (None, content_types.TRIG)
+        assert content_types.guess_rdf_format("test.trix") == (None, content_types.TRIX)
+        assert content_types.guess_rdf_format("test.json") == (
+            None,
+            content_types.LD_JSON,
+        )
+        assert content_types.guess_rdf_format("test.jsonld") == (
+            None,
+            content_types.LD_JSON,
+        )
 
-        assert guess_rdf_format("test.ttl.gz") == ("gzip", TURTLE)
-        assert guess_rdf_format("test.ttl.zip") == ("zip", TURTLE)
-        assert guess_rdf_format("test.ttl.bz2") == ("bzip2", TURTLE)
+        assert content_types.guess_rdf_format("test.ttl.gz") == (
+            "gzip",
+            content_types.TURTLE,
+        )
+        assert content_types.guess_rdf_format("test.ttl.zip") == (
+            "zip",
+            content_types.TURTLE,
+        )
+        assert content_types.guess_rdf_format("test.ttl.bz2") == (
+            "bzip2",
+            content_types.TURTLE,
+        )
 
     def test_guess_mapping_format_from_filename(self):
-        assert guess_mapping_format("test.rq") == "SMS2"
-        assert guess_mapping_format("test.sms2") == "SMS2"
-        assert guess_mapping_format("test.sms") == "SMS2"
-        assert guess_mapping_format("test.r2rml") == "R2RML"
-        assert guess_mapping_format("test.what") is None
+        assert content_types.guess_mapping_format("test.rq") == "SMS2"
+        assert content_types.guess_mapping_format("test.sms2") == "SMS2"
+        assert content_types.guess_mapping_format("test.sms") == "SMS2"
+        assert content_types.guess_mapping_format("test.r2rml") == "R2RML"
+        assert content_types.guess_mapping_format("test.what") is None
 
     def test_guess_mapping_format_from_content(self):
-        assert guess_mapping_format_from_content("MAPPING\nFROM ") == "SMS2"
-        assert guess_mapping_format_from_content("#A comment\nMAPPING FROM ") == "SMS2"
+        assert (
+            content_types.guess_mapping_format_from_content("MAPPING\nFROM ") == "SMS2"
+        )
+        assert (
+            content_types.guess_mapping_format_from_content("#A comment\nMAPPING FROM ")
+            == "SMS2"
+        )
 
     def test_guess_import_format(self):
-        assert guess_import_format("test.csv") == (None, "text/csv", "DELIMITED", ",")
-        assert guess_import_format("test.tsv") == (
+        assert content_types.guess_import_format("test.csv") == (
+            None,
+            "text/csv",
+            "DELIMITED",
+            ",",
+        )
+        assert content_types.guess_import_format("test.tsv") == (
             None,
             "text/tab-separated-values",
             "DELIMITED",
             "\t",
         )
-        assert guess_import_format("test.json") == (
+        assert content_types.guess_import_format("test.json") == (
             None,
             "application/json",
             "JSON",
             None,
         )
-        assert guess_import_format("test.what") == (None, None, None, None)
+        assert content_types.guess_import_format("test.what") == (
+            None,
+            None,
+            None,
+            None,
+        )
 
-        assert guess_import_format("test.csv.gz") == (
+        assert content_types.guess_import_format("test.csv.gz") == (
             "gzip",
             "text/csv",
             "DELIMITED",
             ",",
         )
-        assert guess_import_format("test.csv.zip") == (
+        assert content_types.guess_import_format("test.csv.zip") == (
             "zip",
             "text/csv",
             "DELIMITED",
             ",",
         )
-        assert guess_import_format("test.csv.bz2") == (
+        assert content_types.guess_import_format("test.csv.bz2") == (
             "bzip2",
             "text/csv",
             "DELIMITED",
@@ -176,57 +225,57 @@ class TestContentType:
 class TestContent:
     def test_file(self):
         m = content.File("test.ttl")
-        assert m.content_type == TURTLE
+        assert m.content_type == content_types.TURTLE
         assert m.content_encoding is None
         assert m.fname == "test.ttl"
 
         m = content.File("test.rdf")
-        assert m.content_type == RDF_XML
+        assert m.content_type == content_types.RDF_XML
         assert m.content_encoding is None
 
         m = content.File("test.rdfs")
-        assert m.content_type == RDF_XML
+        assert m.content_type == content_types.RDF_XML
         assert m.content_encoding is None
 
         m = content.File("test.owl")
-        assert m.content_type == RDF_XML
+        assert m.content_type == content_types.RDF_XML
         assert m.content_encoding is None
 
         m = content.File("test.xml")
-        assert m.content_type == RDF_XML
+        assert m.content_type == content_types.RDF_XML
         assert m.content_encoding is None
 
         m = content.File("test.nt")
-        assert m.content_type == NTRIPLES
+        assert m.content_type == content_types.NTRIPLES
         assert m.content_encoding is None
 
         m = content.File("test.n3")
-        assert m.content_type == N3
+        assert m.content_type == content_types.N3
         assert m.content_encoding is None
 
         m = content.File("test.nq")
-        assert m.content_type == NQUADS
+        assert m.content_type == content_types.NQUADS
         assert m.content_encoding is None
 
         m = content.File("test.nquads")
-        assert m.content_type == NQUADS
+        assert m.content_type == content_types.NQUADS
 
         assert m.content_encoding is None
 
         m = content.File("test.trig")
-        assert m.content_type == TRIG
+        assert m.content_type == content_types.TRIG
         assert m.content_encoding is None
 
         m = content.File("test.trix")
-        assert m.content_type == TRIX
+        assert m.content_type == content_types.TRIX
         assert m.content_encoding is None
 
         m = content.File("test.json")
-        assert m.content_type == LD_JSON
+        assert m.content_type == content_types.LD_JSON
         assert m.content_encoding is None
 
         m = content.File("test.jsonld")
-        assert m.content_type == LD_JSON
+        assert m.content_type == content_types.LD_JSON
         assert m.content_encoding is None
 
         m = content.File("test.turtle", content_type="text/turtle", name="overrideName")
@@ -301,11 +350,11 @@ class TestContent:
         assert m.name == "overrideName"
 
     def test_mapping_raw(self):
-        with open("data/test_import_delimited.sms") as f:
+        with open("test/data/test_import_delimited.sms") as f:
             m = content.MappingRaw(f.read())
             assert m.syntax == "SMS2"
 
-        with open("data/r2rml.ttl") as f:
+        with open("test/data/r2rml.ttl") as f:
             m = content.MappingRaw(f.read())
             assert m.syntax is None
 
@@ -414,11 +463,11 @@ class TestContent:
 class TestStardogException:
     def test_exception_orig(self):
         # While not appropriate raise StardogException from scratch, let's check if it still works the old way
-        exception = stardog.exceptions.StardogException("Mymessage")
+        exception = exceptions.StardogException("Mymessage")
         assert str(exception) == "Mymessage"
 
     def test_exception(self):
-        exception = stardog.exceptions.StardogException("Mymessage", 400, "SD90A")
+        exception = exceptions.StardogException("Mymessage", 400, "SD90A")
         assert str(exception) == "Mymessage"
         assert exception.http_code == 400
         assert exception.stardog_code == "SD90A"

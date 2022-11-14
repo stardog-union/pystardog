@@ -1,12 +1,12 @@
 #!/bin/bash
 
-function wait_for_start {
+function wait_for_start_cluster {
     (
     HOST=${1}
     PORT=${2}
     # Wait for stardog to be running
     COUNT=0
-    set +e
+    set +ex
     not_ready=true
     while $not_ready
     do
@@ -18,7 +18,8 @@ function wait_for_start {
       sleep 5
 
       # wait for main cluster to be ready
-      number_of_nodes=$(curl -s http://${HOST}:${PORT}/admin/cluster/ -u ${STARDOG_USER}:${STARDOG_PASS} | jq .'nodes | length')
+      curl -v http://${HOST}:${PORT}/admin/cluster/ -u admin:admin
+      number_of_nodes=$(curl -s http://${HOST}:${PORT}/admin/cluster/ -u admin:admin | jq .'nodes | length')
       echo "number of nodes ready: " $number_of_nodes
       if [[ $number_of_nodes -eq 2 && $RC -eq 0 ]]; then break; fi
 
@@ -73,7 +74,7 @@ function wait_for_start_single_node {
       COUNT=$(expr 1 + ${COUNT} )
       sleep 5
 
-      curl -s http://${HOST}:${PORT}/admin/healthcheck -u ${STARDOG_USER}:${STARDOG_PASS}
+      curl -s http://${HOST}:${PORT}/admin/healthcheck -u admin:admin
       if [ $? -eq 0 ]; then
         echo "Stardog server single node up and running"
         break

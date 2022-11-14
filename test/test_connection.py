@@ -1,10 +1,6 @@
 import pytest
 
-import stardog.admin
-import stardog.connection as connection
-import stardog.content as content
-import stardog.content_types as content_types
-import stardog.exceptions as exceptions
+from stardog import admin, connection, content, content_types, exceptions
 
 
 @pytest.fixture()
@@ -25,9 +21,9 @@ def conn(conn_string, proxies, ssl_verify):
 
 @pytest.fixture(autouse="True")
 def db(conn_string):
-    with stardog.admin.Admin(**conn_string) as admin:
-        db = admin.new_database("newtest", {"search.enabled": True})
-        yield admin
+    with admin.Admin(**conn_string) as sd_admin:
+        db = sd_admin.new_database("newtest", {"search.enabled": True})
+        yield sd_admin
         db.drop()
 
 
@@ -359,8 +355,8 @@ def test_icv(conn):
 
 
 def test_graphql(conn_string):
-    with stardog.admin.Admin(**conn_string) as admin:
-        db = admin.new_database(
+    with admin.Admin(**conn_string) as sd_admin:
+        db = sd_admin.new_database(
             "graphql", {}, content.File("test/data/starwars.ttl"), copy_to_server=True
         )
 

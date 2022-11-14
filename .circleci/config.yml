@@ -1,4 +1,65 @@
+---
 version: 2.1
+
+run_basic_admin_suite: &run_basic_admin_suite
+  run:
+    name: Runs the basic admin suite
+    no_output_timeout: 15m
+    command: |
+      set -x
+      pytest test/test_admin_basic.py -s
+
+run_connection_suite: &run_connection_suite
+  run:
+    name: Runs the test_connection suite
+    no_output_timeout: 15m
+    command: |
+      set -x
+      pytest test/test_connection.py -s
+
+run_test_server_admin_suite: &run_test_server_admin_suite
+  run:
+    name: Runs the test_server_admin suite
+    no_output_timeout: 15m
+    command: |
+      set -x
+      pytest test/test_server_admin.py -s
+
+run_unit_tests: &run_unit_tests
+  run:
+    name: Runs the test_unit suite
+    no_output_timeout: 15m
+    command: |
+      set -x
+      pytest test/test_unit.py -s
+
+run_utils_tests: &run_utils_tests
+  run:
+    name: Runs the test_utils suite
+    no_output_timeout: 15m
+    command: |
+      set -x
+      pytest test/test_utils.py -s
+
+setup_pytest: &setup_pytest
+  run:
+    name: Set up local env
+    command: |
+      # This is only required because circle might not keep their machine executor completetly up to date.
+      # apt-get update is failing because of this, hence we add this workaround. We don't use any heroku cli at all in here.
+      # Main issue here https://discuss.circleci.com/t/heroku-gpg-issues-in-ubuntu-images/43834/3
+      sudo rm -rf /etc/apt/sources.list.d/heroku.list
+
+      sudo apt-get update -y
+      sudo apt-get install python3-pip -y
+      pip3 install -r test-requirements.txt -r requirements.txt
+
+
+pull_license: &pull_license
+  run:
+    name: Pull license
+    command: |
+      echo ${pystardog_license} | base64 --decode  > ~/project/dockerfiles/stardog-license-key.bin
 
 jobs:
   format:
@@ -12,52 +73,85 @@ jobs:
             pip install -r test-requirements.txt
             black --check .
 
-  single_node_tests:
-    docker:
-      - image: cimg/base:2020.01
+  basic_test_suite_single_node:
+    machine:
+      image: ubuntu-2204:2022.10.2
 
     steps:
       - checkout
 
-      - run:
-          name: Pull license
-          command: |
-            echo ${pystardog_license} | base64 --decode  > ~/project/dockerfiles/stardog-license-key.bin
-
-      - setup_remote_docker
+      - <<: *pull_license
 
       - run:
-          name: Start containers and run single node test that are not compatible with cluster
+          name: Brings the single node and the required VGs up
           no_output_timeout: 15m
           command: |
             set -x
-            docker-compose -f docker-compose.single-node.yml up --exit-code-from tests-single-node
+            docker-compose -f docker-compose.single-node.yml up -d
 
+      - run:
+          name: Waits for stardog stack to come up
+          command: |
+            source test/utils/wait.sh
+            wait_for_start_single_node localhost 5820
 
-  cluster_tests:
-    docker:
-      - image: cimg/base:2020.01
+      - <<: *setup_pytest
+      - <<: *run_basic_admin_suite
+      - <<: *run_connection_suite
+      - <<: *run_test_server_admin_suite
+      - <<: *run_utils_tests
+      - <<: *run_unit_tests
+
+      - run:
+          name: Runs the single_node_only_test (These tests only work on single node Stardog instances)
+          no_output_timeout: 15m
+          command: |
+            set -x
+            pytest test/test_single_node.py --endpoint http://localhost:5820 -s
+
+  basic_test_cluster_mode:
+    machine:
+      image: ubuntu-2204:2022.10.2
 
     steps:
       - checkout
 
-      - run:
-          name: Pull license
-          command: |
-            echo ${pystardog_license} | base64 --decode  > ~/project/dockerfiles/stardog-license-key.bin
-
-      - setup_remote_docker
+      - <<: *pull_license
 
       - run:
           name: Start containers and cluster tests
           no_output_timeout: 15m
           command: |
             set -x
-            docker-compose -f docker-compose.cluster.yml up --exit-code-from tests
+            docker-compose -f docker-compose.cluster.yml up -d
+
+      - <<: *setup_pytest
+
+      - run:
+          name: Waits for stardog stack to come up
+          command: |
+            source test/utils/wait.sh
+            wait_for_start_cluster localhost 5820
+
+      - <<: *run_basic_admin_suite
+      - <<: *run_connection_suite
+      - <<: *run_test_server_admin_suite
+      - <<: *run_utils_tests
+      - <<: *run_unit_tests
+
+      - run:
+          name: Runs the test the cluster only suite
+          no_output_timeout: 15m
+          command: |
+            set -x
+            pytest test/test_cluster.py --endpoint http://localhost:5820 -s
 
 workflows:
-  build_and_run_cluster_tests:
+  build_and_test:
     jobs:
       - format
-      - single_node_tests
-      - cluster_tests
+      - basic_test_suite_single_node
+      - basic_test_cluster_mode
+      # Have to reenable cache and standby tests
+      # - cache_tests
+      # - standby_tests

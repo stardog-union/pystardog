@@ -33,11 +33,29 @@ Docs](http://pystardog.readthedocs.io) or can be built using Sphinx:
 To run the tests locally, a valid Stardog license is required and placed in the `dockerfiles/stardog-license-key.bin`. 
 Docker and docker-compose are also required.
 
+1) Bring a stardog instance using docker-compose. For testing about 90% of the  pystardog features, just a single node is sufficient,
+although we also provide a cluster set up for further testing. 
 ```shell script
- docker-compose -f docker-compose.single-node.yml up --exit-code-from tests-single-node
- docker-compose -f docker-compose.cluster.yml up --exit-code-from tests
+# Bring a single node instance plus a bunch of Virtual Graphs for testing (Recommended).
+docker-compose -f docker-compose.single-node.yml up -d
 
+# A cluster set up is also provided, if cluster only features are to be implemented and tested.
+docker-compose -f docker-compose.cluster.yml up -d
 ```
+
+Run the test suite. Create a virtual environment with the neccesary dependencies:
+```shell script
+# Create a virtualenv and activate it
+virtualenv $(which python3) venv
+source venv/bin/activate
+
+# Install the dependencies
+pip install -r requirements.txt -r test-requirements.txt 
+
+# Run the basic test suite (covers most of the pystardog functionalities)
+pytest test/test_admin_basic.py test/test_connection.py test/test_utils.py -s 
+```
+
 
 ## Format
 To run a format of all the files

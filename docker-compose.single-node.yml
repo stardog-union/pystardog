@@ -5,8 +5,6 @@
 
 version: "3.3"
 services:
-
-  # So another node that does not depends on zookeper.
   sd-single-node:
     build:
       context: dockerfiles/
@@ -17,15 +15,20 @@ services:
     container_name: ${STARDOG_HOSTNAME_SINGLE_NODE}
     entrypoint: ["/bin/bash", "-c"]
     command: ["/var/start.sh"]
+    ports:
+      - "127.0.0.1:5820:5820"
 
-  tests-single-node:
+  # two mysql servers are used instead of one so we can simulate multiple datasources.
+  mysql-music:
     build:
       context: .
-      dockerfile: dockerfiles/dockerfile-python
-    entrypoint: /bin/bash -c
-    command: ["./utils/run_test_single_node.sh"]
-    container_name: pystardog_tests_single_node
-    environment:
-      - STARDOG_ENDPOINT=${STARDOG_HOSTNAME_SINGLE_NODE}
-      - STARDOG_USER=${STARDOG_USER}
-      - STARDOG_PASS=${STARDOG_PASS}
+      dockerfile: dockerfiles/dockerfile-mysql-music
+    # this value is hardcoded in conftest.py (music_options fixture), for multiple datasource / vg tests.
+    # it's also hardcoded in test/test_admin.py for testing imports.
+    container_name: pystardog_mysql_music
+
+  mysql-videos:
+    build:
+      context: .
+      dockerfile: dockerfiles/dockerfile-mysql-videos
+    container_name: pystardog_mysql_videos

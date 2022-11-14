@@ -1,5 +1,4 @@
-import stardog.content as content
-import stardog.content_types as content_types
+from stardog import content, content_types
 
 
 def test_content():
