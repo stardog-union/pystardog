@@ -1,16 +1,7 @@
 import pytest
-import stardog.admin
 import os
 import datetime
-import stardog.content as content
-import stardog.exceptions as exceptions
-import stardog.connection as connection
-
-
-@pytest.fixture()
-def admin(conn_string):
-    with stardog.admin.Admin(**conn_string) as admin:
-        yield admin
+from stardog import admin, connection, content, exceptions
 
 
 def test_database_repair(admin, bulkload_content):
