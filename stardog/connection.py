@@ -2,11 +2,11 @@
 """
 
 import contextlib
-import distutils.util
 
 from . import content_types as content_types
 from . import exceptions as exceptions
 from .http import client
+from .utils import strtobool
 import urllib
 
 
@@ -437,7 +437,7 @@ class Connection(object):
           >>> conn.ask('ask {:subj :pred :obj}', reasoning=True)
         """
         r = self.__query(query, "query", content_types.BOOLEAN, **kwargs)
-        return bool(distutils.util.strtobool(r.decode()))
+        return strtobool(r.decode())
 
     def update(self, query, **kwargs):
         """Executes a SPARQL update query.
@@ -473,7 +473,7 @@ class Connection(object):
             params={"graph-uri": graph_uri},
         )
 
-        return bool(distutils.util.strtobool(r.text))
+        return strtobool(r.text)
 
     def explain_inference(self, content):
         """Explains the given inference results.
@@ -731,7 +731,7 @@ class ICV(object):
                 params={"graph-uri": graph_uri},
             )
 
-            return bool(distutils.util.strtobool(r.text))
+            return strtobool(r.text)
 
     def explain_violations(self, content, graph_uri=None):
         """
