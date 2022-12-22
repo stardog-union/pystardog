@@ -8,7 +8,7 @@ import requests
 from . import content_types as content_types
 
 
-class Content(object):
+class Content:
     """Content base class."""
 
     pass

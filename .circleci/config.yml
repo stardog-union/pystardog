@@ -62,16 +62,33 @@ pull_license: &pull_license
       echo ${pystardog_license} | base64 --decode  > ~/project/dockerfiles/stardog-license-key.bin
 
 jobs:
-  format:
+  static_analysis:
     docker:
       - image: python:3.9
     steps:
       - checkout
       - run:
-          name: Formatter
+          name: Install dependencies
           command: |
             pip install -r test-requirements.txt
+
+      - run:
+          name: Black
+          command: |
             black --check .
+
+      - run:
+          # We fail hard if flake8 is not met.
+          name: Flake8
+          command: |
+            flake8 stardog 
+
+      - run:
+          # We allow pylint to fail since it's too strict.
+          # We should fix these slowly, and come up with a proper configuration to enable limited checks.
+          name: pylint
+          command: |
+            pylint stardog --exit-zero
 
   basic_test_suite_single_node:
     machine:
@@ -149,7 +166,7 @@ jobs:
 workflows:
   build_and_test:
     jobs:
-      - format
+      - static_analysis
       - basic_test_suite_single_node
       - basic_test_cluster_mode
       # Have to reenable cache and standby tests

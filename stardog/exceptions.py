@@ -10,5 +10,3 @@ class StardogException(Exception):
 
 class TransactionException(StardogException):
     """Transaction Exceptions"""
-
-    pass

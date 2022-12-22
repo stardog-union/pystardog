@@ -3,7 +3,6 @@ def strtobool(s):
     falsy_values = ["n", "no", "f", "false", "False", "off", 0]
     if s in truthy_values:
         return True
-    elif s in falsy_values:
+    if s in falsy_values:
         return False
-    else:
-        raise ValueError
+    raise ValueError

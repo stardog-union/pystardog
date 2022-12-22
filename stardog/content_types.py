@@ -153,3 +153,4 @@ def _get_extension(fname):
     pos = fname.rfind(".")
     if pos >= 0:
         return fname[pos + 1 :].lower()
+    raise Exception("File has no extension")
