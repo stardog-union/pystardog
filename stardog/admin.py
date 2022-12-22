@@ -7,13 +7,11 @@ import contextlib2
 import urllib
 from time import sleep
 
-from stardog.exceptions import StardogException
-
 from . import content_types as content_types
 from .http import client
 
 
-class Admin(object):
+class Admin:
     """Admin Connection.
 
     This is the entry point for admin-related operations on a Stardog server.
@@ -1045,7 +1043,7 @@ class Admin(object):
         self.client.close()
 
 
-class Database(object):
+class Database:
     """Database Admin
 
     See Also:
@@ -1251,7 +1249,7 @@ class Database(object):
         return self.name == other.name
 
 
-class StoredQuery(object):
+class StoredQuery:
     """Stored Query
 
     See Also:
@@ -1347,7 +1345,7 @@ class StoredQuery(object):
         return self.name == other.name
 
 
-class User(object):
+class User:
     """User
 
     See Also:
@@ -1532,7 +1530,7 @@ class User(object):
         return self.name == other.name
 
 
-class Role(object):
+class Role:
     """Role
 
     See Also:
@@ -1643,7 +1641,7 @@ class Role(object):
         return self.name == other.name
 
 
-class VirtualGraph(object):
+class VirtualGraph:
     """Virtual Graph
 
     See Also:
@@ -1799,7 +1797,7 @@ class VirtualGraph(object):
         return self.name == other.name
 
 
-class DataSource(object):
+class DataSource:
     """Initializes a DataSource
 
     See Also:
@@ -1903,7 +1901,7 @@ class DataSource(object):
 # We could get rid of this class, and the delete method here as admin.delete_stored_functions() can take a single stored function
 # and mimic this behaviour. This is intentionally put here in case more methods are added to StoredFunctions
 # in the future.
-# class StoredFunction(object):
+# class StoredFunction():
 #     def init(self):
 #         """
 #         Initializes an StoredFunction
@@ -1917,7 +1915,7 @@ class DataSource(object):
 #        """
 
 
-class Cache(object):
+class Cache:
     """Cached data
 
     A cached dataset from a query or named/virtual graph.
@@ -1959,7 +1957,7 @@ class Cache(object):
         return self.name == other.name
 
 
-class CacheTarget(object):
+class CacheTarget:
     """Cache Target Server"""
 
     def __init__(self, name, client):

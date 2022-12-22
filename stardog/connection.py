@@ -10,7 +10,7 @@ from .utils import strtobool
 import urllib
 
 
-class Connection(object):
+class Connection:
     """Database Connection.
 
     This is the entry point for all user-related operations on a
@@ -546,7 +546,7 @@ class Connection(object):
         self.close()
 
 
-class Docs(object):
+class Docs:
     """BITES: Document Storage.
 
     See Also:
@@ -638,7 +638,7 @@ class Docs(object):
         self.client.delete("/docs/{}".format(name))
 
 
-class ICV(object):
+class ICV:
     """Integrity Constraint Validation.
 
     See Also:
@@ -843,7 +843,7 @@ class ICV(object):
         return r.text
 
 
-class GraphQL(object):
+class GraphQL:
     """GraphQL
 
     See Also:
