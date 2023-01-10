@@ -1,6 +1,17 @@
 ---
 version: 2.1
 
+installs_supported_python_versions: &installs_supported_python_versions
+  run:
+    name: Install supported python versions
+    no_output_timeout: 15m
+    command: |
+      set -x
+      sudo apt-get update -y
+      yes | sudo add-apt-repository ppa:deadsnakes/ppa || true
+      sudo apt-get install python3.{8,9,10,11} -yq
+      sudo apt-get install python3.{8,9}-distutils -yq
+
 run_basic_admin_suite: &run_basic_admin_suite
   run:
     name: Runs the basic admin suite
@@ -41,6 +52,16 @@ run_utils_tests: &run_utils_tests
       set -x
       pytest test/test_utils.py -s
 
+# See here for supported versions: https://devguide.python.org/versions/
+# We should support everything that's not EOL.
+run_test_supported_python_versions: &run_test_supported_python_versions
+  run:
+    name: Runs the test_utils suite against all supported python versions. 
+    no_output_timeout: 15m
+    command: |
+      set -x
+      tox
+
 setup_pytest: &setup_pytest
   run:
     name: Set up local env
@@ -64,7 +85,7 @@ pull_license: &pull_license
 jobs:
   static_analysis:
     docker:
-      - image: python:3.9
+      - image: python:latest
     steps:
       - checkout
       - run:
@@ -124,7 +145,16 @@ jobs:
           no_output_timeout: 15m
           command: |
             set -x
-            pytest test/test_single_node.py --endpoint http://localhost:5820 -s
+            pytest test/test_single_node.py -s
+            
+      - <<: *installs_supported_python_versions
+      - <<: *run_test_supported_python_versions
+      - run:
+          name: Runs the single_node_only_test against multiple python envs
+          no_output_timeout: 15m
+          command: |
+            set -x
+            tox -e single_node
 
   basic_test_cluster_mode:
     machine:
@@ -161,7 +191,15 @@ jobs:
           no_output_timeout: 15m
           command: |
             set -x
-            pytest test/test_cluster.py --endpoint http://localhost:5820 -s
+            pytest test/test_cluster.py -s
+
+      - <<: *installs_supported_python_versions
+      - run:
+          name: Runs the cluster node only tests against multiple python envs
+          no_output_timeout: 15m
+          command: |
+            set -x
+            tox -e cluster
 
 workflows:
   build_and_test:

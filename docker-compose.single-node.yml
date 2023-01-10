@@ -1,8 +1,4 @@
-# Note that circleci docker executor does not allow to volume mounting, hence the volume block can't be used here.
-# https://support.circleci.com/hc/en-us/articles/360007324514-How-can-I-use-Docker-volume-mounting-on-CircleCI-
-# For this reason, we are creating specific dockerfiles, and building the images from them, copying the files in the images
-# instead of mounting them.
-
+---
 version: "3.3"
 services:
   sd-single-node:
