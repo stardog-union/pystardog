@@ -1,7 +1,7 @@
-from . import admin
-from . import connection
-from . import content
-from . import content_types
-from . import exceptions
+from stardog.admin import Admin
+from stardog.connection import Connection
+import stardog.content as content
+import stardog.content_types as content_types
+import stardog.exceptions as exceptions
 
-__all__ = ["admin", "connection", "content", "content_types", "exceptions"]
+__all__ = ["Admin", "Connection", "content", "content_types", "exceptions"]

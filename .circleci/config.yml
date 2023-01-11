@@ -20,6 +20,14 @@ run_basic_admin_suite: &run_basic_admin_suite
       set -x
       pytest test/test_admin_basic.py -s
 
+run_test_imports: &run_test_imports
+  run:
+    name: Runs import tests
+    no_output_timeout: 15m
+    command: |
+      set -x
+      pytest test/test_import.py test/test_star_import.py -s
+
 run_connection_suite: &run_connection_suite
   run:
     name: Runs the test_connection suite
@@ -134,6 +142,7 @@ jobs:
             wait_for_start_single_node localhost 5820
 
       - <<: *setup_pytest
+      - <<: *run_test_imports
       - <<: *run_basic_admin_suite
       - <<: *run_connection_suite
       - <<: *run_test_server_admin_suite
