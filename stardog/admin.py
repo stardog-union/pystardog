@@ -11,7 +11,7 @@ from . import content_types as content_types
 from .http import client
 
 
-class Admin(object):
+class Admin:
     """Admin Connection.
 
     This is the entry point for admin-related operations on a Stardog server.
@@ -46,6 +46,8 @@ class Admin(object):
                             username='admin', password='admin')
         """
         self.client = client.Client(endpoint, None, username, password, auth=auth)
+        # ensure the server is alive and at the specified location
+        self.alive()
 
     def shutdown(self):
         """Shuts down the server."""
@@ -269,8 +271,10 @@ class Admin(object):
         r = self.client.get(
             "/admin/queries/stored", headers={"Accept": "application/json"}
         )
-        query_names = [q["name"] for q in r.json()["queries"]]
-        return list(map(lambda name: StoredQuery(name, self.client), query_names))
+        queries = r.json()["queries"]
+        return list(
+            map(lambda query: StoredQuery(query["name"], self.client, query), queries)
+        )
 
     def new_stored_query(self, name, query, options=None):
         """Creates a new Stored Query.
@@ -756,7 +760,8 @@ class Admin(object):
         Returns:
           bool: The connection state
         """
-        self.client.get("/admin/users/valid")
+        r = self.client.get("/admin/users/valid")
+        return r.status_code == 200
 
     def cluster_list_standby_nodes(self):
         """
@@ -1038,7 +1043,7 @@ class Admin(object):
         self.client.close()
 
 
-class Database(object):
+class Database:
     """Database Admin
 
     See Also:
@@ -1056,6 +1061,9 @@ class Database(object):
         self.database_name = name
         self.client = client
         self.path = "/admin/databases/{}".format(name)
+
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(self.path + "/options")
 
     @property
     def name(self):
@@ -1241,7 +1249,7 @@ class Database(object):
         return self.name == other.name
 
 
-class StoredQuery(object):
+class StoredQuery:
     """Stored Query
 
     See Also:
@@ -1249,7 +1257,7 @@ class StoredQuery(object):
         https://www.stardog.com/docs/#_managing_stored_queries
     """
 
-    def __init__(self, name, client):
+    def __init__(self, name, client, details=None):
         """Initializes a stored query.
 
         Use :meth:`stardog.admin.Admin.stored_query`,
@@ -1260,8 +1268,16 @@ class StoredQuery(object):
         self.query_name = name
         self.client = client
         self.path = "/admin/queries/stored/{}".format(name)
-        self.details = {}
-        self.__refresh()
+
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(self.path)
+
+        # We only need to call __refresh() if the details are not provided
+        if details is not None and isinstance(details, dict):
+            self.details = details
+        else:
+            self.details = {}
+            self.__refresh()
 
     def __refresh(self):
         details = self.client.get(self.path, headers={"Accept": "application/json"})
@@ -1329,7 +1345,7 @@ class StoredQuery(object):
         return self.name == other.name
 
 
-class User(object):
+class User:
     """User
 
     See Also:
@@ -1347,6 +1363,8 @@ class User(object):
         self.username = name
         self.client = client
         self.path = "/admin/users/{}".format(name)
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(self.path)
 
     @property
     def name(self):
@@ -1512,7 +1530,7 @@ class User(object):
         return self.name == other.name
 
 
-class Role(object):
+class Role:
     """Role
 
     See Also:
@@ -1530,6 +1548,8 @@ class Role(object):
         self.role_name = name
         self.client = client
         self.path = "/admin/roles/{}".format(name)
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(f"{self.path}/users")
 
     @property
     def name(self):
@@ -1621,7 +1641,7 @@ class Role(object):
         return self.name == other.name
 
 
-class VirtualGraph(object):
+class VirtualGraph:
     """Virtual Graph
 
     See Also:
@@ -1640,6 +1660,9 @@ class VirtualGraph(object):
         self.graph_name = name
         self.path = "/admin/virtual_graphs/{}".format(name)
         self.client = client
+
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(f"{self.path}/info")
 
     @property
     def name(self):
@@ -1667,10 +1690,16 @@ class VirtualGraph(object):
         meta["mappings"] = mappings
         if options is not None:
             meta["options"] = options
+
         if datasource is not None:
             meta["data_source"] = datasource
+        else:
+            meta["data_source"] = self.get_datasource()
+
         if db is not None:
             meta["db"] = db
+        else:
+            meta["db"] = self.get_database()
 
         self.client.put(self.path, json=meta)
         self.graph_name = name
@@ -1698,6 +1727,15 @@ class VirtualGraph(object):
         r = self.client.get(self.path + "/info")
         return r.json()["info"]
 
+    # should return object or name?
+    def get_datasource(self):
+        """Gets datasource associated with the VG
+
+        :return: datasource name
+        """
+        return self.info()["data_source"].replace("data-source://", "")
+
+    # should return object or name?
     def get_database(self):
         """Gets database associated with the VirtualGraph.
 
@@ -1759,7 +1797,7 @@ class VirtualGraph(object):
         return self.name == other.name
 
 
-class DataSource(object):
+class DataSource:
     """Initializes a DataSource
 
     See Also:
@@ -1778,6 +1816,9 @@ class DataSource(object):
         self.data_source_name = name
         self.path = "/admin/data_sources/{}".format(name)
         self.client = client
+
+        # this checks for existence by throwing an exception if the resource does not exist
+        self.client.get(f"{self.path}/info")
 
     @property
     def name(self):
@@ -1860,7 +1901,7 @@ class DataSource(object):
 # We could get rid of this class, and the delete method here as admin.delete_stored_functions() can take a single stored function
 # and mimic this behaviour. This is intentionally put here in case more methods are added to StoredFunctions
 # in the future.
-# class StoredFunction(object):
+# class StoredFunction():
 #     def init(self):
 #         """
 #         Initializes an StoredFunction
@@ -1874,7 +1915,7 @@ class DataSource(object):
 #        """
 
 
-class Cache(object):
+class Cache:
     """Cached data
 
     A cached dataset from a query or named/virtual graph.
@@ -1916,7 +1957,7 @@ class Cache(object):
         return self.name == other.name
 
 
-class CacheTarget(object):
+class CacheTarget:
     """Cache Target Server"""
 
     def __init__(self, name, client):

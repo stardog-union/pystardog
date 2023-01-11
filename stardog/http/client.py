@@ -5,7 +5,7 @@ import requests_toolbelt.multipart as multipart
 from .. import exceptions as exceptions
 
 
-class Client(object):
+class Client:
     DEFAULT_ENDPOINT = "http://localhost:5820"
     DEFAULT_USERNAME = "admin"
     DEFAULT_PASSWORD = "admin"

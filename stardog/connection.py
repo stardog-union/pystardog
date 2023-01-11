@@ -2,15 +2,15 @@
 """
 
 import contextlib
-import distutils.util
 
 from . import content_types as content_types
 from . import exceptions as exceptions
 from .http import client
+from .utils import strtobool
 import urllib
 
 
-class Connection(object):
+class Connection:
     """Database Connection.
 
     This is the entry point for all user-related operations on a
@@ -125,32 +125,44 @@ class Connection(object):
         self.client.post("/transaction/commit/{}".format(self.transaction))
         self.transaction = None
 
-    def add(self, content, graph_uri=None):
+    def add(self, content, graph_uri=None, server_side=False):
         """Adds data to the database.
 
-        Args:
-          content (Content): Data to add
-          graph_uri (str, optional): Named graph into which to add the data
-
-        Raises:
-          stardog.exceptions.TransactionException
-            If not currently in a transaction
+        :param content: Data to add to a graph.
+        :type content: Content, str
+        :param graph_uri: Named graph into which to add the data.
+        :type graph_uri: str, optional
+        :param server_side: Whether the file to load lives in the remote server.
+        :type server_side: bool
+        :raises stardog.exceptions.TransactionException If not currently in a transaction
 
         Examples:
-          >>> conn.add(File('example.ttl'), graph_uri='urn:graph')
+            Loads example.ttl from the current directory
+            >>> conn.add(File('example.ttl'), graph_uri='urn:graph')
+
+            Loads /tmp/example.ttl existing in the remote stardog server, and loads it in the default graph.
+            >>> conn.add(File('/tmp/example.ttl'), server_side=True)
         """
         self._assert_in_transaction()
 
-        with content.data() as data:
-            self.client.post(
-                "/{}/add".format(self.transaction),
-                params={"graph-uri": graph_uri},
-                headers={
+        args = {"params": {"graph-uri": graph_uri}}
+
+        if server_side:
+            args["headers"] = {
+                "Content-Type": "application/json",
+            }
+            args["json"] = {
+                "filename": content.fname,
+            }
+            self.client.post("/{}/add".format(self.transaction), **args)
+        else:
+            with content.data() as data:
+                args["headers"] = {
                     "Content-Type": content.content_type,
                     "Content-Encoding": content.content_encoding,
-                },
-                data=data,
-            )
+                }
+                args["data"] = data
+                self.client.post("/{}/add".format(self.transaction), **args)
 
     def remove(self, content, graph_uri=None):
         """Removes data from the database.
@@ -425,7 +437,7 @@ class Connection(object):
           >>> conn.ask('ask {:subj :pred :obj}', reasoning=True)
         """
         r = self.__query(query, "query", content_types.BOOLEAN, **kwargs)
-        return bool(distutils.util.strtobool(r.decode()))
+        return strtobool(r.decode())
 
     def update(self, query, **kwargs):
         """Executes a SPARQL update query.
@@ -461,7 +473,7 @@ class Connection(object):
             params={"graph-uri": graph_uri},
         )
 
-        return bool(distutils.util.strtobool(r.text))
+        return strtobool(r.text)
 
     def explain_inference(self, content):
         """Explains the given inference results.
@@ -534,7 +546,7 @@ class Connection(object):
         self.close()
 
 
-class Docs(object):
+class Docs:
     """BITES: Document Storage.
 
     See Also:
@@ -626,7 +638,7 @@ class Docs(object):
         self.client.delete("/docs/{}".format(name))
 
 
-class ICV(object):
+class ICV:
     """Integrity Constraint Validation.
 
     See Also:
@@ -719,7 +731,7 @@ class ICV(object):
                 params={"graph-uri": graph_uri},
             )
 
-            return bool(distutils.util.strtobool(r.text))
+            return strtobool(r.text)
 
     def explain_violations(self, content, graph_uri=None):
         """
@@ -831,7 +843,7 @@ class ICV(object):
         return r.text
 
 
-class GraphQL(object):
+class GraphQL:
     """GraphQL
 
     See Also:
