@@ -309,6 +309,7 @@ class Connection:
             "offset": kwargs.get("offset"),
             "timeout": kwargs.get("timeout"),
             "reasoning": kwargs.get("reasoning"),
+            "prettify": kwargs.get("prettify"),
         }
 
         # query bindings
