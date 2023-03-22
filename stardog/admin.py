@@ -731,7 +731,7 @@ class Admin:
         if options is None:
             options = {}
 
-        meta = {"name": name, "options": options}
+        meta = {"name": name, "options": options, "force": True}
 
         self.client.post("/admin/data_sources", json=meta)
         return DataSource(name, self.client)
