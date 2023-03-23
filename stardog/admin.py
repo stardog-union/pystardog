@@ -717,7 +717,7 @@ class Admin:
         r = self.client.get("/admin/data_sources/list")
         return r.json()["data_sources"]
 
-    def new_datasource(self, name, options, force=False):
+    def new_datasource(self, name, options):
         """Creates a new DataSource.
 
         Args:
@@ -731,7 +731,7 @@ class Admin:
         if options is None:
             options = {}
 
-        meta = {"name": name, "options": options, "force": force}
+        meta = {"name": name, "options": options}
 
         self.client.post("/admin/data_sources", json=meta)
         return DataSource(name, self.client)
