@@ -717,7 +717,7 @@ class Admin:
         r = self.client.get("/admin/data_sources/list")
         return r.json()["data_sources"]
 
-    def new_datasource(self, name, options, force=False):
+    def new_datasource(self, name, options):
         """Creates a new DataSource.
 
         Args:
@@ -731,7 +731,7 @@ class Admin:
         if options is None:
             options = {}
 
-        meta = {"name": name, "options": options, "force": force}
+        meta = {"name": name, "options": options}
 
         self.client.post("/admin/data_sources", json=meta)
         return DataSource(name, self.client)
@@ -1842,12 +1842,25 @@ class DataSource:
 
         self.client.post(self.path + "/refresh_counts", json=meta)
 
-    def update(self, options=None):
-        """Update data source"""
+    def update(self, options=None, force=False):
+        """Update data source
+        
+        Args:
+            options (dict): Dictionary with data source options (optional)
+            force (boolean, optional): a data source will not be updated while
+            in use unless the force flag is set to True
+
+        Examples:
+            >>> admin.update({"sql.dialect": "MYSQL"})
+            >>> admin.update({"sql.dialect": "MYSQL"}, force=True)
+
+        See Also:
+            https://docs.stardog.com/virtual-graphs/virtual-graph-configuration#virtual-graph-options
+        """
         if options is None:
             options = {}
 
-        meta = {"options": options}
+        meta = {"options": options, "force": force}
 
         self.client.put(self.path, json=meta)
 

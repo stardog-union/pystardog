@@ -104,7 +104,7 @@ def test_cache_vg_datasets(admin, music_options, cache_target_info):
     cache_target_password = cache_target_info["password"]
 
     # creating a VG using empty mappings, and specifying a datasource
-    ds = admin.new_datasource("music", music_options, force=True)
+    ds = admin.new_datasource("music", music_options)
     vg = admin.new_virtual_graph("test_vg", mappings="", datasource=ds.name)
 
     cache_target = admin.new_cache_target(
@@ -124,7 +124,7 @@ def test_cache_vg_datasets(admin, music_options, cache_target_info):
     }
 
     with stardog.admin.Admin(**conn_string_cache) as admin_cache_target:
-        ds_cached = admin_cache_target.new_datasource("music", music_options, force=True)
+        ds_cached = admin_cache_target.new_datasource("music", music_options)
         vg_cached = admin_cache_target.new_virtual_graph(
             "test_vg", mappings="", datasource=ds.name
         )

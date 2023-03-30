@@ -140,7 +140,6 @@ def conn(conn_string, request):
 def datasource(admin, music_options, request):
     dsname = request.node.get_closest_marker("ds_name", None)
     options = request.node.get_closest_marker("options", None)
-    force = request.node.get_closest_marker("force", False)
     if dsname is not None:
         dsname = dsname.args[0]
     else:
@@ -150,7 +149,7 @@ def datasource(admin, music_options, request):
         options = options.args[0]
     else:
         options = music_options
-    ds = admin.new_datasource(dsname, options, force=force)
+    ds = admin.new_datasource(dsname, options)
     yield ds
     ds.delete()
 

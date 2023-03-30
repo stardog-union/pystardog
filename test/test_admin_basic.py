@@ -366,6 +366,18 @@ class TestDataSource(TestStardog):
         ):
             admin.datasource("not a real data source")
 
+    @pytest.mark.ds_name("pystardog-test-update-datasource")
+    def test_datasource_update_with_force(self, admin):
+        ds = admin.datasource("pystardog-test-update-datasource")
+
+        # Update data source options without force
+        with pytest.raises(exceptions.StardogException, match="The data source .* is in use by virtual graphs"):
+            ds.update({"new_option": "new_value"}, force=False)
+
+        # Update data source options with force
+        ds.update({"new_option": "new_value"}, force=True)
+        assert ds.options["new_option"] == "new_value"
+        
 
 class TestLoadData(TestStardog):
     def setup_class(self):
