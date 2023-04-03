@@ -46,7 +46,7 @@ docker-compose -f docker-compose.cluster.yml up -d
 Run the test suite. Create a virtual environment with the neccesary dependencies:
 ```shell script
 # Create a virtualenv and activate it
-virtualenv $(which python3) venv
+virtualenv -p $(which python3) venv
 source venv/bin/activate
 
 # Install the dependencies
