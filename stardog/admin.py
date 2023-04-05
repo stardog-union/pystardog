@@ -1844,7 +1844,7 @@ class DataSource:
 
     def update(self, options=None, force=False):
         """Update data source
-        
+
         Args:
             options (dict): Dictionary with data source options (optional)
             force (boolean, optional): a data source will not be updated while
