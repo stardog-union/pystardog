@@ -366,6 +366,43 @@ class TestDataSource(TestStardog):
         ):
             admin.datasource("not a real data source")
 
+    def test_data_source_update(self, datasource):
+        current_options = datasource.get_options()
+        assert "new_option" not in current_options
+        new_options = {
+            "jdbc.driver": "com.mysql.jdbc.Driver",
+            "jdbc.username": "user",
+            "jdbc.password": "pass",
+            "mappings.syntax": "STARDOG",
+            "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?useSSL=false",
+            "new_option": "new option",
+        }
+        datasource.update(new_options)
+        new_options_from_ds = datasource.get_options()
+        assert "new_option" in new_options_from_ds
+
+    @pytest.mark.use_music_datasource(True)
+    def test_data_source_update_force(self, datasource, virtual_graph):
+        current_options = datasource.get_options()
+        assert "new_option" not in current_options
+        new_options = {
+            "jdbc.driver": "com.mysql.jdbc.Driver",
+            "jdbc.username": "user",
+            "jdbc.password": "pass",
+            "mappings.syntax": "STARDOG",
+            "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?useSSL=false",
+            "new_option": "new option",
+        }
+        with pytest.raises(
+            exceptions.StardogException,
+            match="The data source .* is in use by virtual graphs",
+        ):
+            datasource.update(new_options, force=False)
+
+        datasource.update(new_options, force=True)
+        new_options_from_ds = datasource.get_options()
+        assert "new_option" in new_options_from_ds
+
 
 class TestLoadData(TestStardog):
     def setup_class(self):
