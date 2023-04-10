@@ -73,7 +73,6 @@ function wait_for_start_single_node {
       fi
       COUNT=$(expr 1 + ${COUNT} )
       sleep 5
-
       curl -s http://${HOST}:${PORT}/admin/healthcheck -u admin:admin
       if [ $? -eq 0 ]; then
         echo "Stardog server single node up and running"

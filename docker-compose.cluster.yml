@@ -14,7 +14,8 @@ services:
       context: dockerfiles/
       dockerfile: dockerfile-stardog
       args:
-        - TAG=${STARDOG_TAG}
+        - STARDOG_TAG=${STARDOG_TAG}
+        - STARDOG_REPO=${STARDOG_REPO}
         - NODE_TYPE=node
         - SSH_USER=${SSH_USER}
         - SSH_PASS=${SSH_PASS}
@@ -29,7 +30,8 @@ services:
       context: dockerfiles/
       dockerfile: dockerfile-stardog
       args:
-          - TAG=${STARDOG_TAG}
+          - STARDOG_TAG=${STARDOG_TAG}
+          - STARDOG_REPO=${STARDOG_REPO}
           - NODE_TYPE=node
           - SSH_USER=${SSH_USER}
           - SSH_PASS=${SSH_PASS}
@@ -44,7 +46,8 @@ services:
       context: dockerfiles/
       dockerfile: dockerfile-stardog
       args:
-        - TAG=${STARDOG_TAG}
+        - STARDOG_TAG=${STARDOG_TAG}
+        - STARDOG_REPO=${STARDOG_REPO}
         - NODE_TYPE=standby
         - SSH_USER=${SSH_USER}
         - SSH_PASS=${SSH_PASS}
@@ -59,7 +62,8 @@ services:
       context: dockerfiles/
       dockerfile: dockerfile-stardog
       args:
-        - TAG=${STARDOG_TAG}
+        - STARDOG_TAG=${STARDOG_TAG}
+        - STARDOG_REPO=${STARDOG_REPO}
         - NODE_TYPE=cache
         - SSH_USER=${SSH_USER}
         - SSH_PASS=${SSH_PASS}
