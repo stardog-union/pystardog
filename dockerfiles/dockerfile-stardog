@@ -16,7 +16,6 @@ ARG NODE_TYPE
 ARG SSH_USER
 ARG SSH_PASS
 
-# COPY /tmp/mysql-connector-java.jar opt/stardog/server/dbms
 COPY stardog-license-key.bin /var/opt/stardog
 COPY start.sh /var/start.sh
 COPY start-standby.sh /var/start-standby.sh
