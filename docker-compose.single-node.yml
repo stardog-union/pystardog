@@ -6,7 +6,8 @@ services:
       context: dockerfiles/
       dockerfile: dockerfile-stardog
       args:
-        - TAG=${STARDOG_TAG}
+        - STARDOG_TAG=${STARDOG_TAG}
+        - STARDOG_REPO=${STARDOG_REPO}
         - NODE_TYPE=single
     container_name: ${STARDOG_HOSTNAME_SINGLE_NODE}
     entrypoint: ["/bin/bash", "-c"]

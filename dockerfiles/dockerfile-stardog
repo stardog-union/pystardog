@@ -1,26 +1,25 @@
-FROM alpine as base
+ARG STARDOG_TAG
+ARG STARDOG_REPO
+FROM ${STARDOG_REPO}:${STARDOG_TAG}
+
+USER root
+RUN yes $SSH_PASS | passwd $SSH_USER
+RUN apt-get update -y && apt-get install openssh-server vim unzip wget -y
 
 ARG CONNECTOR_VERSION=8.0.21
 
 RUN wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-java-${CONNECTOR_VERSION}.zip \
   && unzip mysql-connector-java-${CONNECTOR_VERSION}.zip \
-  && mv mysql-connector-java-${CONNECTOR_VERSION}/mysql-connector-java-${CONNECTOR_VERSION}.jar /tmp/mysql-connector-java.jar
-
-FROM stardog/stardog
+  && mv mysql-connector-java-${CONNECTOR_VERSION}/mysql-connector-java-${CONNECTOR_VERSION}.jar opt/stardog/server/dbms/mysql-connector-java.jar
 
 ARG NODE_TYPE
 ARG SSH_USER
 ARG SSH_PASS
 
-COPY --from=base /tmp/mysql-connector-java.jar opt/stardog/server/dbms
 COPY stardog-license-key.bin /var/opt/stardog
 COPY start.sh /var/start.sh
 COPY start-standby.sh /var/start-standby.sh
 COPY example.ttl /tmp/example-remote.ttl
-
-USER root
-RUN yes $SSH_PASS | passwd $SSH_USER
-RUN yum install openssh-server vim -y
 
 USER stardog
 # We require ssh to test that backups are successfully generated.

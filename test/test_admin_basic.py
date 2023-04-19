@@ -12,8 +12,9 @@ from stardog import admin, connection, content, content_types, exceptions
 ###############################################################
 from stardog.exceptions import StardogException
 
-default_users = ["admin", "anonymous"]
+default_users = ["admin"]
 default_roles = ["reader"]
+default_namespace_count = 7
 
 
 class Resource(Enum):
@@ -294,11 +295,10 @@ class TestDatabase(TestStardog):
 # both gets cleaned up as part of the fixture.
 class TestNamespaces(TestStardog):
     def test_add_and_delete_namespaces(self, db):
-        # number of namespaces is always 6 by default for any new database
-        assert len(db.namespaces()) == 6
+        assert len(db.namespaces()) == default_namespace_count
 
         db.add_namespace("testns", "my:test:IRI")
-        assert len(db.namespaces()) == 7
+        assert len(db.namespaces()) == default_namespace_count + 1
 
         # tests a failure while adding an existing namespace
         with pytest.raises(
@@ -307,7 +307,7 @@ class TestNamespaces(TestStardog):
             db.add_namespace("stardog", "someiri")
 
         db.remove_namespace("testns")
-        assert len(db.namespaces()) == 6
+        assert len(db.namespaces()) == default_namespace_count
 
         # tests a failure while removing an existing namespace
         with pytest.raises(
@@ -319,13 +319,13 @@ class TestNamespaces(TestStardog):
         db.add_namespace("testnspace", "my:test:IRI")
         db.add_namespace("testns", "my:test:IRI")
 
-        assert len(db.namespaces()) == 8
+        assert len(db.namespaces()) == default_namespace_count + 2
 
         # tests removal of the correct namespace, even if a similar namespace exists
         db.remove_namespace("testns")
         db.remove_namespace("testnspace")
 
-        assert len(db.namespaces()) == 6
+        assert len(db.namespaces()) == default_namespace_count
 
     def test_import_namespaces(self, db):
         # we want to tests more than 1 file format
@@ -335,9 +335,9 @@ class TestNamespaces(TestStardog):
         db_default_namespaces = db.namespaces()
         ns_default_count = len(db_default_namespaces)
 
-        # number of namespaces is always 6 by default for any new database
+        # number of namespaces is a fixed number set to default_namespace_count by default for any new database
         # https://docs.stardog.com/operating-stardog/database-administration/managing-databases#namespaces
-        assert ns_default_count == 6
+        assert ns_default_count == default_namespace_count
 
         # imports 4 namespaces
         db.import_namespaces(namespaces_ttl)
