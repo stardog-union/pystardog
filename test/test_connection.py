@@ -3,34 +3,14 @@ import pytest
 from stardog import admin, connection, content, content_types, exceptions
 
 
-@pytest.fixture()
-def conn(conn_string, proxies, ssl_verify):
-    if len(proxies):
-        # create external session and configure connection
-        session = requests.Session()
-        # e.g. set proxies
-        session.proxies.update(proxies)
-        # or optionally disable ssl_verification
-        # if MITM acting proxy or mysql connector doesn't support it
-        session.verify = ssl_verify
-    else:
-        session = None
-    with connection.Connection("newtest", **conn_string, session=session) as conn:
-        yield conn
-
-
-@pytest.fixture(autouse="True")
-def db(conn_string):
-    with admin.Admin(**conn_string) as sd_admin:
-        db = sd_admin.new_database("newtest", {"search.enabled": True})
-        yield sd_admin
-        db.drop()
+def starwars_contents() -> list:
+    return content.File("test/data/starwars.ttl")
 
 
 @pytest.mark.skip(
     reason="Currently failing, check out another branch and see if it fails there."
 )
-def test_transactions(conn):
+def test_transactions(db, conn):
     data = content.Raw("<urn:subj> <urn:pred> <urn:obj> .", content_types.TURTLE)
 
     # add
@@ -98,7 +78,9 @@ def test_transactions(conn):
     assert conn.size(exact=True) == 0
 
 
-def test_export(conn):
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_export(db, conn):
     conn.begin()
     # add to default graph
     conn.add(content.Raw("<urn:default_subj> <urn:default_pred> <urn:default_obj> ."))
@@ -118,7 +100,9 @@ def test_export(conn):
     assert b"default_obj" not in named_export
 
 
-def test_queries(conn):
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_queries(db, conn):
     # add
     conn.begin()
     conn.clear()
@@ -209,7 +193,7 @@ def test_queries(conn):
 @pytest.mark.skip(
     reason="Bug introduced in reasoning, it's being tracked here: https://stardog.atlassian.net/browse/PLAT-2027"
 )
-def test_reasoning(conn):
+def test_reasoning(db, conn):
     data = content.Raw(
         b"<urn:subj> <urn:pred> <urn:obj> , <urn:obj2> .", content_types.TURTLE
     )
@@ -250,7 +234,9 @@ def test_reasoning(conn):
     assert len(r) == 0
 
 
-def test_docs(conn):
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_docs(db, conn):
     example = (
         b"Only the Knowledge Graph can unify all data types and "
         b"every data velocity into a single, coherent, unified whole."
@@ -282,7 +268,9 @@ def test_docs(conn):
     assert docs.size() == 0
 
 
-def test_unicode(conn):
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_unicode(db, conn):
     conn.begin()
     conn.add(
         content.Raw(":βüãäoñr̈ a :Employee .".encode("utf-8"), content_types.TURTLE)
@@ -299,7 +287,7 @@ def test_unicode(conn):
     reason="Stardog 8 deprecated OWL constraints, which all these tests are depending on. need to update the tests"
     "https://github.com/stardog-union/pystardog/issues/112"
 )
-def test_icv(conn):
+def test_icv(db, conn):
 
     conn.begin()
     conn.clear()
@@ -354,13 +342,16 @@ def test_icv(conn):
     assert "SELECT DISTINCT" in icv.convert(constraint)
 
 
-def test_graphql(conn_string):
-    with admin.Admin(**conn_string) as sd_admin:
-        db = sd_admin.new_database(
-            "graphql", {}, content.File("test/data/starwars.ttl"), copy_to_server=True
-        )
+@pytest.mark.dbname("pystardog-test-graphql-database")
+@pytest.mark.conn_dbname("pystardog-test-graphql-database")
+@pytest.mark.kwargs({"copy_to_server": True})
+def test_graphql(db, conn_string):
+    with connection.Connection("pystardog-test-graphql-database", **conn_string) as c:
+        # query in transaction
+        c.begin()
+        c.add(content.File("test/data/starwars.ttl"))
+        c.commit()
 
-    with connection.Connection("graphql", **conn_string) as c:
         gql = c.graphql()
 
         # query
@@ -371,7 +362,7 @@ def test_graphql(conn_string):
 
         # variables
         assert gql.query(
-            "query getHuman($id: Integer) { Human(id: $id) {name} }",
+            "query getHuman($id: Int) { Human(id: $id) {name} }",
             variables={"id": 1000},
         ) == [{"name": "Luke Skywalker"}]
 
@@ -403,8 +394,6 @@ def test_graphql(conn_string):
         gql.clear_schemas()
         assert len(gql.schemas()) == 0
 
-    db.drop()
-
 
 def test_invalid_request_session(conn_string):
     session = "im an invalid session"
@@ -415,13 +404,17 @@ def test_invalid_request_session(conn_string):
         connection.Connection("somevaliddb", **conn_string, session=session)
 
 
-def test_icv_reports_with_no_params(conn):
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_icv_reports_with_no_params(db, conn):
     icv = conn.icv()
     res = icv.report()
     assert res == open("test/data/icv_report.ttl").read()
 
 
-def test_invalid_param_for_icv_report_should_fail(conn):
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_invalid_param_for_icv_report_should_fail(db, conn):
     icv = conn.icv()
     with pytest.raises(Exception, match="Parameter not recognized"):
         icv.report(**{"invalidKey": "invalidParam"})
@@ -436,25 +429,35 @@ def test_accept_more_than_1_param_for_icv_report(conn):
     assert res == open("test/data/icv_report.ttl").read()
 
 
-def test_accept_combination_of_valid_and_invalid_param_should_fail_for_icv_report(conn):
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_accept_combination_of_valid_and_invalid_param_should_fail_for_icv_report(
+    db, conn
+):
     icv = conn.icv()
     with pytest.raises(Exception, match="Parameter not recognized"):
         icv.report(**{"shapes": "valid:uri", "invalidKey": "invalidParam"})
 
 
-def test_icv_report_uri_match(conn):
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_icv_report_uri_match(db, conn):
     icv = conn.icv()
     res = icv.report(**{"graph-uri": "valid:uri"})
     assert res == open("test/data/icv_report.ttl").read()
 
 
-def test_icv_report_shacl_target_class_boolean(conn):
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_icv_report_shacl_target_class_boolean(db, conn):
     icv = conn.icv()
     res = icv.report(**{"shacl.targetClass.simple": True})
     assert res == open("test/data/icv_report.ttl").read()
 
 
-def test_icv_reasoning_enabled(conn):
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_icv_reasoning_enabled(db, conn):
     icv = conn.icv()
     res = icv.report(**{"reasoning": True})
     assert res == open("test/data/icv_report.ttl").read()

@@ -882,7 +882,7 @@ class GraphQL:
           with named variables
 
           >>> gql.query(
-                'query getPerson($id: Integer) { Person(id: $id) {name} }',
+                'query getPerson($id: Int) { Person(id: $id) {name} }',
                 variables={'id': 1000})
 
         """
