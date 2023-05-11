@@ -170,7 +170,7 @@ class ImportRaw(Content):
         Args:
           content (obj): Object representing the content (e.g., str, file)
           input_type (str): DELIMITED or JSON
-          seperator (str): Required if it's  DELIMITED CONTENT
+          separator (str): Required if it's DELIMITED CONTENT
           content_type (str, optional): Content type
           content_encoding (str, optional): Content encoding
           name (str, optional): Object name
@@ -218,9 +218,9 @@ class ImportFile(Content):
         Args:
           file (str): Filename
           input_type (str): DELIMITED or JSON
-          separator (str): Required if it's  DELIMITED CONTENT
           content_type (str, optional): Content type
           content_encoding (str, optional): Content encoding
+          separator (str): Required if it's DELIMITED CONTENT
           name (str, optional): Object name
             It will be automatically detected from the filename, if possible otherwise it will default to system default
 

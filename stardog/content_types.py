@@ -37,10 +37,10 @@ _RDF_EXTENSIONS = {
 # Mapping filename extensions and their mapping syntax
 _MAPPING_EXTENSIONS = {"rq": "SMS2", "sms": "SMS2", "sms2": "SMS2", "r2rml": "R2RML"}
 
-# Import filename extension and their type, and seperator
+# Import filename extension and their type, and separator
 _IMPORT_EXTENSIONS = {
     "csv": (CSV, "DELIMITED", ","),
-    "tsv": (TSV, "DELIMITED", "\t"),
+    "tsv": (TSV, "DELIMITED", "\\t"),
     "json": ("application/json", "JSON", None),
 }
 
@@ -109,7 +109,7 @@ def guess_import_format(fname):
             Filename
 
     Returns
-            (input_file_type,seperator)
+            (input_file_type,separator)
     """
 
     if fname is None:

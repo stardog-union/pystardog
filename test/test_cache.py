@@ -1,3 +1,6 @@
+import pytest
+
+
 def test_cache_targets(admin, cache_target_info):
 
     cache_target_name = cache_target_info["target_name"]
