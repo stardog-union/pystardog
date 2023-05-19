@@ -638,7 +638,7 @@ class Admin:
         if mappings is not None:
             if mappings.syntax:
                 if options:
-                    options = {"mappings.syntax": mappings.syntax}
+                    options["mappings.syntax"] = mappings.syntax
                 else:
                     options = {"mappings.syntax": mappings.syntax}
 
@@ -652,7 +652,7 @@ class Admin:
         if input_file is not None:
             if input_file.separator:
                 if options:
-                    options["csv.seperator"] = input_file.separator
+                    options["csv.separator"] = input_file.separator
                 else:
                     options = {"csv.separator": input_file.separator}
 

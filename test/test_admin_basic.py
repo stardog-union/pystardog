@@ -489,6 +489,18 @@ And install in directory pointed to by STARDOG_EXT and restart server
         )
         assert self.expected_count(conn, 145961)
 
+    @pytest.mark.dbname("pystardog-test-database")
+    @pytest.mark.conn_dbname("pystardog-test-database")
+    def test_import_from_file_with_delimiter(self, admin, db, conn):
+        admin.import_file(
+            db.name,
+            content.MappingFile("data/test_import_delimited.sms"),
+            content.ImportFile(
+                "data/test_import_pipe.txt", input_type="DELIMITED", separator="|"
+            ),
+        )
+        assert self.expected_count(conn, 145961)
+
     # nested withs can be merged into 1
     @pytest.mark.dbname("pystardog-test-database")
     @pytest.mark.conn_dbname("pystardog-test-database")
@@ -520,7 +532,7 @@ And install in directory pointed to by STARDOG_EXT and restart server
         admin.import_file(
             db.name,
             content.MappingFile("data/test_import_delimited.sms"),
-            content.ImportFile("data/test_import_delimited.csv"),
+            content.ImportFile("data/test_import_delimited.tsv"),
         )
         assert self.expected_count(conn, 145961)
 
@@ -528,12 +540,12 @@ And install in directory pointed to by STARDOG_EXT and restart server
     @pytest.mark.dbname("pystardog-test-database")
     @pytest.mark.conn_dbname("pystardog-test-database")
     def test_import_tsv_from_content(self, admin, db, conn):
-        with open("data/test_import_delimited.csv") as tsv:
+        with open("data/test_import_delimited.tsv") as tsv:
             with open("data/test_import_delimited.sms") as sms:
                 admin.import_file(
                     db.name,
                     content.MappingRaw(sms.read()),
-                    content.ImportRaw(tsv.read(), name="data.csv"),
+                    content.ImportRaw(tsv.read(), name="data.tsv"),
                 )
                 assert self.expected_count(conn, 145961)
 

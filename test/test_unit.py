@@ -187,7 +187,7 @@ class TestContentType:
             None,
             "text/tab-separated-values",
             "DELIMITED",
-            "\t",
+            "\\t",
         )
         assert content_types.guess_import_format("test.json") == (
             None,
@@ -389,7 +389,7 @@ class TestContent:
         assert m.content_encoding is None
         assert m.input_type == "DELIMITED"
         assert m.name == "test.tsv"
-        assert m.separator == "\t"
+        assert m.separator == "\\t"
 
         # detect all values from filename for JSON
         m = content.ImportFile("test.json")
@@ -441,7 +441,7 @@ class TestContent:
         assert m.content_encoding is None
         assert m.input_type == "DELIMITED"
         assert m.name == "test.tsv"
-        assert m.separator == "\t"
+        assert m.separator == "\\t"
 
         # detect all values from name for JSON
         m = content.ImportRaw("data", name="test.json")
