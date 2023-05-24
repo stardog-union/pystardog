@@ -98,7 +98,7 @@ def music_options():
         "jdbc.username": "user",
         "jdbc.password": "pass",
         "mappings.syntax": "STARDOG",
-        "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?useSSL=false",
+        "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?allowPublicKeyRetrieval=true&useSSL=false",
     }
     return options
 
