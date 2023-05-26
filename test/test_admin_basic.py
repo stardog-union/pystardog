@@ -25,13 +25,6 @@ class Resource(Enum):
 
 
 class TestStardog:
-    is_local = (
-        True
-        if "localhost" in os.environ.get("STARDOG_ENDPOINT", "http://localhost:5820")
-        and not os.path.exists("/.dockerenv")
-        else False
-    )
-
     def setup_method(self, test_method):
         """
         Before each test a fresh stardog admin and credential object will be provided, just in case it got corrupted.
@@ -86,25 +79,13 @@ class TestStardog:
     # This is redefined too many time. Need to choose one, and stick to that one (as a fixture, and as a private method in the database class)
     @property
     def music_options(self):
-        if TestStardog.is_local:
-            return {
-                "jdbc.url": "jdbc:sqlite:/tmp/music.db",
-                "jdbc.username": "whatever",
-                "jdbc.password": "whatever",
-                "jdbc.driver": "org.sqlite.JDBC",
-                "sql.default.schema": "main",
-                "sql.defaults": "main",
-                "sql.skip.validation": "true",
-                "sql.dialect": "POSTGRESQL",
-            }
-        else:
-            return {
-                "jdbc.driver": "com.mysql.jdbc.Driver",
-                "jdbc.username": "user",
-                "jdbc.password": "pass",
-                "mappings.syntax": "STARDOG",
-                "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?useSSL=false",
-            }
+        return {
+            "jdbc.driver": "com.mysql.jdbc.Driver",
+            "jdbc.username": "user",
+            "jdbc.password": "pass",
+            "mappings.syntax": "STARDOG",
+            "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?useSSL=false",
+        }
 
 
 class TestUsers(TestStardog):
@@ -408,44 +389,6 @@ class TestLoadData(TestStardog):
     def setup_class(self):
         self.run_vg_test = True
 
-        if TestStardog.is_local:
-            # Let's check if we have the sqlite driver
-            libpath = os.environ.get("STARDOG_EXT", None)
-
-            driver_found = False
-            if libpath:
-                d = re.compile("sqlite-jdbc")
-                for file in os.listdir(libpath):
-                    if d.match(file):
-                        driver_found = True
-
-            if driver_found:
-                if not os.path.exists("/tmp/music.db"):
-                    import sqlite3
-                    from sqlite3 import Error
-
-                    conn = None
-                    try:
-                        conn = sqlite3.connect("/tmp/music.db")
-                        with open("data/music_schema.sql") as f:
-                            conn.executescript(f.read())
-                        with open("data/beatles.sql") as f:
-                            conn.executescript(f.read())
-                    except Error as e:
-                        self.run_vg_test = False
-                    except FileNotFoundError as e:
-                        self.run_vg_test = False
-                    finally:
-                        if conn:
-                            conn.close()
-            else:
-                self.run_vg_test = False
-                self.msg_vg_test = """
-No sqlite driver detected, all virtual graph test will be disabled
-Download driver from https://search.maven.org/artifact/org.xerial/sqlite-jdbc
-And install in directory pointed to by STARDOG_EXT and restart server
-"""
-
     @pytest.mark.dbname("pystardog-test-database")
     @pytest.mark.conn_dbname("pystardog-test-database")
     def test_data_add_ttl_from_file(self, db, conn):
@@ -725,7 +668,7 @@ class TestVirtualGraph(TestStardog):
             "jdbc.username": "user",
             "jdbc.password": "pass",
             "mappings.syntax": "STARDOG",
-            "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?useSSL=false",
+            "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?allowPublicKeyRetrieval=true&useSSL=false",
         }
         return options
 
@@ -735,7 +678,7 @@ class TestVirtualGraph(TestStardog):
             "jdbc.username": "user",
             "jdbc.password": "pass",
             "mappings.syntax": "STARDOG",
-            "jdbc.url": "jdbc:mysql://pystardog_mysql_videos/videos?useSSL=false",
+            "jdbc.url": "jdbc:mysql://pystardog_mysql_videos/videos?allowPublicKeyRetrieval=true&useSSL=false",
         }
         return properties
 
