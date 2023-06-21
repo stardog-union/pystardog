@@ -114,7 +114,7 @@ def test_user_impersonation(conn_string, db, user):
         q = admin_regular_conn.select('select * {?s :name "Luke Skywalker"}')
         assert len(q["results"]["bindings"]) == 1
 
-    # attempting to query database as user is impersonating should return an unauthorized error
+    # attempting to query database as the user the admin is impersonating should return an unauthorized error
     with connection.Connection(
         endpoint=conn_string["endpoint"], database=db.name, run_as=user.name
     ) as admin_impersonating_user:
