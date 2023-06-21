@@ -104,8 +104,10 @@ class TestUserImpersonation(TestStardog):
             ]
         assert len(databases_impersonated_user_can_see) == 0
 
-        # catalog db and database created by the `db` fixture
-        assert len(databases_admin_can_see) == 2
+        # for cluster tests in Circle, catalog is disabled so the exact number of dbs
+        # varies (2 for single node, 1 for cluster since catalog isn't created)
+        assert len(databases_admin_can_see) > 0
+        assert db.name in databases_admin_can_see
 
 
 class TestUsers(TestStardog):
