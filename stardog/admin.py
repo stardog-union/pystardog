@@ -26,6 +26,7 @@ class Admin:
         username: object = None,
         password: object = None,
         auth: object = None,
+        run_as: str = None,
     ) -> None:
         """Initializes an admin connection to a Stardog server.
 
@@ -36,8 +37,9 @@ class Admin:
             Defaults to `admin`
           password (str, optional): Password to use in the connection.
             Defaults to `admin`
-        auth (requests.auth.AuthBase, optional): requests Authentication object.
+          auth (requests.auth.AuthBase, optional): requests Authentication object.
             Defaults to `None`
+          run_as (str, optional): the User to impersonate
 
         auth and username/password should not be used together.  If the are the value
         of `auth` will take precedent.
@@ -45,7 +47,9 @@ class Admin:
           >>> admin = Admin(endpoint='http://localhost:9999',
                             username='admin', password='admin')
         """
-        self.client = client.Client(endpoint, None, username, password, auth=auth)
+        self.client = client.Client(
+            endpoint, None, username, password, auth=auth, run_as=run_as
+        )
         # ensure the server is alive and at the specified location
         self.alive()
 

@@ -25,6 +25,7 @@ class Connection:
         password=None,
         auth=None,
         session=None,
+        run_as=None,
     ):
         """Initializes a connection to a Stardog database.
 
@@ -38,13 +39,20 @@ class Connection:
             Defaults to `None`
           session (requests.session.Session, optional): requests Session object.
             Defaults to `None`
+          run_as (str, optional): the user to impersonate
 
         Examples:
           >>> conn = Connection('db', endpoint='http://localhost:9999',
                                 username='admin', password='admin')
         """
         self.client = client.Client(
-            endpoint, database, username, password, auth=auth, session=session
+            endpoint,
+            database,
+            username,
+            password,
+            auth=auth,
+            session=session,
+            run_as=run_as,
         )
         self.transaction = None
 

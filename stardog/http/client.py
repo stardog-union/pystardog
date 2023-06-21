@@ -18,6 +18,7 @@ class Client:
         password=None,
         session=None,
         auth=None,
+        run_as=None,
     ):
         self.url = endpoint if endpoint else self.DEFAULT_ENDPOINT
 
@@ -44,6 +45,9 @@ class Client:
                 self.username, password if password else self.DEFAULT_PASSWORD
             )
         self.session.auth = auth
+
+        if run_as:
+            self.session.headers.update({"SD-Run-As": run_as})
 
     def post(self, path, **kwargs):
         return self.__wrap(self.session.post(self.url + path, **kwargs))

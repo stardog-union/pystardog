@@ -1,6 +1,6 @@
 import pytest
 
-from stardog import admin, connection, content, content_types, exceptions
+from stardog import connection, content, content_types, exceptions
 
 
 def starwars_contents() -> list:
@@ -98,6 +98,28 @@ def test_export(db, conn):
     assert b"named_obj" not in default_export
     assert b"named_obj" in named_export
     assert b"default_obj" not in named_export
+
+
+def test_user_impersonation(conn_string, db, user):
+    with connection.Connection(
+        endpoint=conn_string["endpoint"], database=db.name
+    ) as admin_regular_conn:
+        # add some data to query
+        admin_regular_conn.begin()
+        admin_regular_conn.clear()
+        admin_regular_conn.add(content.File("test/data/starwars.ttl"))
+        admin_regular_conn.commit()
+
+        # confirm admin can read the data
+        q = admin_regular_conn.select('select * {?s :name "Luke Skywalker"}')
+        assert len(q["results"]["bindings"]) == 1
+
+    # attempting to query database as user is impersonating should return an unauthorized error
+    with connection.Connection(
+        endpoint=conn_string["endpoint"], database=db.name, run_as=user.name
+    ) as admin_impersonating_user:
+        with pytest.raises(exceptions.StardogException, match="403"):
+            admin_impersonating_user.select('select * {?s :name "Luke Skywalker"}')
 
 
 @pytest.mark.dbname("pystardog-test-database")
