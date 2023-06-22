@@ -88,6 +88,28 @@ class TestStardog:
         }
 
 
+class TestUserImpersonation(TestStardog):
+    def test_impersonating_user_databases_visibility(self, conn_string, user, db):
+
+        with admin.Admin(
+            endpoint=conn_string["endpoint"],
+        ) as admin_user:
+            databases_admin_can_see = [db.name for db in admin_user.databases()]
+        with admin.Admin(
+            endpoint=conn_string["endpoint"],
+            run_as=user.name,
+        ) as admin_impersonating_user:
+            databases_impersonated_user_can_see = [
+                db.name for db in admin_impersonating_user.databases()
+            ]
+        assert len(databases_impersonated_user_can_see) == 0
+
+        # for cluster tests in Circle, catalog is disabled so the exact number of dbs
+        # varies (2 for single node, 1 for cluster since catalog isn't created)
+        assert len(databases_admin_can_see) > 0
+        assert db.name in databases_admin_can_see
+
+
 class TestUsers(TestStardog):
     def test_user_creation(self, admin, user):
         assert len(admin.users()) == len(default_users) + 1
