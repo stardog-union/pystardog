@@ -423,8 +423,8 @@ class Connection:
             values
           content_type (str): Content type for results.
               Defaults to 'application/sparql-results+json'
-          default_graph_uri (list[str], optional): URI(s) to be used as the default graph (equivalent to FROM)
-          named_graph_uri (list[str], optional): URI(s) to be used as named graphs (equivalent to FROM NAMED)
+          default_graph_uri (str, list[str], optional): URI(s) to be used as the default graph (equivalent to FROM)
+          named_graph_uri (str, list[str], optional): URI(s) to be used as named graphs (equivalent to FROM NAMED)
 
         Returns:
           dict: if content_type='application/sparql-results+json'.
