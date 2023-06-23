@@ -124,6 +124,313 @@ def test_user_impersonation(conn_string, db, user):
 
 @pytest.mark.dbname("pystardog-test-database")
 @pytest.mark.conn_dbname("pystardog-test-database")
+def test_select_with_default_graph_uri(db, conn: connection.Connection):
+
+    graph1 = "http://graph1"
+    graph1_content = """
+    @prefix ex: <http://example.com/> .
+    <ex:a> <ex:b> <ex:c> .
+    <ex:d> <ex:e> <ex:f> .
+    """
+    graph2 = "http://graph2"
+    graph2_content = """
+    @prefix ex: <http://example.com/> .
+    <ex:g> <ex:h> <ex:i> .
+    """
+
+    conn.begin()
+    conn.clear()
+    conn.add(
+        content=content.Raw(content=graph1_content, content_type=content_types.TURTLE),
+        graph_uri=graph1,
+    )
+    conn.add(
+        content=content.Raw(content=graph2_content, content_type=content_types.TURTLE),
+        graph_uri=graph2,
+    )
+    conn.commit()
+
+    response = conn.select(
+        query="select * { ?s ?p ?o }",
+        default_graph_uri=[graph1],
+    )
+    assert len(response["results"]["bindings"]) == 2
+
+    response = conn.select(
+        query="select * { ?s ?p ?o }",
+        default_graph_uri=[graph2],
+    )
+    assert len(response["results"]["bindings"]) == 1
+
+    response = conn.select(
+        query="select * { ?s ?p ?o }",
+        default_graph_uri=[graph1, graph2],
+    )
+    assert len(response["results"]["bindings"]) == 3
+
+
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_select_with_named_graph_uri(db, conn: connection.Connection):
+
+    graph1 = "http://graph1"
+    graph1_content = """
+    @prefix ex: <http://example.com/> .
+    <ex:a> <ex:b> <ex:c> .
+    <ex:d> <ex:e> <ex:f> .
+    """
+    graph2 = "http://graph2"
+    graph2_content = """
+    @prefix ex: <http://example.com/> .
+    <ex:g> <ex:h> <ex:i> .
+    """
+
+    conn.begin()
+    conn.clear()
+    conn.add(
+        content=content.Raw(content=graph1_content, content_type=content_types.TURTLE),
+        graph_uri=graph1,
+    )
+    conn.add(
+        content=content.Raw(content=graph2_content, content_type=content_types.TURTLE),
+        graph_uri=graph2,
+    )
+    conn.commit()
+
+    response = conn.select(
+        query="select * { GRAPH ?g { ?s ?p ?o }}",
+        named_graph_uri=[graph1],
+    )
+    assert len(response["results"]["bindings"]) == 2
+
+    response = conn.select(
+        query="select * { GRAPH ?g { ?s ?p ?o }}",
+        named_graph_uri=[graph2],
+    )
+    assert len(response["results"]["bindings"]) == 1
+
+    response = conn.select(
+        query="select * { GRAPH ?g { ?s ?p ?o }}",
+        named_graph_uri=[graph1, graph2],
+    )
+    assert len(response["results"]["bindings"]) == 3
+
+
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_update_with_using_graph_uri(db, conn: connection.Connection):
+
+    graph1 = "http://graph1"
+    graph1_content = """
+    @prefix ex: <http://example.com/> .
+    <ex:a> <ex:b> <ex:c> .
+    <ex:d> <ex:e> <ex:f> .
+    """
+    graph2 = "http://graph2"
+    graph2_content = """
+    @prefix ex: <http://example.com/> .
+    <ex:g> <ex:h> <ex:i> .
+    """
+
+    insert_into_graph1 = f"""
+    INSERT {{
+        GRAPH <{graph1}> {{
+        ?s <urn:z> ?o 
+        }}
+    }}
+    WHERE {{
+        ?s ?p ?o
+    }}
+    """
+
+    graph3 = "http://graph3"
+    insert_into_graph3 = f"""
+    INSERT {{
+        GRAPH <{graph3}> {{
+            ?s ?p ?o 
+        }}
+    }}
+    WHERE {{
+        ?s ?p ?o
+    }}
+    """
+
+    conn.begin()
+    conn.clear()
+    conn.add(
+        content=content.Raw(content=graph1_content, content_type=content_types.TURTLE),
+        graph_uri=graph1,
+    )
+    conn.add(
+        content=content.Raw(content=graph2_content, content_type=content_types.TURTLE),
+        graph_uri=graph2,
+    )
+    conn.commit()
+
+    # update graph1
+    response = conn.select(
+        query="select * { ?s ?p ?o }",
+        default_graph_uri=[graph1],
+    )
+    assert len(response["results"]["bindings"]) == 2
+
+    conn.begin()
+    conn.update(
+        query=insert_into_graph1,
+        using_graph_uri=[graph1],
+    )
+    conn.commit()
+
+    response = conn.select(
+        query="select * { ?s ?p ?o }",
+        default_graph_uri=[graph1],
+    )
+    assert len(response["results"]["bindings"]) == 4
+
+    # create/update graph3 with contents of graph1 and graph2
+    response = conn.select(
+        query="select * { ?s ?p ?o }",
+        default_graph_uri=[graph2],
+    )
+    assert len(response["results"]["bindings"]) == 1
+
+    conn.begin()
+    conn.update(
+        query=insert_into_graph3,
+        using_graph_uri=[graph1, graph2],
+    )
+    conn.commit()
+
+    response = conn.select(
+        query="select * { ?s ?p ?o }",
+        default_graph_uri=[graph3],
+    )
+    assert len(response["results"]["bindings"]) == 5
+
+
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_update_with_using_named_graph_uri(db, conn: connection.Connection):
+
+    graph1 = "http://graph1"
+    graph1_content = """
+    @prefix ex: <http://example.com/> .
+    <ex:a> <ex:b> <ex:c> .
+    <ex:d> <ex:e> <ex:f> .
+    """
+    graph2 = "http://graph2"
+    graph2_content = """
+    @prefix ex: <http://example.com/> .
+    <ex:g> <ex:h> <ex:i> .
+    """
+
+    graph3 = "http://graph3"
+    insert_into_graph3 = f"""
+    INSERT {{
+        GRAPH <{graph3}> {{
+            ?s ?p ?o
+        }}
+    }}
+    WHERE {{
+        GRAPH ?g {{
+            ?s ?p ?o
+        }}
+    }}
+    """
+
+    conn.begin()
+    conn.clear()
+    conn.add(
+        content=content.Raw(content=graph1_content, content_type=content_types.TURTLE),
+        graph_uri=graph1,
+    )
+    conn.add(
+        content=content.Raw(content=graph2_content, content_type=content_types.TURTLE),
+        graph_uri=graph2,
+    )
+    conn.commit()
+
+    conn.begin()
+    conn.update(
+        query=insert_into_graph3,
+        using_named_graph_uri=[graph1, graph2],
+    )
+    conn.commit()
+
+    response = conn.select(
+        query="select * { ?s ?p ?o }",
+        default_graph_uri=[graph3],
+    )
+    assert len(response["results"]["bindings"]) == 3
+
+
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_update_with_insert_graph_uri(db, conn: connection.Connection):
+
+    the_graph = "http://my-graph"
+    query = """
+    INSERT DATA {
+        <ex:a> <ex:b> <ex:c> .
+        <ex:d> <ex:e> <ex:f> .
+    }
+    """
+
+    conn.begin()
+    conn.update(query=query, insert_graph_uri=the_graph)
+    conn.commit()
+
+    response = conn.select(
+        query="select * { ?s ?p ?o }",
+        default_graph_uri=[the_graph],
+    )
+    assert len(response["results"]["bindings"]) == 2
+
+
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_update_with_remove_graph_uri(db, conn: connection.Connection):
+
+    the_graph = "http://my-graph"
+    insert_data = """
+    INSERT DATA {
+        <ex:a> <ex:b> <ex:c> .
+        <ex:d> <ex:e> <ex:f> .
+    }
+    """
+
+    delete_data = """
+    DELETE DATA {
+        <ex:a> <ex:b> <ex:c> .
+        <ex:d> <ex:e> <ex:f> .
+    }
+    """
+
+    # first insert data
+    conn.begin()
+    conn.update(query=insert_data, insert_graph_uri=the_graph)
+    conn.commit()
+
+    response = conn.select(
+        query="select * { ?s ?p ?o }",
+        default_graph_uri=[the_graph],
+    )
+    assert len(response["results"]["bindings"]) == 2
+
+    # now remove it
+    conn.begin()
+    conn.update(query=delete_data, remove_graph_uri=the_graph)
+    conn.commit()
+
+    response = conn.select(
+        query="select * { ?s ?p ?o }",
+        default_graph_uri=[the_graph],
+    )
+    assert len(response["results"]["bindings"]) == 0
+
+
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
 def test_queries(db, conn):
     # add
     conn.begin()

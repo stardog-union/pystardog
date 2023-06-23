@@ -2,6 +2,7 @@
 """
 
 import contextlib
+from typing import Dict, Optional
 
 from . import content_types as content_types
 from . import exceptions as exceptions
@@ -318,6 +319,12 @@ class Connection:
             "timeout": kwargs.get("timeout"),
             "reasoning": kwargs.get("reasoning"),
             "prettify": kwargs.get("prettify"),
+            "default-graph-uri": kwargs.get("default_graph_uri"),
+            "named-graph-uri": kwargs.get("named_graph_uri"),
+            "using-graph-uri": kwargs.get("using_graph_uri"),
+            "using-named-graph-uri": kwargs.get("using_named_graph_uri"),
+            "remove-graph-uri": kwargs.get("remove_graph_uri"),
+            "insert-graph-uri": kwargs.get("insert_graph_uri"),
         }
 
         # query bindings
@@ -350,6 +357,9 @@ class Connection:
             values
           content_type (str, optional): Content type for results.
             Defaults to 'application/sparql-results+json'
+          default_graph_uri (str, list[str], optional): URI(s) to be used as the default graph (equivalent to FROM)
+          named_graph_uri (str, list[str], optional): URI(s) to be used as named graphs (equivalent to FROM NAMED)
+
 
         Returns:
           dict: If content_type='application/sparql-results+json'
@@ -382,6 +392,8 @@ class Connection:
             values
           content_type (str): Content type for results.
             Defaults to 'text/turtle'
+          default_graph_uri (str, list[str], optional): URI(s) to be used as the default graph (equivalent to FROM)
+          named_graph_uri (str, list[str], optional): URI(s) to be used as named graphs (equivalent to FROM NAMED)
 
         Returns:
           str: Results in format given by content_type
@@ -412,6 +424,8 @@ class Connection:
             values
           content_type (str): Content type for results.
               Defaults to 'application/sparql-results+json'
+          default_graph_uri (list[str], optional): URI(s) to be used as the default graph (equivalent to FROM)
+          named_graph_uri (list[str], optional): URI(s) to be used as named graphs (equivalent to FROM NAMED)
 
         Returns:
           dict: if content_type='application/sparql-results+json'.
@@ -438,6 +452,8 @@ class Connection:
           reasoning (bool, optional): Enable reasoning for the query
           bindings (dict, optional): Map between query variables and their
             values
+          default_graph_uri (str, list[str], optional): URI(s) to be used as the default graph (equivalent to FROM)
+          named_graph_uri (str, list[str], optional): URI(s) to be used as named graphs (equivalent to FROM NAMED)
 
         Returns:
           bool: Result of ask query
@@ -461,6 +477,10 @@ class Connection:
           reasoning (bool, optional): Enable reasoning for the query
           bindings (dict, optional): Map between query variables and their
             values
+          using_graph_uri (str, list[str], optional): URI(s) to be used as the default graph (equivalent to USING)
+          using_named_graph_uri (str, list[str], optional): URI(s) to be used as named graphs (equivalent to USING NAMED)
+          remove_graph_uri (str, optional): URI of the graph to be removed from
+          insert_graph_uri (str, optional): URI of the graph to be inserted into
 
         Examples:
           >>> conn.update('delete where {?s ?p ?o}')
