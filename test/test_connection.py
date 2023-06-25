@@ -712,13 +712,10 @@ def test_graphql(db, conn_string):
         ]
 
         # variables
-        assert (
-            gql.query(
-                "query getHuman($id: Int) { Human(id: $id) {name} }",
-                variables={"id": 1000},
-            )
-            == [{"name": "Luke Skywalker"}]
-        )
+        assert gql.query(
+            "query getHuman($id: Int) { Human(id: $id) {name} }",
+            variables={"id": 1000},
+        ) == [{"name": "Luke Skywalker"}]
 
         # schemas
         gql.add_schema("characters", content=content.File("test/data/starwars.graphql"))
