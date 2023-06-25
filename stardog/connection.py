@@ -2,7 +2,7 @@
 """
 
 import contextlib
-from typing import TypedDict
+from typing import Dict, Optional, TypedDict
 
 from . import content_types as content_types
 from . import exceptions as exceptions
@@ -353,6 +353,11 @@ class Connection:
 
         # query bindings
         bindings = kwargs.get("bindings", {})
+
+        # many of the query methods (select, ask, etc) set bindings to a
+        # default of None
+        if bindings is None:
+            bindings = {}
         for k, v in bindings.items():
             params["${}".format(k)] = v
 
@@ -366,7 +371,18 @@ class Connection:
 
         return r.json() if content_type == content_types.SPARQL_JSON else r.content
 
-    def select(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
+    def select(
+        self,
+        query: str,
+        base_uri: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        timeout: Optional[int] = None,
+        reasoning: Optional[bool] = None,
+        bindings: Optional[Dict[str, str]] = None,
+        content_type: str = content_types.SPARQL_JSON,
+        **kwargs,
+    ) -> Dict | str:
         """Executes a SPARQL select query.
 
         Args:
@@ -379,14 +395,14 @@ class Connection:
           reasoning (bool, optional): Enable reasoning for the query
           bindings (dict, optional): Map between query variables and their
             values
-          content_type (str, optional): Content type for results.
+          content_type (str): Content type for results.
             Defaults to 'application/sparql-results+json'
           default_graph_uri (str, list[str], optional): URI(s) to be used as the default graph (equivalent to FROM)
           named_graph_uri (str, list[str], optional): URI(s) to be used as named graphs (equivalent to FROM NAMED)
 
 
         Returns:
-          dict: If content_type='application/sparql-results+json'
+          Dict: If content_type='application/sparql-results+json'
 
         Returns:
           str: Other content types
@@ -399,9 +415,31 @@ class Connection:
 
           >>> conn.select('select * {?s ?p ?o}', bindings={'o': '<urn:a>'})
         """
-        return self.__query(query, "query", content_type=content_type, **kwargs)
+        return self.__query(
+            query=query,
+            method="query",
+            content_type=content_type,
+            base_uri=base_uri,
+            limit=limit,
+            offset=offset,
+            timeout=timeout,
+            reasoning=reasoning,
+            bindings=bindings,
+            **kwargs,
+        )
 
-    def graph(self, query, content_type=content_types.TURTLE, **kwargs):
+    def graph(
+        self,
+        query: str,
+        base_uri: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        timeout: Optional[int] = None,
+        reasoning: Optional[bool] = None,
+        bindings: Optional[Dict[str, str]] = None,
+        content_type=content_types.TURTLE,
+        **kwargs,
+    ) -> str:
         """Executes a SPARQL graph query.
 
         Args:
@@ -431,9 +469,31 @@ class Connection:
           >>> conn.graph('construct {?s ?p ?o} where {?s ?p ?o}',
                          bindings={'o': '<urn:a>'})
         """
-        return self.__query(query, "query", content_type, **kwargs)
+        return self.__query(
+            query=query,
+            method="query",
+            content_type=content_type,
+            base_uri=base_uri,
+            limit=limit,
+            offset=offset,
+            timeout=timeout,
+            reasoning=reasoning,
+            bindings=bindings,
+            **kwargs,
+        )
 
-    def paths(self, query, content_type=content_types.SPARQL_JSON, **kwargs):
+    def paths(
+        self,
+        query: str,
+        base_uri: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        timeout: Optional[int] = None,
+        reasoning: Optional[bool] = None,
+        bindings: Optional[Dict[str, str]] = None,
+        content_type=content_types.SPARQL_JSON,
+        **kwargs,
+    ) -> Dict | str:
         """Executes a SPARQL paths query.
 
         Args:
@@ -461,9 +521,30 @@ class Connection:
           >>> conn.paths('paths start ?x = :subj end ?y = :obj via ?p',
                          reasoning=True)
         """
-        return self.__query(query, "query", content_type, **kwargs)
+        return self.__query(
+            query=query,
+            method="query",
+            content_type=content_type,
+            base_uri=base_uri,
+            limit=limit,
+            offset=offset,
+            timeout=timeout,
+            reasoning=reasoning,
+            bindings=bindings,
+            **kwargs,
+        )
 
-    def ask(self, query, **kwargs):
+    def ask(
+        self,
+        query: str,
+        base_uri: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        timeout: Optional[int] = None,
+        reasoning: Optional[bool] = None,
+        bindings: Optional[Dict[str, str]] = None,
+        **kwargs,
+    ) -> bool:
         """Executes a SPARQL ask query.
 
         Args:
@@ -485,10 +566,32 @@ class Connection:
         Examples:
           >>> conn.ask('ask {:subj :pred :obj}', reasoning=True)
         """
-        r = self.__query(query, "query", content_types.BOOLEAN, **kwargs)
+
+        r = self.__query(
+            query=query,
+            method="query",
+            content_type=content_types.BOOLEAN,
+            base_uri=base_uri,
+            limit=limit,
+            offset=offset,
+            timeout=timeout,
+            reasoning=reasoning,
+            bindings=bindings,
+            **kwargs,
+        )
         return strtobool(r.decode())
 
-    def update(self, query, **kwargs):
+    def update(
+        self,
+        query: str,
+        base_uri: Optional[str] = None,
+        limit: Optional[int] = None,
+        offset: Optional[int] = None,
+        timeout: Optional[int] = None,
+        reasoning: Optional[bool] = None,
+        bindings: Optional[Dict[str, str]] = None,
+        **kwargs,
+    ):
         """Executes a SPARQL update query.
 
         Args:
@@ -509,7 +612,19 @@ class Connection:
         Examples:
           >>> conn.update('delete where {?s ?p ?o}')
         """
-        self.__query(query, "update", None, **kwargs)
+
+        self.__query(
+            query=query,
+            method="update",
+            content_type=None,
+            base_uri=base_uri,
+            limit=limit,
+            offset=offset,
+            timeout=timeout,
+            reasoning=reasoning,
+            bindings=bindings,
+            **kwargs,
+        )
 
     def is_consistent(self, graph_uri=None):
         """Checks if the database or named graph is consistent wrt its schema.
