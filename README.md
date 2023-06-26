@@ -4,6 +4,7 @@
 a Python wrapper for communicating with the Stardog HTTP server.
 
 **Docs**: [http://pystardog.readthedocs.io](http://pystardog.readthedocs.io)
+
 **Requirements**: Python 3.8+
 
 ## What is it?
@@ -14,9 +15,9 @@ as executing SPARQL queries and many administrative tasks.
 
 The implementation uses the HTTP protocol, since most of Stardog
 functionality is available using this protocol. For more information,
-go to the Stardog's [HTTP
+see [HTTP
 Programming](https://docs.stardog.com/developing/http-api)
-documentation.
+in Stardog's documentation.
 
 ## Installation
 
@@ -51,7 +52,7 @@ with stardog.Admin(**conn_details) as admin:
 
 ## Interactive Tutorial
 
-There is a Jupyter notebook and instructions in the `notebooks`
+There is a Jupyter notebook and instructions in the [`notebooks`](./notebooks)
 directory of this repository.
 
 ## Documentation
