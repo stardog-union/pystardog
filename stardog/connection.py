@@ -142,14 +142,22 @@ class Connection:
         :type graph_uri: str, optional
         :param server_side: Whether the file to load lives in the remote server.
         :type server_side: bool
-        :raises stardog.exceptions.TransactionException If not currently in a transaction
+
+        Raises:
+          stardog.exceptions.TransactionException
+            If currently not in a transaction
 
         Examples:
-            Loads example.ttl from the current directory
+
+            Loads `example.ttl` from the current directory
+
             >>> conn.add(File('example.ttl'), graph_uri='urn:graph')
 
-            Loads /tmp/example.ttl existing in the remote stardog server, and loads it in the default graph.
+            Loads `/tmp/example.ttl` which exists on the same filesystem as the Stardog server,
+            and loads it in the default graph.
+
             >>> conn.add(File('/tmp/example.ttl'), server_side=True)
+
         """
         self._assert_in_transaction()
 
@@ -559,7 +567,7 @@ class Docs:
     """BITES: Document Storage.
 
     See Also:
-      https://www.stardog.com/docs/#_unstructured_data
+        `Stardog Docs - BITES <https://docs.stardog.com/unstructured-content/>`_
     """
 
     def __init__(self, client):
@@ -651,7 +659,7 @@ class ICV:
     """Integrity Constraint Validation.
 
     See Also:
-      https://www.stardog.com/docs/#_validating_constraints
+      `Stardog Docs - Data Quality Constraints <https://docs.stardog.com/data-quality-constraints>`_
     """
 
     def __init__(self, conn):
@@ -812,7 +820,7 @@ class ICV:
         """
         Produces a SHACL validation report.
 
-        Args (dict):
+        Args:
           shapes (str, optional): SHACL shapes to validate
           shacl.shape.graphs (str, optional): SHACL shape graphs to validate
           nodes (str, optional): SHACL focus node(s) to validate
@@ -821,7 +829,6 @@ class ICV:
           shacl.violation.limit.shape (str, optional): number of violation limits per SHACL shapes
           graph-uri (str, optional): Named Graph
           reasoning (boolean, optional): Enable Reasoning
-
 
         Returns:
           str: SHACL validation report
@@ -856,7 +863,7 @@ class GraphQL:
     """GraphQL
 
     See Also:
-        https://www.stardog.com/docs/#_graphql_queries
+        `Stardog Docs - GraphQL <https://docs.stardog.com/query-stardog/graphql>`_
 
     """
 
