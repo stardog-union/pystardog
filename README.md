@@ -1,6 +1,6 @@
 # pystardog
 
-![PyPI](https://img.shields.io/pypi/v/pystardog?label=pypi&link=https://pypi.org/project/pystardog/)
+[![PyPI version](https://badge.fury.io/py/pystardog.svg)](https://badge.fury.io/py/pystardog)
 
 a Python wrapper for communicating with the Stardog HTTP server.
 
