@@ -62,11 +62,11 @@ Documentation is available at [http://pystardog.readthedocs.io](http://pystardog
 
 The docs can be built locally using [Sphinx](https://www.sphinx-doc.org/en/master/):
 
-    ```shell
-    cd docs
-    pip install -r requirements.txt
-    make html
-    ```
+  ```shell
+  cd docs
+  pip install -r requirements.txt
+  make html
+  ```
 
 ## Contributing and Development
 
@@ -146,12 +146,12 @@ although we also provide a cluster set up for further testing.
 
 To format all the Python code:
 
-    ```shell
-    # make sure black is install
-    virtualenv -p $(which python3) venv
-    . venv/bin/activate
-    pip install -r test-requirements.txt
+  ```shell
+  # make sure black is install
+  virtualenv -p $(which python3) venv
+  . venv/bin/activate
+  pip install -r test-requirements.txt
 
-    # run black formatter
-    black .
-    ```
+  # run black formatter
+  black .
+  ```
