@@ -2,7 +2,7 @@
 """
 
 import contextlib
-from typing import Dict, Optional, TypedDict
+from typing import Dict, Optional, TypedDict, Union
 
 from . import content_types as content_types
 from . import exceptions as exceptions
@@ -382,7 +382,7 @@ class Connection:
         bindings: Optional[Dict[str, str]] = None,
         content_type: str = content_types.SPARQL_JSON,
         **kwargs,
-    ) -> Dict | str:
+    ) -> Union[str, Dict]:
         """Executes a SPARQL select query.
 
         Args:
@@ -402,7 +402,7 @@ class Connection:
 
 
         Returns:
-          Dict: If content_type='application/sparql-results+json'
+          dict: If content_type='application/sparql-results+json'
 
         Returns:
           str: Other content types
@@ -493,7 +493,7 @@ class Connection:
         bindings: Optional[Dict[str, str]] = None,
         content_type=content_types.SPARQL_JSON,
         **kwargs,
-    ) -> Dict | str:
+    ) -> Union[Dict, str]:
         """Executes a SPARQL paths query.
 
         Args:
