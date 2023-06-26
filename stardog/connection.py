@@ -2,7 +2,7 @@
 """
 
 import contextlib
-from typing import Dict, TypedDict
+from typing import TypedDict
 
 from . import content_types as content_types
 from . import exceptions as exceptions
