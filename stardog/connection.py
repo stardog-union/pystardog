@@ -2,12 +2,27 @@
 """
 
 import contextlib
+from typing import Dict, TypedDict
 
 from . import content_types as content_types
 from . import exceptions as exceptions
 from .http import client
 from .utils import strtobool
 import urllib
+
+
+class CommitResult(TypedDict):
+    """The result of committing a transaction.
+
+    Represents the outcome of a transaction commit operation, including the counts
+    of added and removed triples.
+    """
+
+    added: int
+    """ The amount of triples added in the transaction """
+
+    removed: int
+    """ The amount of triples removed in the transaction """
 
 
 class Connection:
@@ -122,7 +137,7 @@ class Connection:
         self.client.post("/transaction/rollback/{}".format(self.transaction))
         self.transaction = None
 
-    def commit(self):
+    def commit(self) -> CommitResult:
         """Commits the current transaction.
 
         Raises:
@@ -130,8 +145,10 @@ class Connection:
             If currently not in a transaction
         """
         self._assert_in_transaction()
-        self.client.post("/transaction/commit/{}".format(self.transaction))
+        resp = self.client.post("/transaction/commit/{}".format(self.transaction))
         self.transaction = None
+
+        return resp.json()
 
     def add(self, content, graph_uri=None, server_side=False):
         """Adds data to the database.

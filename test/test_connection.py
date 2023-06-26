@@ -7,6 +7,28 @@ def starwars_contents() -> list:
     return content.File("test/data/starwars.ttl")
 
 
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_commit(db, conn: connection.Connection):
+    data = content.Raw("<urn:subj> <urn:pred> <urn:obj> .", content_types.TURTLE)
+
+    conn.begin()
+    conn.clear()
+    conn.add(data)
+
+    result = conn.commit()
+
+    assert result["added"] == 1
+    assert result["removed"] == 0
+
+    conn.begin()
+    conn.remove(data)
+
+    result = conn.commit()
+    assert result["added"] == 0
+    assert result["removed"] == 1
+
+
 @pytest.mark.skip(
     reason="Currently failing, check out another branch and see if it fails there."
 )
