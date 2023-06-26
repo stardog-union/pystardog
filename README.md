@@ -93,7 +93,7 @@ about running tests.
     git push origin feature/add-support-for-x
     ```
 
-5. Create a pull request against `main`. All CircleCI checks should be passing in order to merge your PR. CircleCI will run tests against all supported versions of Python, single node and clcluster tests for pystardog, as well as do some static analysis of the code.
+5. Create a pull request against `main`. All CircleCI checks should be passing in order to merge your PR. CircleCI will run tests against all supported versions of Python, single node and cluster tests for pystardog, as well as do some static analysis of the code.
 
 ### Running Tests
 
