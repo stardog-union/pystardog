@@ -1,10 +1,10 @@
 # pystardog
-
 [![PyPI version](https://badge.fury.io/py/pystardog.svg)](https://badge.fury.io/py/pystardog)
 
 a Python wrapper for communicating with the Stardog HTTP server.
 
 **Docs**: [http://pystardog.readthedocs.io](http://pystardog.readthedocs.io)
+**Requirements**: Python 3.8+
 
 ## What is it?
 
@@ -115,7 +115,7 @@ although we also provide a cluster set up for further testing.
     docker-compose -f docker-compose.cluster.yml up -d
     ```
 
-2. Run the test suite. Create a virtual environment with the necessary dependencies:
+2. Create a virtual environment with the necessary dependencies:
 
     ```shell
     # Create a virtualenv and activate it
