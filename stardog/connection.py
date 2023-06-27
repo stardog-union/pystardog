@@ -10,6 +10,8 @@ from .http import client
 from .utils import strtobool
 import urllib
 
+from stardog import http
+
 
 class CommitResult(TypedDict):
     """The result of committing a transaction.
@@ -34,27 +36,23 @@ class Connection:
 
     def __init__(
         self,
-        database,
-        endpoint=None,
-        username=None,
-        password=None,
-        auth=None,
-        session=None,
-        run_as=None,
+        database: str,
+        endpoint: Optional[str] = client.Client.DEFAULT_ENDPOINT,
+        username: Optional[str] = client.Client.DEFAULT_USERNAME,
+        password: Optional[str] = client.Client.DEFAULT_PASSWORD,
+        auth: Optional[AuthBase] = None,
+        session: Optional[Session] = None,
+        run_as: Optional[str] = None,
     ):
         """Initializes a connection to a Stardog database.
 
-        Args:
-          database (str): Name of the database
-          endpoint (str): Url of the server endpoint.
-            Defaults to `http://localhost:5820`
-          username (str, optional): Username to use in the connection
-          password (str, optional): Password to use in the connection
-          auth (requests.auth.AuthBase, optional): requests Authentication object.
-            Defaults to `None`
-          session (requests.session.Session, optional): requests Session object.
-            Defaults to `None`
-          run_as (str, optional): the user to impersonate
+        :param database: Name of the database
+        :param endpoint: URL of the Stardog server endpoint. Default is ``http://localhost:5820``
+        :param username: Username to use in the connection. Default is ``admin``
+        :param password: Password to use in the connection. Default is ``admin``
+        :param auth: :class:`requests.auth.AuthBase` object. Used as an alternative authentication scheme. If not provided, HTTP Basic auth will be attempted with the ``username`` and ``password``.
+        :param session: :class:`requests.session.Session` object
+        :param run_as: The user to impersonate.
 
         Examples:
           >>> conn = Connection('db', endpoint='http://localhost:9999',
@@ -71,28 +69,16 @@ class Connection:
         )
         self.transaction = None
 
-    def docs(self):
-        """Makes a document storage object.
-
-        Returns:
-          Docs: A Docs object
-        """
+    def docs(self) -> "Docs":
+        """Makes a document storage object."""
         return Docs(self.client)
 
-    def icv(self):
-        """Makes an integrity constraint validation object.
-
-        Returns:
-          ICV: An ICV object
-        """
+    def icv(self) -> "ICV":
+        """Makes an integrity constraint validation (ICV) object."""
         return ICV(self)
 
-    def graphql(self):
-        """Makes a GraphQL object.
-
-        Returns:
-          GraphQL: A GraphQL object
-        """
+    def graphql(self) -> "GraphQL":
+        """Makes a GraphQL object."""
         return GraphQL(self)
 
     # TODO
@@ -150,15 +136,17 @@ class Connection:
 
         return resp.json()
 
-    def add(self, content, graph_uri=None, server_side=False):
+    def add(
+        self,
+        content: Union[Content, str],
+        graph_uri: Optional[str] = None,
+        server_side: bool = False,
+    ) -> None:
         """Adds data to the database.
 
         :param content: Data to add to a graph.
-        :type content: Content, str
-        :param graph_uri: Named graph into which to add the data.
-        :type graph_uri: str, optional
-        :param server_side: Whether the file to load lives in the remote server.
-        :type server_side: bool
+        :param graph_uri: Named graph into which to add the data. If no named graph is provided, the data will be loaded into the default graph.
+        :param server_side: Whether the file to load is located on the same file system as the Stardog server.
 
         Raises:
           stardog.exceptions.TransactionException
@@ -166,11 +154,11 @@ class Connection:
 
         Examples:
 
-            Loads `example.ttl` from the current directory
+            Loads ``example.ttl`` from the current directory
 
             >>> conn.add(File('example.ttl'), graph_uri='urn:graph')
 
-            Loads `/tmp/example.ttl` which exists on the same filesystem as the Stardog server,
+            Loads ``/tmp/example.ttl`` which exists on the same file system as the Stardog server,
             and loads it in the default graph.
 
             >>> conn.add(File('/tmp/example.ttl'), server_side=True)
@@ -225,11 +213,13 @@ class Connection:
                 data=data,
             )
 
-    def clear(self, graph_uri=None):
+    def clear(self, graph_uri: Optional[str] = None) -> None:
         """Removes all data from the database or specific named graph.
 
-        Args:
-          graph_uri (str, optional): Named graph from which to remove data
+        :param graph_uri: Named graph from which to remove data.
+
+        .. warning::
+            If no ``graph_uri`` is specified, the entire database will be cleared.
 
         Raises:
           stardog.exceptions.TransactionException
@@ -249,14 +239,11 @@ class Connection:
             "/{}/clear".format(self.transaction), params={"graph-uri": graph_uri}
         )
 
-    def size(self, exact=False):
-        """Database size.
+    def size(self, exact: bool = False) -> int:
+        """Calculate the size of the database.
 
-        Args:
-          exact (bool, optional): Calculate the size exactly. Defaults to False
-
-        Returns:
-          int: The number of elements in database
+        :param exact: calculate the size of the database exactly. If ``False`` (default), the size will be an estimate; this should take less time to calculate especially if the database is large.
+        :return: the number of triples in the database
         """
         r = self.client.get("/size", params={"exact": exact})
         return int(r.text)
@@ -271,32 +258,27 @@ class Connection:
 
     def export(
         self,
-        content_type=content_types.TURTLE,
-        stream=False,
-        chunk_size=10240,
-        graph_uri=None,
-    ):
+        content_type: str = content_types.TURTLE,
+        stream: bool = False,
+        chunk_size: int = 10240,
+        graph_uri: Optional[str] = None,
+    ) -> Union[str, Iterator[bytes]]:
         """Exports the contents of the database.
 
-        Args:
-          content_type (str): RDF content type. Defaults to 'text/turtle'
-          stream (bool): Chunk results? Defaults to False
-          chunk_size (int): Number of bytes to read per chunk when streaming.
-            Defaults to 10240
-          graph_uri (str, optional): Named graph to export
+        :param content_type: RDF content type. Defaults to ``text/turtle``
+        :param stream: Stream and chunk results? Defaults to ``False``. See the note below for additional information.
+        :param chunk_size: Number of bytes to read per chunk when streaming. Defaults to ``10240``
+        :param graph_uri: URI of the named graph to export
 
-        Returns:
-          str: If stream = False
-
-        Returns:
-          gen: If stream = True
+        .. note::
+            If ``stream=False``, the contents of the database or named graph will be returned as a ``str``. If ``stream=True``, an iterable that yields chunks of content as ``bytes`` will be returned.
 
         Examples:
-          no streaming
+          No streaming
 
           >>> contents = conn.export()
 
-          streaming
+          Streaming
 
           >>> with conn.export(stream=True) as stream:
                 contents = ''.join(stream)
@@ -314,15 +296,13 @@ class Connection:
         db = _export()
         return _nextcontext(db) if stream else next(db)
 
-    def explain(self, query, base_uri=None):
+    def explain(self, query: str, base_uri: Optional[str] = None) -> str:
         """Explains the evaluation of a SPARQL query.
 
-        Args:
-          query (str): SPARQL query
-          base_uri (str, optional): Base URI for the parsing of the query
+        :param query: the SPARQL query to explain
+        :param base_uri: base URI for the parsing of the ``query``
 
-        Returns:
-         str: Query explanation
+        :return: Query explanation
         """
         params = {"query": query, "baseURI": base_uri}
 
@@ -333,7 +313,9 @@ class Connection:
 
         return r.text
 
-    def __query(self, query, method, content_type=None, **kwargs):
+    def __query(
+        self, query: str, method: str, content_type: Optional[str] = None, **kwargs
+    ):
         txId = self.transaction
         params = {
             "query": query,
@@ -650,15 +632,11 @@ class Connection:
             **kwargs,
         )
 
-    def is_consistent(self, graph_uri=None):
-        """Checks if the database or named graph is consistent wrt its schema.
+    def is_consistent(self, graph_uri: Optional[str] = None) -> bool:
+        """Checks if the database or named graph is consistent with respect to its schema.
 
-        Args:
-          graph_uri (str, optional): Named graph from which to check
-            consistency
-
-        Returns:
-          bool: Database consistency state
+        :param graph_uri: the URI of the graph to check
+        :return: database consistency state
         """
         r = self.client.get(
             "/reasoning/consistency",
@@ -667,14 +645,11 @@ class Connection:
 
         return strtobool(r.text)
 
-    def explain_inference(self, content):
+    def explain_inference(self, content: Content) -> dict:
         """Explains the given inference results.
 
-        Args:
-          content (Content): Data from which to provide explanations
-
-        Returns:
-          dict: Explanation results
+        :param content: data from which to provide explanations
+        :return: explanation results
 
         Examples:
           >>> conn.explain_inference(File('inferences.ttl'))
@@ -695,15 +670,11 @@ class Connection:
 
             return r.json()["proofs"]
 
-    def explain_inconsistency(self, graph_uri=None):
+    def explain_inconsistency(self, graph_uri: Optional[str] = None) -> dict:
         """Explains why the database or a named graph is inconsistent.
 
-        Args:
-          graph_uri (str, optional): Named graph for which to explain
-            inconsistency
-
-        Returns:
-          dict: Explanation results
+        :param graph_uri: the URI of the named graph for which to explain inconsistency
+        :return: explanation results
         """
         txId = self.transaction
         url = (
@@ -727,7 +698,7 @@ class Connection:
         if not self.transaction:
             raise exceptions.TransactionException("Not in a transaction")
 
-    def close(self):
+    def close(self) -> None:
         """Close the underlying HTTP connection."""
         self.client.close()
 
@@ -745,7 +716,7 @@ class Docs:
         `Stardog Docs - BITES <https://docs.stardog.com/unstructured-content/>`_
     """
 
-    def __init__(self, client):
+    def __init__(self, client: client.Client):
         """Initializes a Docs.
 
         Use :meth:`stardog.connection.Connection.docs`
@@ -753,21 +724,19 @@ class Docs:
         """
         self.client = client
 
-    def size(self):
+    def size(self) -> int:
         """Calculates document store size.
 
-        Returns:
-          int: Number of documents in the store
+        :return: Number of documents in the store
         """
         r = self.client.get("/docs/size")
         return int(r.text)
 
-    def add(self, name, content):
+    def add(self, name: str, content: Content) -> None:
         """Adds a document to the store.
 
-        Args:
-          name (str): Name of the document
-          content (Content): Contents of the document
+        :param name: Name of the document
+        :param content: Contents of the document
 
         Examples:
           >>> docs.add('example', File('example.pdf'))
@@ -775,7 +744,7 @@ class Docs:
         with content.data() as data:
             self.client.post("/docs", files={"upload": (name, data)})
 
-    def clear(self):
+    def clear(self) -> None:
         """Removes all documents from the store."""
         self.client.delete("/docs")
 
@@ -787,28 +756,24 @@ class Docs:
     #     :return:
     #     """
 
-    def get(self, name, stream=False, chunk_size=10240):
+    def get(
+        self, name: str, stream: bool = False, chunk_size: int = 10240
+    ) -> Union[str, Iterator[bytes]]:
         """Gets a document from the store.
 
-        Args:
-          name (str): Name of the document
-          stream (bool): If document should come in chunks or as a whole.
-            Defaults to False
-          chunk_size (int): Number of bytes to read per chunk when streaming.
-            Defaults to 10240
+        :param name: Name of the document
+        :param stream: If document should be streamed back as chunks of bytes or as one string . Defaults to ``False``
+        :param chunk_size: Number of bytes to read per chunk when streaming. Defaults to ``10240``
 
-        Returns:
-          str: If stream=False
-
-        Returns:
-          gen: If stream=True
+        .. note::
+            If ``stream=False``, the contents of the document will be returned as a ``str``. If ``stream=True``, an iterable that yields chunks of content as ``bytes`` will be returned.
 
         Examples:
-          no streaming
+          No streaming
 
           >>> contents = docs.get('example')
 
-          streaming
+          Streaming
 
           >>> with docs.get('example', stream=True) as stream:
                             contents = ''.join(stream)
@@ -821,11 +786,10 @@ class Docs:
         doc = _get()
         return _nextcontext(doc) if stream else next(doc)
 
-    def delete(self, name):
+    def delete(self, name: str) -> None:
         """Deletes a document from the store.
 
-        Args:
-          name (str): Name of the document
+        :param name: Name of the document to delete
         """
         self.client.delete("/docs/{}".format(name))
 
@@ -837,7 +801,7 @@ class ICV:
       `Stardog Docs - Data Quality Constraints <https://docs.stardog.com/data-quality-constraints>`_
     """
 
-    def __init__(self, conn):
+    def __init__(self, conn: Connection):
         """Initializes an ICV.
 
         Use :meth:`stardog.connection.Connection.icv`
@@ -846,13 +810,14 @@ class ICV:
         self.conn = conn
         self.client = conn.client
 
-    def add(self, content):
+    def add(self, content: Content) -> None:
         """
-        Deprecated: Connection.add() should be preferred. icv.add() will be removed in the next major version.
         Adds integrity constraints to the database.
 
-        Args:
-          content (Content): Data to add
+        :param content: Data to add
+
+        .. warning::
+            Deprecated: :meth:`stardog.connection.Connection.add` should be preferred. :meth:`stardog.connection.ICV.add` will be removed in the next major version.
 
         Examples:
           >>> icv.add(File('constraints.ttl'))
@@ -867,13 +832,15 @@ class ICV:
                 },
             )
 
-    def remove(self, content):
+    def remove(self, content: Content) -> None:
         """
-        Deprecated: Connection.remove() should be preferred. icv.remove() will be removed in the next major version.
         Removes integrity constraints from the database.
 
-        Args:
-          content (Content): Data to remove
+        :param content: Data to remove
+
+        .. warning::
+            Deprecated: :meth:`stardog.connection.Connection.remove` should be preferred. :meth:`stardog.connection.ICV.remove` will be removed in the next major version.
+
 
         Examples:
           >>> icv.remove(File('constraints.ttl'))
@@ -888,24 +855,21 @@ class ICV:
                 },
             )
 
-    def clear(self):
+    def clear(self) -> None:
         """Removes all integrity constraints from the database."""
         self.client.post("/icv/clear")
 
-    def list(self):
+    def list(self) -> str:
         """List all integrity constraints from the database."""
         r = self.client.get("/icv")
         return r.text
 
-    def is_valid(self, content, graph_uri=None):
+    def is_valid(self, content: Content, graph_uri: Optional[str] = None) -> bool:
         """Checks if given integrity constraints are valid.
 
-        Args:
-          content (Content): Data to check for validity
-          graph_uri (str, optional): Named graph to check for validity
-
-        Returns:
-          bool: Integrity constraint validity
+        :param content: Data to check validity (with respect to constraints) against
+        :param graph_uri: URI of the named graph to check for validity
+        :return: whether the data is valid with respect to the constraints
 
         Examples:
           >>> icv.is_valid(File('constraints.ttl'), graph_uri='urn:graph')
@@ -925,18 +889,18 @@ class ICV:
 
             return strtobool(r.text)
 
-    def explain_violations(self, content, graph_uri=None):
+    def explain_violations(
+        self, content: Content, graph_uri: Optional[str] = None
+    ) -> dict:
         """
-        Deprecated: icv.report() should be preferred. icv.explain_violations() will be removed in the next major version.
         Explains violations of the given integrity constraints.
 
-        Args:
-          content (Content): Data to check for violations
-          graph_uri (str, optional): Named graph from which to check for
-            validations
+        :param content: Data containing constraints
+        :graph_uri: Named graph from which to check for violations
+        :return: the violations
 
-        Returns:
-          dict: Integrity constraint violations
+        .. warning::
+            Deprecated: :meth:`stardog.connection.ICV.report` should be preferred. :meth:`stardog.connection.ICV.explain_violations` will be removed in the next major version.
 
         Examples:
           >>> icv.explain_violations(File('constraints.ttl'),
@@ -962,18 +926,17 @@ class ICV:
 
             return self.client._multipart(r)
 
-    def convert(self, content, graph_uri=None):
+    def convert(self, content: Content, graph_uri: Optional[str] = None) -> str:
         """
-        Deprecated: icv.convert() was meant as a debugging tool, and will be removed in the next major version.
         Converts given integrity constraints to a SPARQL query.
 
-        Args:
-          content (Content): Integrity constraints
-          graph_uri (str, optional): Named graph from which to apply
-            constraints
+        :param content: Integrity constraints
+        :graph_uri: Named graph from which to apply constraints
 
-        Returns:
-          str: SPARQL query
+        :return: SPARQL query
+
+        .. warning::
+            Deprecated: :meth:`stardog.connection.ICV.convert()` was meant as a debugging tool, and will be removed in the next major version.
 
         Examples:
           >>> icv.convert(File('constraints.ttl'), graph_uri='urn:graph')
@@ -991,7 +954,7 @@ class ICV:
 
             return r.text
 
-    def report(self, **kwargs):
+    def report(self, **kwargs) -> str:
         """
         Produces a SHACL validation report.
 
@@ -1042,7 +1005,7 @@ class GraphQL:
 
     """
 
-    def __init__(self, conn):
+    def __init__(self, conn: Connection):
         """Initializes a GraphQL.
 
         Use :meth:`stardog.connection.Connection.graphql`
@@ -1051,17 +1014,15 @@ class GraphQL:
         self.conn = conn
         self.client = conn.client
 
-    def query(self, query, variables=None):
+    def query(self, query: str, variables: Optional[dict] = None) -> dict:
         """Executes a GraphQL query.
 
-        Args:
-          query (str): GraphQL query
-          variables (dict, optional): GraphQL variables.
-            Keys: '@reasoning' (bool) to enable reasoning,
-            '@schema' (str) to define schemas
+        :param query: GraphQL query
+        :param variables: GraphQL variables.
+            Keys: ``@reasoning`` (bool) to enable reasoning,
+            ``@schema`` (str) to define schemas
 
-        Returns:
-          dict: Query results
+        :return: Query results
 
         Examples:
           with schema and reasoning
@@ -1088,25 +1049,23 @@ class GraphQL:
         # graphql endpoint returns valid response with errors
         raise exceptions.StardogException(res)
 
-    def schemas(self):
+    def schemas(self) -> dict:
         """Retrieves all available schemas.
 
-        Returns:
-          dict: All schemas
+        :return: All schemas
         """
         r = self.client.get("/graphql/schemas")
         return r.json()["schemas"]
 
-    def clear_schemas(self):
+    def clear_schemas(self) -> None:
         """Deletes all schemas."""
         self.client.delete("/graphql/schemas")
 
-    def add_schema(self, name, content):
+    def add_schema(self, name: str, content: Content) -> None:
         """Adds a schema to the database.
 
-        Args:
-          name (str): Name of the schema
-          content (Content): Schema data
+        :param name: Name of the schema
+        :param content: Schema data
 
         Examples:
           >>> gql.add_schema('people', content=File('people.graphql'))
@@ -1114,23 +1073,19 @@ class GraphQL:
         with content.data() as data:
             self.client.put("/graphql/schemas/{}".format(name), data=data)
 
-    def schema(self, name):
+    def schema(self, name: str) -> str:
         """Gets schema information.
 
-        Args:
-          name (str): Name of the schema
-
-        Returns:
-          dict: GraphQL schema
+        :param name: Name of the schema
+        :return: GraphQL schema
         """
         r = self.client.get("/graphql/schemas/{}".format(name))
         return r.text
 
-    def remove_schema(self, name):
+    def remove_schema(self, name: str) -> None:
         """Removes a schema from the database.
 
-        Args:
-          name (str): Name of the schema
+        :param name: Name of the schema
         """
         self.client.delete("/graphql/schemas/{}".format(name))
 
