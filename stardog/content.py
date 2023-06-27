@@ -89,25 +89,30 @@ class MappingRaw(Content):
     """User-defined Mapping."""
 
     def __init__(self, content, syntax=None, name=None):
-        """Initializes a Raw object.
+        """Initializes a MappingRaw object.
 
-                Args:
-                  content (str): Mapping in raw form
-                  syntax (str, optional): Whether it r2rml or sms type.
-                    If not provided, it will try to detect it from name if provided, otherwise from the content itselft
-                  name (str, optional): Object name
+        Args:
+          content (str): Mapping in raw form
+          syntax (str, optional): Whether it r2rml or sms type.
+                If not provided, it will try to detect it from name if provided, otherwise from the content itself
+          name (str, optional): Object name
 
-                Examples:
-                  >>> MappingRaw('''MAPPING
-        FROM SQL {
-          SELECT *
-          FROM `benchmark`.`person`
-        }
-        TO {
-          ?subject rdf:type :person
-        } WHERE {
-          BIND(template("http://api.stardog.com/person/nr={nr}") AS ?subject)
-        }''')
+        Examples:
+
+            >>> mapping = '''
+            MAPPING
+            FROM SQL {
+              SELECT *
+              FROM `benchmark`.`person`
+            }
+            TO {
+              ?subject rdf:type :person
+            } WHERE {
+              BIND(template("http://api.stardog.com/person/nr={nr}") AS ?subject)
+            }
+            '''
+            >>> MappingRaw(mapping)
+
         """
         self.raw = content
         self.name = name
