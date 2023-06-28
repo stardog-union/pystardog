@@ -3,9 +3,11 @@
 """
 
 import json
+from typing import Dict, List, Optional
 import contextlib2
 import urllib
 from time import sleep
+from requests.auth import AuthBase
 
 from . import content_types as content_types
 from .http import client
@@ -22,27 +24,23 @@ class Admin:
 
     def __init__(
         self,
-        endpoint: object = None,
-        username: object = None,
-        password: object = None,
-        auth: object = None,
-        run_as: str = None,
+        endpoint: Optional[str] = client.Client.DEFAULT_ENDPOINT,
+        username: Optional[str] = client.Client.DEFAULT_USERNAME,
+        password: Optional[str] = client.Client.DEFAULT_PASSWORD,
+        auth: Optional[AuthBase] = None,
+        run_as: Optional[str] = None,
     ) -> None:
         """Initializes an admin connection to a Stardog server.
 
-        Args:
-          endpoint (str, optional): Url of the server endpoint.
-            Defaults to `http://localhost:5820`
-          username (str, optional): Username to use in the connection.
-            Defaults to `admin`
-          password (str, optional): Password to use in the connection.
-            Defaults to `admin`
-          auth (requests.auth.AuthBase, optional): requests Authentication object.
-            Defaults to `None`
-          run_as (str, optional): the User to impersonate
+        :param endpoint: URL of the Stardog server endpoint.
+        :param username: Username to use in the connection.
+        :param password: Password to use in the connection.
+        :param auth: :class:`requests.auth.AuthBase` object. Used as an alternative authentication scheme. If not provided, HTTP Basic auth will be attempted with the ``username`` and ``password``.
+        :param run_as: the user to impersonate
 
-        auth and username/password should not be used together.  If the are the value
-        of `auth` will take precedent.
+        .. note::
+            ``auth`` and ``username``/``password`` should not be used together.  If they are, the value of ``auth`` will take precedent.
+
         Examples:
           >>> admin = Admin(endpoint='http://localhost:9999',
                             username='admin', password='admin')
@@ -53,39 +51,38 @@ class Admin:
         # ensure the server is alive and at the specified location
         self.alive()
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shuts down the server."""
         self.client.post("/admin/shutdown")
 
-    def alive(self):
+    def alive(self) -> bool:
         """
         Determine whether the server is running
-        :return: Returns True if server is alive
-        :rtype: bool
+
+        :return: is the server alive?
         """
         r = self.client.get("/admin/alive")
         return r.status_code == 200
 
-    def healthcheck(self):
+    def healthcheck(self) -> bool:
         """
         Determine whether the server is running and able to accept traffic
-        :return: Returns true if server is able to accept traffic
-        :rtype: bool
+
+        :return: is the server accepting traffic?
         """
         r = self.client.get("/admin/healthcheck")
         return r.status_code == 200
 
-    def get_prometheus_metrics(self):
+    def get_prometheus_metrics(self) -> str:
         """ """
         r = self.client.get("/admin/status/prometheus")
         return r.text
 
-    def get_server_metrics(self):
+    def get_server_metrics(self) -> dict:
         """
         Returns metric information from the registry in JSON format
 
         :return: Server metrics
-        :rtype: dict
 
         See Also:
             `HTTP API - Server metrics <https://stardog-union.github.io/http-docs/#operation/status>`_
@@ -93,28 +90,24 @@ class Admin:
         r = self.client.get("/admin/status")
         return r.json()
 
-    def database(self, name):
+    def database(self, name: str) -> "Database":
         """Retrieves an object representing a database.
 
-        Args:
-          name (str): The database name
+        :param name: The database name
 
-        Returns:
-          Database: The requested database
+        :return: the database
         """
         return Database(name, self.client)
 
-    def databases(self):
-        """Retrieves all databases.
-
-        Returns:
-          list[Database]: A list of database objects
-        """
+    def databases(self) -> List["Database"]:
+        """Retrieves all databases."""
         r = self.client.get("/admin/databases")
         databases = r.json()["databases"]
         return list(map(lambda name: Database(name, self.client), databases))
 
-    def new_database(self, name, options=None, *contents, **kwargs):
+    def new_database(
+        self, name: str, options: Dict = None, *contents, **kwargs
+    ) -> "Database":
         """Creates a new database.
 
         Args:
@@ -125,9 +118,6 @@ class Admin:
             Content and the name.
           **kwargs: Allows to set copy_to_server. If true, sends the files to the Stardog server,
             and replicates them to the rest of nodes.
-
-        Returns:
-            Database: The database object
 
         Examples:
             Options

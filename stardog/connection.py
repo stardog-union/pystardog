@@ -47,9 +47,9 @@ class Connection:
         """Initializes a connection to a Stardog database.
 
         :param database: Name of the database
-        :param endpoint: URL of the Stardog server endpoint. Default is ``http://localhost:5820``
-        :param username: Username to use in the connection. Default is ``admin``
-        :param password: Password to use in the connection. Default is ``admin``
+        :param endpoint: URL of the Stardog server endpoint.
+        :param username: Username to use in the connection.
+        :param password: Password to use in the connection.
         :param auth: :class:`requests.auth.AuthBase` object. Used as an alternative authentication scheme. If not provided, HTTP Basic auth will be attempted with the ``username`` and ``password``.
         :param session: :class:`requests.session.Session` object
         :param run_as: The user to impersonate.
@@ -265,13 +265,13 @@ class Connection:
     ) -> Union[str, Iterator[bytes]]:
         """Exports the contents of the database.
 
-        :param content_type: RDF content type. Defaults to ``text/turtle``
-        :param stream: Stream and chunk results? Defaults to ``False``. See the note below for additional information.
-        :param chunk_size: Number of bytes to read per chunk when streaming. Defaults to ``10240``
+        :param content_type: RDF content type.
+        :param stream: Stream and chunk results?. See the note below for additional information.
+        :param chunk_size: Number of bytes to read per chunk when streaming.
         :param graph_uri: URI of the named graph to export
 
         .. note::
-            If ``stream=False``, the contents of the database or named graph will be returned as a ``str``. If ``stream=True``, an iterable that yields chunks of content as ``bytes`` will be returned.
+            If ``stream=False`` (default), the contents of the database or named graph will be returned as a ``str``. If ``stream=True``, an iterable that yields chunks of content as ``bytes`` will be returned.
 
         Examples:
           No streaming
@@ -762,8 +762,8 @@ class Docs:
         """Gets a document from the store.
 
         :param name: Name of the document
-        :param stream: If document should be streamed back as chunks of bytes or as one string . Defaults to ``False``
-        :param chunk_size: Number of bytes to read per chunk when streaming. Defaults to ``10240``
+        :param stream: If document should be streamed back as chunks of bytes or as one string . 
+        :param chunk_size: Number of bytes to read per chunk when streaming. 
 
         .. note::
             If ``stream=False``, the contents of the document will be returned as a ``str``. If ``stream=True``, an iterable that yields chunks of content as ``bytes`` will be returned.
