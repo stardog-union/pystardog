@@ -3,11 +3,13 @@
 """
 
 import json
-from typing import Dict, List, Optional
+from typing import Dict, List, Optional, Tuple, Union
 import contextlib2
 import urllib
 from time import sleep
 from requests.auth import AuthBase
+
+from stardog.content import Content
 
 from . import content_types as content_types
 from .http import client
@@ -17,7 +19,6 @@ class Admin:
     """Admin Connection.
 
     This is the entry point for admin-related operations on a Stardog server.
-
     See Also:
         `Stardog Docs - Operating Stardog <https://docs.stardog.com/operating-stardog/>`_
     """
@@ -106,7 +107,11 @@ class Admin:
         return list(map(lambda name: Database(name, self.client), databases))
 
     def new_database(
-        self, name: str, options: Dict = None, *contents, **kwargs
+        self,
+        name: str,
+        options: Dict = None,
+        *contents: Union[Content, Tuple[Content, str], None],
+        **kwargs,
     ) -> "Database":
         """Creates a new database.
 
