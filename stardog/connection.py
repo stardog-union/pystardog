@@ -2,7 +2,7 @@
 """
 
 import contextlib
-from typing import Dict, Optional, TypedDict, Union
+from typing import Dict, List, Optional, TypedDict, Union
 
 from . import content_types as content_types
 from . import exceptions as exceptions
@@ -381,6 +381,8 @@ class Connection:
         reasoning: Optional[bool] = None,
         bindings: Optional[Dict[str, str]] = None,
         content_type: str = content_types.SPARQL_JSON,
+        default_graph_uri: Optional[List[str]] = None,
+        named_graph_uri: Optional[List[str]] = None,
         **kwargs,
     ) -> Union[str, Dict]:
         """Executes a SPARQL select query.
@@ -425,6 +427,8 @@ class Connection:
             timeout=timeout,
             reasoning=reasoning,
             bindings=bindings,
+            default_graph_uri=default_graph_uri,
+            named_graph_uri=named_graph_uri,
             **kwargs,
         )
 
@@ -438,6 +442,8 @@ class Connection:
         reasoning: Optional[bool] = None,
         bindings: Optional[Dict[str, str]] = None,
         content_type=content_types.TURTLE,
+        default_graph_uri: Optional[List[str]] = None,
+        named_graph_uri: Optional[List[str]] = None,
         **kwargs,
     ) -> str:
         """Executes a SPARQL graph query.
@@ -479,6 +485,8 @@ class Connection:
             timeout=timeout,
             reasoning=reasoning,
             bindings=bindings,
+            default_graph_uri=default_graph_uri,
+            named_graph_uri=named_graph_uri,
             **kwargs,
         )
 
@@ -492,6 +500,8 @@ class Connection:
         reasoning: Optional[bool] = None,
         bindings: Optional[Dict[str, str]] = None,
         content_type=content_types.SPARQL_JSON,
+        default_graph_uri: Optional[List[str]] = None,
+        named_graph_uri: Optional[List[str]] = None,
         **kwargs,
     ) -> Union[Dict, str]:
         """Executes a SPARQL paths query.
@@ -531,6 +541,8 @@ class Connection:
             timeout=timeout,
             reasoning=reasoning,
             bindings=bindings,
+            default_graph_uri=default_graph_uri,
+            named_graph_uri=named_graph_uri,
             **kwargs,
         )
 
@@ -543,6 +555,8 @@ class Connection:
         timeout: Optional[int] = None,
         reasoning: Optional[bool] = None,
         bindings: Optional[Dict[str, str]] = None,
+        default_graph_uri: Optional[List[str]] = None,
+        named_graph_uri: Optional[List[str]] = None,
         **kwargs,
     ) -> bool:
         """Executes a SPARQL ask query.
@@ -577,6 +591,8 @@ class Connection:
             timeout=timeout,
             reasoning=reasoning,
             bindings=bindings,
+            default_graph_uri=default_graph_uri,
+            named_graph_uri=named_graph_uri,
             **kwargs,
         )
         return strtobool(r.decode())
@@ -590,6 +606,10 @@ class Connection:
         timeout: Optional[int] = None,
         reasoning: Optional[bool] = None,
         bindings: Optional[Dict[str, str]] = None,
+        using_graph_uri: Optional[List[str]] = None,
+        using_named_graph_uri: Optional[List[str]] = None,
+        remove_graph_uri: Optional[str] = None,
+        insert_graph_uri: Optional[str] = None,
         **kwargs,
     ):
         """Executes a SPARQL update query.
@@ -623,6 +643,10 @@ class Connection:
             timeout=timeout,
             reasoning=reasoning,
             bindings=bindings,
+            using_graph_uri=using_graph_uri,
+            using_named_graph_uri=using_named_graph_uri,
+            remove_graph_uri=remove_graph_uri,
+            insert_graph_uri=insert_graph_uri,
             **kwargs,
         )
 
