@@ -69,6 +69,66 @@ The docs can be built locally using [Sphinx](https://www.sphinx-doc.org/en/maste
   make html
   ```
 
+#### Autodoc Type Hints
+
+The docs use [`sphinx-autodoc-typehints`](https://github.com/tox-dev/sphinx-autodoc-typehints) which allows you to omit types when documenting argument/returns types of functions. For example:
+
+The following function:
+
+```python
+def database(self, name: str) -> "Database":
+    """Retrieves an object representing a database.
+
+    :param name: The database name
+
+    :return: the database
+    """
+    return Database(name, self.client)
+```
+
+will yield the following documentation after Sphinx processes it:
+
+
+> **Note**
+> Only arguments that have an existing `:param:` directive in the docstring get their
+> respective `:type:` directives added. The `:rtype:` directive is added if and only if no existing `:rtype:` is found.
+> See the [docs](https://github.com/tox-dev/sphinx-autodoc-typehints) for additional information on how the extension works.
+
+#### Auto Build 
+
+Docs can be rebuilt automatically when saving a Python file by utilizing [`sphinx-autobuild`](https://github.com/executablebooks/sphinx-autobuild)
+
+```shell
+cd docs
+pip install -r requirements.txt requirements-dev.txt
+make livehtml
+```
+
+This should make the docs available at [http://localhost:8000](http://localhost:8000).
+
+Example output after running `make livehtml`:
+
+```text
+❯ make livehtml
+sphinx-autobuild "." "_build"   --watch ../stardog/
+[sphinx-autobuild] > sphinx-build /Users/frodo/projects/pystardog/docs /Users/frodo/projects/pystardog/docs/_build
+Running Sphinx v6.2.1
+loading pickled environment... done
+building [mo]: targets for 0 po files that are out of date
+writing output...
+building [html]: targets for 0 source files that are out of date
+updating environment: 0 added, 0 changed, 0 removed
+reading sources...
+looking for now-outdated files... none found
+no targets are out of date.
+build succeeded.
+
+The HTML pages are in _build.
+[I 230710 15:26:18 server:335] Serving on http://127.0.0.1:8000
+[I 230710 15:26:18 handlers:62] Start watching changes
+[I 230710 15:26:18 handlers:64] Start detecting changes
+```
+
 ## Contributing and Development
 
 Contrbutions are always welcome to pystardog.
