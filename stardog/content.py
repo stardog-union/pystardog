@@ -2,6 +2,7 @@
 """
 import contextlib
 import os
+from typing import Optional
 
 import requests
 
@@ -17,14 +18,19 @@ class Content:
 class Raw(Content):
     """User-defined content."""
 
-    def __init__(self, content, content_type=None, content_encoding=None, name=None):
+    def __init__(
+        self,
+        content: object,
+        content_type: Optional[str] = None,
+        content_encoding: Optional[str] = None,
+        name: Optional[str] = None,
+    ):
         """Initializes a Raw object.
 
-        Args:
-          content (obj): Object representing the content (e.g., str, file)
-          content_type (str, optional): Content type
-          content_encoding (str, optional): Content encoding
-          name (str, optional): Object name
+        :param content: Object representing the content (e.g., str, file)
+        :param content_type: Content type
+        :param content_encoding: Content encoding
+        :param name: Object name
 
         Examples:
           >>> Raw(':luke a :Human', 'text/turtle', name='data.ttl')
@@ -47,18 +53,23 @@ class File(Content):
     """File-based content."""
 
     def __init__(
-        self, file=None, content_type=None, content_encoding=None, name=None, fname=None
+        self,
+        file: Optional[str] = None,
+        content_type: Optional[str] = None,
+        content_encoding: Optional[str] = None,
+        name: Optional[str] = None,
+        fname: Optional[str] = None,
     ):
         """Initializes a File object.
 
-        Args:
-          fname (str): Filename
-          content_type (str, optional): Content type.
+        :param file: the filename/path of the file
+        :param content_type: Content type.
             It will be automatically detected from the filename
-          content_encoding (str, optional): Content encoding.
+        :param content_encoding: Content encoding.
             It will be automatically detected from the filename
-          name (str, optional): Object name.
+        :param name: Name of the file object.
             It will be automatically detected from the filename
+        :param fname: backward compatible parameter for ``file``
 
         Examples:
           >>> File('data.ttl')
@@ -88,14 +99,15 @@ class File(Content):
 class MappingRaw(Content):
     """User-defined Mapping."""
 
-    def __init__(self, content, syntax=None, name=None):
+    def __init__(
+        self, content: str, syntax: Optional[str] = None, name: Optional[str] = None
+    ):
         """Initializes a MappingRaw object.
 
-        Args:
-          content (str): Mapping in raw form
-          syntax (str, optional): Whether it r2rml or sms type.
-                If not provided, it will try to detect it from name if provided, otherwise from the content itself
-          name (str, optional): Object name
+        :param content: the actual mapping content (e.g. ``'MAPPING\\n FROM SQL ...'``)
+        :param syntax: The mapping syntax (``'STARDOG'``, ``'R2RML'``, or ``'SMS2'``)
+                If not provided, it will try to detect it from ``name`` if provided, otherwise from the content itself
+        :param name: name of object
 
         Examples:
 
@@ -134,13 +146,15 @@ class MappingRaw(Content):
 class MappingFile(Content):
     """File-based content."""
 
-    def __init__(self, file: str, syntax=None, name=None):
+    def __init__(
+        self, file: str, syntax: Optional[str] = None, name: Optional[str] = None
+    ):
         """Initializes a File object.
 
-        Args:
-          file (str): Filename
-          syntax (str, optional): Whether it r2rml or sms type.
-            It will be automatically detected from the filename, if possible otherwise it will default to system default
+        :param file: the filename/path of the file
+        :param syntax: The mapping syntax (``'STARDOG'``, ``'R2RML'``, or ``'SMS2'``)
+            If not provided, it will try to detect it from the ``file``'s extension.
+        :param name: the name of the object. If not provided, will fall back to the basename of the ``file``.
 
         Examples:
           >>> MappingFile('data.sms')
@@ -163,25 +177,25 @@ class ImportRaw(Content):
 
     def __init__(
         self,
-        content,
-        input_type=None,
-        separator=None,
-        content_type=None,
-        content_encoding=None,
-        name=None,
+        content: object,
+        input_type: Optional[str] = None,
+        separator: Optional[str] = None,
+        content_type: Optional[str] = None,
+        content_encoding: Optional[str] = None,
+        name: Optional[str] = None,
     ):
         """Initializes a Raw object.
 
-        Args:
-          content (obj): Object representing the content (e.g., str, file)
-          input_type (str): DELIMITED or JSON
-          separator (str): Required if it's DELIMITED CONTENT
-          content_type (str, optional): Content type
-          content_encoding (str, optional): Content encoding
-          name (str, optional): Object name
+        :param content: Object representing the content (e.g., str, file)
+        :param input_type: ``'DELIMITED'`` or ``'JSON'``
+        :param separator: Required if ``input_type`` is ``'DELIMITED'``. Use ``','`` for a CSV. Use ``\\\\t`` for a TSV.
+        :param content_type: Content type
+        :param content_encoding: Content encoding
+        :param name: Object name
 
-          if name is provided like a pseudo filename, ie data.csv, data.tsv, or data.json, it will auto-detect most
-          required parameter, otherwise you must specify them.
+        .. note::
+            if ``name`` is provided like a pseudo filename (i.e. ``'data.csv'``, ``'data.tsv'``, or ``'data.json'``), it will auto-detect most
+            required parameters (``input_type``, ``separator``, ``content_type``, ``content_encoding``) - otherwise you must specify them.
 
         Examples:
           >>> ImportRaw('a,b,c',  name='data.csv')
@@ -211,29 +225,33 @@ class ImportFile(Content):
 
     def __init__(
         self,
-        file,
-        input_type=None,
-        content_type=None,
-        content_encoding=None,
-        separator=None,
-        name=None,
+        file: str,
+        input_type: Optional[str] = None,
+        content_type: Optional[str] = None,
+        content_encoding: Optional[str] = None,
+        separator: Optional[str] = None,
+        name: Optional[str] = None,
     ):
         """Initializes a File object.
 
-        Args:
-          file (str): Filename
-          input_type (str): DELIMITED or JSON
-          content_type (str, optional): Content type
-          content_encoding (str, optional): Content encoding
-          separator (str): Required if it's DELIMITED CONTENT
-          name (str, optional): Object name
-            It will be automatically detected from the filename, if possible otherwise it will default to system default
+        :param file: filename/path of the file
+        :param input_type: ``'DELIMITED'`` or ``'JSON'``
+        :param content_type: Content type
+        :param content_encoding: Content encoding
+        :param separator: Required if ``input_type`` is ``'DELIMITED'``. Use ``','`` for a CSV. Use ``\\\\t`` for a TSV.
+        :param name: Object name.
+            It will be automatically detected from the ``file`` if omitted.
+
+
+        .. note::
+            If ``file`` has a recognized extension (i.e. ``'data.csv'``, ``'data.tsv'``, or ``'data.json'``), it will auto-detect most
+            required parameters (``input_type``, ``separator``, ``content_type``, ``content_encoding``) - otherwise you must specify them.
 
         Examples:
           >>> ImportFile('data.csv')
           >>> ImportFile('data.tsv')
-          >>> ImportFile('data.txt','DELIMITED',"\t" )
-          >>> MappingFile('data.json')
+          >>> ImportFile('data.txt','DELIMITED',"\\\\t" )
+          >>> ImportFile('data.json')
         """
 
         self.fname = file
@@ -258,17 +276,22 @@ class ImportFile(Content):
 class URL(Content):
     """Url-based content."""
 
-    def __init__(self, url, content_type=None, content_encoding=None, name=None):
+    def __init__(
+        self,
+        url: str,
+        content_type: Optional[str] = None,
+        content_encoding: Optional[str] = None,
+        name: Optional[str] = None,
+    ):
         """Initializes a URL object.
 
-        Args:
-          url (str): Url
-          content_type (str, optional): Content type.
-              It will be automatically detected from the url
-          content_encoding (str, optional): Content encoding.
-              It will be automatically detected from the filename
-          name (str, optional): Object name.
-              It will be automatically detected from the url
+        :param url: URL to the content
+        :param content_type: Content type.
+            It will be automatically detected from the ``url`` if not provided. 
+        :param content_encoding: Content encoding.
+            It will be automatically detected from the ``url`` if not provided.
+        :param name: Object name.
+            It will be automatically detected from the ``url`` if not provided.
 
         Examples:
           >>> URL('http://example.com/data.ttl')

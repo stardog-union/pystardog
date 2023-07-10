@@ -958,18 +958,16 @@ class ICV:
         """
         Produces a SHACL validation report.
 
-        Args:
-          shapes (str, optional): SHACL shapes to validate
-          shacl.shape.graphs (str, optional): SHACL shape graphs to validate
-          nodes (str, optional): SHACL focus node(s) to validate
-          countLimit (str, optional): Maximum number of violations to report
-          shacl.targetClass.simple (boolean, optional): If true, sh:targetClass will be evaluated based on rdf:type triples only, without following rdfs:subClassOf relations
-          shacl.violation.limit.shape (str, optional): number of violation limits per SHACL shapes
-          graph-uri (str, optional): Named Graph
-          reasoning (boolean, optional): Enable Reasoning
+        :keyword str, optional shapes: SHACL shapes to validate
+        :keyword str, optional shacl.shape.graphs: SHACL shape graphs to validate
+        :keyword str, optional nodes: SHACL focus node(s) to validate
+        :keyword str, optional countLimit: Maximum number of violations to report
+        :keyword bool, optional shacl.targetClass.simple: If ``True``, ``sh:targetClass`` will be evaluated based on ``rdf:type`` triples only, without following ``rdfs:subClassOf`` relations
+        :keyword str, optional shacl.violation.limit.shape: number of violation limits per SHACL shapes
+        :keyword str, optional graph-uri: Named Graph
+        :keyword bool, optional reasoning: If ``True``, enable reasoning.
 
-        Returns:
-          str: SHACL validation report
+        :return: SHACL validation report
 
         Examples:
           >>> icv.report()
