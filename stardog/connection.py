@@ -2,15 +2,18 @@
 """
 
 import contextlib
-from typing import Dict, List, Optional, TypedDict, Union
+from typing import Iterator, Optional, TypedDict, Union
+
+from requests.auth import AuthBase
+from requests.sessions import Session
+
+from stardog.content import Content
 
 from . import content_types as content_types
 from . import exceptions as exceptions
 from .http import client
 from .utils import strtobool
 import urllib
-
-from stardog import http
 
 
 class CommitResult(TypedDict):
