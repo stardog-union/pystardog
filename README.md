@@ -88,6 +88,7 @@ def database(self, name: str) -> "Database":
 
 will yield the following documentation after Sphinx processes it:
 
+![sphinx-autobuild-example](https://github.com/stardog-union/pystardog/assets/23270779/f0defa61-e0d5-4df6-9daf-6842e41a3889)
 
 > **Note**
 > Only arguments that have an existing `:param:` directive in the docstring get their
