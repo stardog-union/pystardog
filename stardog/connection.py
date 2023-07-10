@@ -762,8 +762,8 @@ class Docs:
         """Gets a document from the store.
 
         :param name: Name of the document
-        :param stream: If document should be streamed back as chunks of bytes or as one string . 
-        :param chunk_size: Number of bytes to read per chunk when streaming. 
+        :param stream: If document should be streamed back as chunks of bytes or as one string .
+        :param chunk_size: Number of bytes to read per chunk when streaming.
 
         .. note::
             If ``stream=False``, the contents of the document will be returned as a ``str``. If ``stream=True``, an iterable that yields chunks of content as ``bytes`` will be returned.

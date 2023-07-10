@@ -287,7 +287,7 @@ class URL(Content):
 
         :param url: URL to the content
         :param content_type: Content type.
-            It will be automatically detected from the ``url`` if not provided. 
+            It will be automatically detected from the ``url`` if not provided.
         :param content_encoding: Content encoding.
             It will be automatically detected from the ``url`` if not provided.
         :param name: Object name.
