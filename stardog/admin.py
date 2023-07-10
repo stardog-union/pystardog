@@ -79,7 +79,7 @@ class Admin:
         r = self.client.get("/admin/status/prometheus")
         return r.text
 
-    def get_server_metrics(self) -> dict:
+    def get_server_metrics(self) -> Dict:
         """
         Returns metric information from the registry in JSON format
 

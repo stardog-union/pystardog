@@ -2,7 +2,7 @@
 """
 
 import contextlib
-from typing import Iterator, Optional, TypedDict, Union
+from typing import Iterator, Optional, TypedDict, Union, Dict, List
 
 from requests.auth import AuthBase
 from requests.sessions import Session
@@ -318,7 +318,7 @@ class Connection:
 
     def __query(
         self, query: str, method: str, content_type: Optional[str] = None, **kwargs
-    ):
+    ) -> Union[Dict, bytes]:
         txId = self.transaction
         params = {
             "query": query,
@@ -369,38 +369,39 @@ class Connection:
         default_graph_uri: Optional[List[str]] = None,
         named_graph_uri: Optional[List[str]] = None,
         **kwargs,
-    ) -> Union[str, Dict]:
+    ) -> Union[bytes, Dict]:
         """Executes a SPARQL select query.
 
-        Args:
-          query (str): SPARQL query
-          base_uri (str, optional): Base URI for the parsing of the query
-          limit (int, optional): Maximum number of results to return
-          offset (int, optional): Offset into the result set
-          timeout (int, optional): Number of ms after which the query should
-            timeout. 0 or less implies no timeout
-          reasoning (bool, optional): Enable reasoning for the query
-          bindings (dict, optional): Map between query variables and their
-            values
-          content_type (str): Content type for results.
-            Defaults to 'application/sparql-results+json'
-          default_graph_uri (str, list[str], optional): URI(s) to be used as the default graph (equivalent to FROM)
-          named_graph_uri (str, list[str], optional): URI(s) to be used as named graphs (equivalent to FROM NAMED)
+        :param query: SPARQL query
+        :param base_uri: Base URI for the parsing of the query
+        :param limit: Maximum number of results to return
+        :param offset: Offset into the result set
+        :param timeout: Number of ms after which the query should
+          timeout. ``0`` or less implies no timeout
+        :param reasoning: Enable reasoning for the query
+        :param bindings: Map between query variables and their values
+        :param content_type: Content type for results.
+        :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
+        :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
+
+        :return: If ``content_type='application/sparql-results+json'``, results will be returned as a Dict, else results will be returned as bytes.
+
+        **Examples:**
+
+        .. code-block:: python
+            :caption: Simple ``SELECT`` query utilizing ``limit`` and ``offset`` to restrict the result set with ``reasoning`` enabled.
+
+            results = conn.select('select * {?s ?p ?o}',
+                        offset=100,
+                        limit=100,
+                        reasoning=True
+                      )
 
 
-        Returns:
-          dict: If content_type='application/sparql-results+json'
+        .. code-block:: python
+            :caption: Query utilizing ``bindings`` to bind the query variable ``o`` to a value of ``<urn:a>``.
 
-        Returns:
-          str: Other content types
-
-        Examples:
-          >>> conn.select('select * {?s ?p ?o}',
-                          offset=100, limit=100, reasoning=True)
-
-          bindings
-
-          >>> conn.select('select * {?s ?p ?o}', bindings={'o': '<urn:a>'})
+            results = conn.select('select * {?s ?p ?o}', bindings={'o': '<urn:a>'})
         """
         return self.__query(
             query=query,
@@ -430,35 +431,39 @@ class Connection:
         default_graph_uri: Optional[List[str]] = None,
         named_graph_uri: Optional[List[str]] = None,
         **kwargs,
-    ) -> str:
-        """Executes a SPARQL graph query.
+    ) -> bytes:
+        """Executes a SPARQL graph (``CONSTRUCT``) query.
 
-        Args:
-          query (str): SPARQL query
-          base_uri (str, optional): Base URI for the parsing of the query
-          limit (int, optional): Maximum number of results to return
-          offset (int, optional): Offset into the result set
-          timeout (int, optional): Number of ms after which the query should
-            timeout. 0 or less implies no timeout
-          reasoning (bool, optional): Enable reasoning for the query
-          bindings (dict, optional): Map between query variables and their
-            values
-          content_type (str): Content type for results.
-            Defaults to 'text/turtle'
-          default_graph_uri (str, list[str], optional): URI(s) to be used as the default graph (equivalent to FROM)
-          named_graph_uri (str, list[str], optional): URI(s) to be used as named graphs (equivalent to FROM NAMED)
+        :param query: SPARQL query
+        :param base_uri: Base URI for the parsing of the query
+        :param limit: Maximum number of results to return
+        :param offset: Offset into the result set
+        :param timeout: Number of ms after which the query should
+          timeout. ``0`` or less implies no timeout
+        :param reasoning: Enable reasoning for the query
+        :param bindings: Map between query variables and their values
+        :param content_type: Content type for results.
+        :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
+        :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
 
-        Returns:
-          str: Results in format given by content_type
+        :return: the query results
 
-        Examples:
-          >>> conn.graph('construct {?s ?p ?o} where {?s ?p ?o}',
-                         offset=100, limit=100, reasoning=True)
+        **Examples:**
 
-          bindings
+        .. code-block:: python
+            :caption: Simple ``CONSTRUCT`` (graph) query utilizing ``limit`` and ``offset`` to restrict the result set with ``reasoning`` enabled.
 
-          >>> conn.graph('construct {?s ?p ?o} where {?s ?p ?o}',
-                         bindings={'o': '<urn:a>'})
+            results = conn.graph('select * {?s ?p ?o}',
+                        offset=100,
+                        limit=100,
+                        reasoning=True
+                      )
+
+
+        .. code-block:: python
+            :caption: ``CONSTRUCT`` (graph) query utilizing ``bindings`` to bind the query variable ``o`` to a value of ``<urn:a>``.
+
+            results = conn.graph('select * {?s ?p ?o}', bindings={'o': '<urn:a>'})
         """
         return self.__query(
             query=query,
@@ -488,33 +493,35 @@ class Connection:
         default_graph_uri: Optional[List[str]] = None,
         named_graph_uri: Optional[List[str]] = None,
         **kwargs,
-    ) -> Union[Dict, str]:
+    ) -> Union[Dict, bytes]:
         """Executes a SPARQL paths query.
 
-        Args:
-          query (str): SPARQL query
-          base_uri (str, optional): Base URI for the parsing of the query
-          limit (int, optional): Maximum number of results to return
-          offset (int, optional): Offset into the result set
-          timeout (int, optional): Number of ms after which the query should
-            timeout. 0 or less implies no timeout
-          reasoning (bool, optional): Enable reasoning for the query
-          bindings (dict, optional): Map between query variables and their
-            values
-          content_type (str): Content type for results.
-              Defaults to 'application/sparql-results+json'
-          default_graph_uri (str, list[str], optional): URI(s) to be used as the default graph (equivalent to FROM)
-          named_graph_uri (str, list[str], optional): URI(s) to be used as named graphs (equivalent to FROM NAMED)
+        :param query: SPARQL query
+        :param base_uri: Base URI for the parsing of the query
+        :param limit: Maximum number of results to return
+        :param offset: Offset into the result set
+        :param timeout: Number of ms after which the query should
+          timeout. ``0`` or less implies no timeout
+        :param reasoning: Enable reasoning for the query
+        :param bindings: Map between query variables and their values
+        :param content_type: Content type for results.
+        :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
+        :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
 
-        Returns:
-          dict: if content_type='application/sparql-results+json'.
+        :return: If ``content_type='application/sparql-results+json'``, results will be returned as a Dict
+            , else results will be returned as bytes.
 
-        Returns:
-          str: other content types.
 
-        Examples:
-          >>> conn.paths('paths start ?x = :subj end ?y = :obj via ?p',
-                         reasoning=True)
+        **Examples:**
+
+        .. code-block:: python
+            :caption: Simple ``PATHS`` query with ``reasoning`` enabled.
+
+            results = conn.paths('paths start ?x = :subj end ?y = :obj via ?p', reasoning=True)
+
+        See Also:
+            `Stardog Docs - PATH Queries <https://docs.stardog.com/query-stardog/path-queries>`_
+
         """
         return self.__query(
             query=query,
@@ -544,26 +551,31 @@ class Connection:
         named_graph_uri: Optional[List[str]] = None,
         **kwargs,
     ) -> bool:
-        """Executes a SPARQL ask query.
+        """Executes a SPARQL ``ASK`` query.
 
-        Args:
-          query (str): SPARQL query
-          base_uri (str, optional): Base URI for the parsing of the query
-          limit (int, optional): Maximum number of results to return
-          offset (int, optional): Offset into the result set
-          timeout (int, optional): Number of ms after which the query should
-            timeout. 0 or less implies no timeout
-          reasoning (bool, optional): Enable reasoning for the query
-          bindings (dict, optional): Map between query variables and their
-            values
-          default_graph_uri (str, list[str], optional): URI(s) to be used as the default graph (equivalent to FROM)
-          named_graph_uri (str, list[str], optional): URI(s) to be used as named graphs (equivalent to FROM NAMED)
+        :param query: SPARQL query
+        :param base_uri: Base URI for the parsing of the query
+        :param limit: Maximum number of results to return
+        :param offset: Offset into the result set
+        :param timeout: Number of ms after which the query should
+          timeout. ``0`` or less implies no timeout
+        :param reasoning: Enable reasoning for the query
+        :param bindings: Map between query variables and their values
+        :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
+        :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
 
-        Returns:
-          bool: Result of ask query
+        :return: whether the query pattern has a solution or not
 
-        Examples:
-          >>> conn.ask('ask {:subj :pred :obj}', reasoning=True)
+        **Examples:**
+
+        .. code-block:: python
+            :caption: ``ASK`` query with ``reasoning`` enabled.
+
+            pattern_exists = conn.ask('ask {:subj :pred :obj}', reasoning=True)
+
+        See Also:
+            `SPARQL Spec - ASK Queries <https://www.w3.org/TR/sparql11-query/#ask>`_
+
         """
 
         r = self.__query(
@@ -596,23 +608,21 @@ class Connection:
         remove_graph_uri: Optional[str] = None,
         insert_graph_uri: Optional[str] = None,
         **kwargs,
-    ):
+    ) -> None:
         """Executes a SPARQL update query.
 
-        Args:
-          query (str): SPARQL query
-          base_uri (str, optional): Base URI for the parsing of the query
-          limit (int, optional): Maximum number of results to return
-          offset (int, optional): Offset into the result set
-          timeout (int, optional): Number of ms after which the query should
-            timeout. 0 or less implies no timeout
-          reasoning (bool, optional): Enable reasoning for the query
-          bindings (dict, optional): Map between query variables and their
-            values
-          using_graph_uri (str, list[str], optional): URI(s) to be used as the default graph (equivalent to USING)
-          using_named_graph_uri (str, list[str], optional): URI(s) to be used as named graphs (equivalent to USING NAMED)
-          remove_graph_uri (str, optional): URI of the graph to be removed from
-          insert_graph_uri (str, optional): URI of the graph to be inserted into
+        :param query: SPARQL query
+        :param base_uri: Base URI for the parsing of the query
+        :param limit: Maximum number of results to return
+        :param offset: Offset into the result set
+        :param timeout: Number of ms after which the query should
+          timeout. ``0`` or less implies no timeout
+        :param reasoning: Enable reasoning for the query
+        :param bindings: Map between query variables and their values
+        :param using_graph_uri: URI(s) to be used as the default graph (equivalent to ``USING``)
+        :param using_named_graph_uri: URI(s) to be used as named graphs (equivalent to ``USING NAMED``)
+        :param remove_graph_uri: URI of the graph to be removed from
+        :param insert_graph_uri: URI of the graph to be inserted into
 
         Examples:
           >>> conn.update('delete where {?s ?p ?o}')
@@ -894,7 +904,7 @@ class ICV:
 
     def explain_violations(
         self, content: Content, graph_uri: Optional[str] = None
-    ) -> dict:
+    ) -> Dict:
         """
         Explains violations of the given integrity constraints.
 
@@ -1050,7 +1060,7 @@ class GraphQL:
         # graphql endpoint returns valid response with errors
         raise exceptions.StardogException(res)
 
-    def schemas(self) -> dict:
+    def schemas(self) -> Dict:
         """Retrieves all available schemas.
 
         :return: All schemas
