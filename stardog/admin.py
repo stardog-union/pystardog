@@ -3,9 +3,13 @@
 """
 
 import json
+from typing import Dict, List, Optional, Tuple, Union
 import contextlib2
 import urllib
 from time import sleep
+from requests.auth import AuthBase
+
+from stardog.content import Content, ImportFile, ImportRaw, MappingFile, MappingRaw
 
 from . import content_types as content_types
 from .http import client
@@ -15,34 +19,29 @@ class Admin:
     """Admin Connection.
 
     This is the entry point for admin-related operations on a Stardog server.
-
     See Also:
         `Stardog Docs - Operating Stardog <https://docs.stardog.com/operating-stardog/>`_
     """
 
     def __init__(
         self,
-        endpoint: object = None,
-        username: object = None,
-        password: object = None,
-        auth: object = None,
-        run_as: str = None,
+        endpoint: Optional[str] = client.Client.DEFAULT_ENDPOINT,
+        username: Optional[str] = client.Client.DEFAULT_USERNAME,
+        password: Optional[str] = client.Client.DEFAULT_PASSWORD,
+        auth: Optional[AuthBase] = None,
+        run_as: Optional[str] = None,
     ) -> None:
         """Initializes an admin connection to a Stardog server.
 
-        Args:
-          endpoint (str, optional): Url of the server endpoint.
-            Defaults to `http://localhost:5820`
-          username (str, optional): Username to use in the connection.
-            Defaults to `admin`
-          password (str, optional): Password to use in the connection.
-            Defaults to `admin`
-          auth (requests.auth.AuthBase, optional): requests Authentication object.
-            Defaults to `None`
-          run_as (str, optional): the User to impersonate
+        :param endpoint: URL of the Stardog server endpoint.
+        :param username: Username to use in the connection.
+        :param password: Password to use in the connection.
+        :param auth: :class:`requests.auth.AuthBase` object. Used as an alternative authentication scheme. If not provided, HTTP Basic auth will be attempted with the ``username`` and ``password``.
+        :param run_as: the user to impersonate
 
-        auth and username/password should not be used together.  If the are the value
-        of `auth` will take precedent.
+        .. note::
+            ``auth`` and ``username``/``password`` should not be used together.  If they are, the value of ``auth`` will take precedent.
+
         Examples:
           >>> admin = Admin(endpoint='http://localhost:9999',
                             username='admin', password='admin')
@@ -53,39 +52,38 @@ class Admin:
         # ensure the server is alive and at the specified location
         self.alive()
 
-    def shutdown(self):
+    def shutdown(self) -> None:
         """Shuts down the server."""
         self.client.post("/admin/shutdown")
 
-    def alive(self):
+    def alive(self) -> bool:
         """
         Determine whether the server is running
-        :return: Returns True if server is alive
-        :rtype: bool
+
+        :return: is the server alive?
         """
         r = self.client.get("/admin/alive")
         return r.status_code == 200
 
-    def healthcheck(self):
+    def healthcheck(self) -> bool:
         """
         Determine whether the server is running and able to accept traffic
-        :return: Returns true if server is able to accept traffic
-        :rtype: bool
+
+        :return: is the server accepting traffic?
         """
         r = self.client.get("/admin/healthcheck")
         return r.status_code == 200
 
-    def get_prometheus_metrics(self):
+    def get_prometheus_metrics(self) -> str:
         """ """
         r = self.client.get("/admin/status/prometheus")
         return r.text
 
-    def get_server_metrics(self):
+    def get_server_metrics(self) -> Dict:
         """
         Returns metric information from the registry in JSON format
 
         :return: Server metrics
-        :rtype: dict
 
         See Also:
             `HTTP API - Server metrics <https://stardog-union.github.io/http-docs/#operation/status>`_
@@ -93,41 +91,37 @@ class Admin:
         r = self.client.get("/admin/status")
         return r.json()
 
-    def database(self, name):
+    def database(self, name: str) -> "Database":
         """Retrieves an object representing a database.
 
-        Args:
-          name (str): The database name
+        :param name: The database name
 
-        Returns:
-          Database: The requested database
+        :return: the database
         """
         return Database(name, self.client)
 
-    def databases(self):
-        """Retrieves all databases.
-
-        Returns:
-          list[Database]: A list of database objects
-        """
+    def databases(self) -> List["Database"]:
+        """Retrieves all databases."""
         r = self.client.get("/admin/databases")
         databases = r.json()["databases"]
         return list(map(lambda name: Database(name, self.client), databases))
 
-    def new_database(self, name, options=None, *contents, **kwargs):
+    def new_database(
+        self,
+        name: str,
+        options: Optional[Dict] = None,
+        *contents: Union[Content, Tuple[Content, str], None],
+        **kwargs,
+    ) -> "Database":
         """Creates a new database.
 
-        Args:
-          name (str): the database name
-          options (dict): Dictionary with database options (optional)
-          *contents (Content or (Content, str), optional): Datasets
+        :param name: the database name
+        :param options: Dictionary with database options
+        :param contents: Datasets
             to perform bulk-load with. Named graphs are made with tuples of
             Content and the name.
-          **kwargs: Allows to set copy_to_server. If true, sends the files to the Stardog server,
-            and replicates them to the rest of nodes.
-
-        Returns:
-            Database: The database object
+        :keyword copy_to_server: . If ``True``, sends the files to the Stardog server; if running as a cluster,
+            data will be replicated to all nodes in the cluster.
 
         Examples:
             Options
@@ -185,21 +179,34 @@ class Admin:
             self.client.post("/admin/databases", files=params)
             return Database(name, self.client)
 
-    def restore(self, from_path, *, name=None, force=False):
+    def restore(
+        self,
+        from_path: str,
+        *,
+        name: Optional[str] = None,
+        force: Optional[bool] = False,
+    ) -> None:
         """Restore a database.
 
-        Args:
-          from_path (str): the full path on the server to the backup
-          name (str, optional): the name of the database to
+        :param from_path: the full path on the server's file system to the backup
+        :param name: the name of the database to
             restore to if different from the backup
-          force (boolean, optional): a backup will not be restored over an
-            existing database of the same name; the force flag should be used
+        :param force: by default, a backup will not be restored in place of an
+            existing database of the same name; the ``force`` parameter should be used
             to overwrite the database
 
         Examples:
-            >>> admin.restore("/data/stardog/.backup/db/2019-12-01")
-            >>> admin.restore("/data/stardog/.backup/db/2019-11-05",
-                              name="db2", force=True)
+
+        .. code-block:: python
+            :caption: simple restore
+
+            admin.restore("/data/stardog/.backup/db/2019-12-01")
+
+        .. code-block:: python
+            :caption: restore the backup and overwrite ``db2`` database
+
+            admin.restore("/data/stardog/.backup/db/2019-11-05",
+                          name="db2", force=True)
 
         See Also:
             `Stardog Docs - Restoring a Database <https://docs.stardog.com/operating-stardog/database-administration/backup-and-restore#restoring-a-database>`_
@@ -213,9 +220,17 @@ class Admin:
 
         self.client.put("/admin/restore", params=params)
 
-    def backup_all(self, location=None):
+    def backup_all(self, location: Optional[str] = None):
         """
-        Create a backup of all databases on the server
+        Create a backup of all databases on the server. This is also known as a **server backup**.
+
+        :param location: where to write the server backup to on the Stardog server's file system.
+
+        .. note::
+            By default, backups are stored in the ``.backup`` directory in ``$STARDOG_HOME``,
+            but you can use the ``backup.dir`` property in your ``stardog.properties`` file
+            to specify a different location for backups or you can override it using the ``location`` parameter.
+
         """
         url = "/admin/databases/backup_all"
         if location is not None:
@@ -223,12 +238,11 @@ class Admin:
             url = f"{url}?{params}"
         self.client.put(url)
 
-    def get_all_metadata_properties(self):
+    def get_all_metadata_properties(self) -> Dict:
         """
         Get information on all database metadata properties, including description and example values
 
         :return: Metadata properties
-        :rtype: dict
 
         See also:
             `HTTP API - Get all database metadata properties <https://stardog-union.github.io/http-docs/#tag/DB-Admin/operation/getAllMetaProperties>`_
@@ -236,52 +250,40 @@ class Admin:
         r = self.client.get("/admin/config_properties")
         return r.json()
 
-    def query(self, id):
+    def query(self, id: str) -> Dict:
         """Gets information about a running query.
 
-        Args:
-          id (str): Query ID
+        :param id: Query ID
 
-        Returns:
-            dict: Query information
+        :return: Query information
         """
         r = self.client.get("/admin/queries/{}".format(id))
         return r.json()
 
-    def queries(self):
+    def queries(self) -> Dict:
         """Gets information about all running queries.
 
-        Returns:
-          dict: Query information
+        :return: information about all running queries
         """
         r = self.client.get("/admin/queries")
         return r.json()["queries"]
 
-    def kill_query(self, id):
+    def kill_query(self, id: str) -> None:
         """Kills a running query.
 
-        Args:
-          id (str): ID of the query to kill
+        :param id: ID of the query to kill
         """
         self.client.delete("/admin/queries/{}".format(id))
 
-    def stored_query(self, name):
+    def stored_query(self, name: str) -> "StoredQuery":
         """Retrieves a Stored Query.
 
-        Args:
-          name (str): The name of the Stored Query to retrieve
-
-        Returns:
-          StoredQuery: The StoredQuery object
+        :param name: The name of the stored query to retrieve
         """
         return StoredQuery(name, self.client)
 
-    def stored_queries(self):
-        """Retrieves all stored queries.
-
-        Returns:
-          list[StoredQuery]: A list of StoredQuery objects
-        """
+    def stored_queries(self) -> List["StoredQuery"]:
+        """Retrieves all stored queries."""
         r = self.client.get(
             "/admin/queries/stored", headers={"Accept": "application/json"}
         )
@@ -290,22 +292,29 @@ class Admin:
             map(lambda query: StoredQuery(query["name"], self.client, query), queries)
         )
 
-    def new_stored_query(self, name, query, options=None):
+    def new_stored_query(
+        self, name: str, query: str, options: Optional[Dict] = None
+    ) -> "StoredQuery":
         """Creates a new Stored Query.
 
-        Args:
-          name (str): The name of the stored query
-          query (str): The query text
-          options (dict, optional): Additional options
 
-        Returns:
-          StoredQuery: the new StoredQuery
+        :param name: the name of the stored query
+        :param query: the query to store
+        :param options: Additional options (e.g. ``{"shared": True, "database": "myDb" }``)
+
+        :return: the new StoredQuery object
 
         Examples:
-            >>> admin.new_stored_query('all triples',
-                  'select * where { ?s ?p ?o . }',
-                  { 'database': 'mydb' }
-                )
+
+        .. code-block:: python
+            :caption: Create a new stored query named ``all triples`` and make it only executable against
+                the database ``mydb``.
+
+            new_stored_query = admin.new_stored_query(
+                'all triples',
+                'select * where { ?s ?p ?o . }',
+                { 'database': 'mydb' }
+            )
         """
         if options is None:
             options = {}
@@ -324,7 +333,7 @@ class Admin:
     #     :return:
     #     """
 
-    def clear_stored_queries(self):
+    def clear_stored_queries(self) -> None:
         """Remove all stored queries on the server."""
         self.client.delete("/admin/queries/stored")
 
@@ -361,37 +370,27 @@ class Admin:
     #     :return:
     #     """
 
-    def user(self, name):
-        """Retrieves an object representing a user.
+    def user(self, name: str) -> "User":
+        """Retrieves a User object.
 
-        Args:
-          name (str): The name of the user
-
-        Returns:
-          User: The User object
+        :param name: The name of the user
         """
         return User(name, self.client)
 
-    def users(self):
-        """Retrieves all users.
-
-        Returns:
-          list[User]: A list of User objects
-        """
+    def users(self) -> List["User"]:
+        """Retrieves all users."""
         r = self.client.get("/admin/users")
         users = r.json()["users"]
         return list(map(lambda name: User(name, self.client), users))
 
-    def new_user(self, username, password, superuser=False):
+    def new_user(self, username: str, password: str, superuser: bool = False) -> "User":
         """Creates a new user.
 
-        Args:
-          username (str): The username
-          password (str): The password
-          superuser (bool): Should the user be super? Defaults to false.
+        :param username: The username
+        :param password: The password
+        :param superuser: Create the user as a superuser. Only superusers can make other superusers.
 
-        Returns:
-          User: The new User object
+        :return: The new User object
         """
         meta = {
             "username": username,
@@ -402,56 +401,38 @@ class Admin:
         self.client.post("/admin/users", json=meta)
         return self.user(username)
 
-    def role(self, name):
-        """Retrieves an object representing a role.
+    def role(self, name: str) -> "Role":
+        """Retrieves a Role.
 
-        Args:
-          name (str): The name of the Role
-
-        Returns:
-          Role: The Role object
+        :param name: The name of the role
         """
         return Role(name, self.client)
 
-    def roles(self):
-        """Retrieves all roles.
-
-        Returns:
-          list[Role]: A list of Role objects
-        """
+    def roles(self) -> List["Role"]:
+        """Retrieves all roles."""
         r = self.client.get("/admin/roles")
         roles = r.json()["roles"]
         return list(map(lambda name: Role(name, self.client), roles))
 
-    def new_role(self, name):
+    def new_role(self, name: str):
         """Creates a  new role.
 
-        Args:
-          name (str): The name of the new Role
+        :param name: the name of the new role
 
-        Returns:
-          Role: The new Role object
+        :return: the new Role object
         """
         self.client.post("/admin/roles", json={"rolename": name})
         return Role(name, self.client)
 
-    def virtual_graph(self, name):
+    def virtual_graph(self, name: str) -> "VirtualGraph":
         """Retrieves a Virtual Graph.
 
-        Args:
-          name (str): The name of the Virtual Graph to retrieve
-
-        Returns:
-          VirtualGraph: The VirtualGraph object
+        :param name: The name of the virtual graph to retrieve
         """
         return VirtualGraph(name, self.client)
 
-    def virtual_graphs(self):
-        """Retrieves all virtual graphs.
-
-        Returns:
-          list[VirtualGraph]: A list of VirtualGraph objects
-        """
+    def virtual_graphs(self) -> List["VirtualGraph"]:
+        """Retrieves all virtual graphs."""
         r = self.client.get("/admin/virtual_graphs")
         virtual_graphs = r.json()["virtual_graphs"]
         return list(
@@ -470,22 +451,38 @@ class Admin:
     #     :return:
     #     """
 
-    # deprecated
-    def import_virtual_graph(self, db, mappings, named_graph, remove_all, options):
-        """Import (materialize) a virtual graph directly into the local knowledge graph.
+    def import_virtual_graph(
+        self,
+        db: str,
+        mappings: Union[MappingRaw, MappingFile, str],
+        named_graph: str,
+        remove_all: Optional[bool],
+        options: Dict,
+    ) -> None:
+        """Import (materialize) a virtual graph directly into the Stardog database.
 
-        Args:
-          db (str): The database into which to import the graph
-          mappings (MappingFile or MappingRaw): New mapping contents. An empty string can be passed for autogenerated mappings.
-          named_graph (str): Name of the graph into which import the VG.
-          remove_all (bool): Should the target named graph be cleared before importing?
-          options (dict): Options for the new virtual graph. See `Stardog Docs - Virtual Graph Properties <https://docs.stardog.com/virtual-graphs/virtual-graph-configuration#virtual-graph-properties>`_ for all available options.
+        .. warning::
+            **Deprecated**: :meth:`stardog.admin.Admin.materialize_virtual_graph` should be preferred.
+
+        :param db: The database into which to import the graph
+        :param mappings: New mapping contents. An empty string can be passed for autogenerated mappings.
+        :param named_graph: Name of the graph to import the virtual graph into.
+        :param remove_all: Should the target named graph be cleared before importing?
+        :param options: Options for the new virtual graph. See `Stardog Docs - Virtual Graph Properties <https://docs.stardog.com/virtual-graphs/virtual-graph-configuration#virtual-graph-properties>`_ for all available options.
 
         Examples:
-            >>> admin.import_virtual_graph(
-                  'db-name', mappings=File('mappings.ttl'),
-                  named_graph='my-graph', remove_all=True, options={'jdbc.driver': 'com.mysql.jdbc.Driver'}
-                )
+
+        .. code-block:: python
+            :caption: Import a MySQL virtual graph into the ``db-name`` database using the mappings specified in ``mappings.ttl``.
+                The virtual graph will be imported into the named graph ``my-graph`` and prior to the import will have its contents cleared.
+
+            admin.import_virtual_graph(
+                  'db-name',
+                  mappings=File('mappings.ttl'),
+                  named_graph='my-graph',
+                  remove_all=True,
+                  options={'jdbc.driver': 'com.mysql.jdbc.Driver'}
+            )
         """
 
         if mappings == "":
@@ -501,28 +498,24 @@ class Admin:
     # new one is called materialize_virtual_graph
     def materialize_virtual_graph(
         self,
-        db,
-        mappings,
-        data_source=None,
-        options=None,
-        named_graph="tag:stardog:api:context:default",
-        remove_all=False,
+        db: str,
+        mappings: Union[MappingFile, MappingRaw, str],
+        data_source: Optional[str] = None,
+        options: Optional[Dict] = None,
+        named_graph: Optional[str] = "tag:stardog:api:context:default",
+        remove_all: bool = False,
     ):
-        """Import (materialize) a virtual graph directly into the local knowledge graph.
+        """Import (materialize) a virtual graph directly into a database.
 
-        Args:
-          db (str): The database into which to import the graph
-          mappings (MappingFile or MappingRaw): New mapping contents. An empty string can be passed for autogenerated mappings.
-          data_source (str, optional): The datasource to load from
-          options (dict, optional): Options for the new virtual graph, See `Stardog Docs - Virtual Graph Properties <https://docs.stardog.com/virtual-graphs/virtual-graph-configuration#virtual-graph-properties>`_ for all available options.
-          named_graph (str,optional): Name of the graph into which import the VG. Default: Default graph
-          remove_all (bool, optional): Should the target named graph be cleared before importing? Default: False
+        :param db: The database into which to import the graph
+        :param mappings: New mapping contents. An empty string can be passed for autogenerated mappings.
+        :param data_source: The datasource to load from
+        :param options: Options for the new virtual graph, See `Stardog Docs - Virtual Graph Properties <https://docs.stardog.com/virtual-graphs/virtual-graph-configuration#virtual-graph-properties>`_ for all available options.
+        :param named_graph: Name of the graph into which import the virtual graph.
+        :param remove_all: Should the target named graph be cleared before importing?
 
-        Examples:
-            >>> admin.materialize_virtual_graph(
-                  'db-name', mappings=File('mappings.ttl'),
-                  named_graph='my-graph'
-                )
+        .. note::
+            ``data_source`` or ``options`` must be provided.
         """
 
         assert (
@@ -566,31 +559,33 @@ class Admin:
         r = self.client.post("/admin/virtual_graphs/import_db", json=meta)
 
     def new_virtual_graph(
-        self, name, mappings=None, options=None, datasource=None, db=None
-    ):
+        self,
+        name: str,
+        mappings: Union[MappingFile, MappingRaw, None] = None,
+        options: Optional[Dict] = None,
+        datasource: Optional[str] = None,
+        db: Optional[str] = None,
+    ) -> "VirtualGraph":
         """Creates a new Virtual Graph.
 
-        Args:
-          name (str): The name of the virtual graph.
-          mappings (MappingFile or MappingRaw, optional): New mapping contents, if not pass it will autogenerate
-          options (dict, Optional): Options for the new virtual graph. If not passed, then a datasource must be specified.
-          datasource (str, Optional): Name of the datasource to use. If not passed, options with a datasource must be set.
-          db (str, Optional): Name of the database to associate the VG. If not passed, will be associated to all databases.
+        :param name: The name of the virtual graph.
+        :param mappings: New mapping contents. If ``None`` provided, mappings will be autogenerated.
+        :param options: Options for the new virtual graph. If ``None`` provided, then a ``datasource`` must be specified.
+        :param datasource: Name of the datasource to use. If ``None`` provided, ``options`` with a ``datasource`` key must be set.
+        :param db: Name of the database to associate the virtual graph. If ``None`` provided, the virtual graph will be associated with all databases.
 
-        Returns:
-          VirtualGraph: the new VirtualGraph
+        :return: the new VirtualGraph
 
         Examples:
-            >>> admin.new_virtual_graph(
-                  'users', MappingFile('mappings.sms'), None, 'my_datasource'
-                )
-            >>> admin.new_virtual_graph(
-                  'users', MappingFile('mappings.ttl','SMS2'), None, 'my_datasource'
-                )
-            >>> admin.new_virtual_graph(  #DEPRECATED
-                  'users', File('mappings.ttl'),
-                  {'jdbc.driver': 'com.mysql.jdbc.Driver'}
-                )
+
+        .. code-block:: python
+            :caption: Create a new virtual graph named ``users`` and associate it with all databases. The SMS2 mappings are provided in the ``mappings.ttl`` file.
+
+            new_vg = admin.new_virtual_graph(
+                         name='users',
+                         mappings=MappingFile('mappings.ttl','SMS2'),
+                         datasource='my_datasource'
+                    )
         """
 
         if mappings is None:
@@ -629,24 +624,23 @@ class Admin:
         self.client.post("/admin/virtual_graphs", json=meta)
         return VirtualGraph(name, self.client)
 
-    def import_file(self, db, mappings, input_file, options=None, named_graph=None):
+    def import_file(
+        self,
+        db: str,
+        mappings: Union[MappingRaw, MappingFile],
+        input_file: Union[ImportFile, ImportRaw],
+        options: Optional[Dict] = None,
+        named_graph: Optional[str] = None,
+    ) -> bool:
         """Import a JSON or CSV file.
 
-        Args:
-          db (str): Name of the database to import the data
-          mappings (MappingRaw or MappingFile): New mapping contents.
-          input_file(ImportFile or ImportRaw):
-          options (dict, Optional): Options for the new csv import.
-          named_graph (str, Optional): The namegraph to associate it too
+        :param db: Name of the database to import the data
+        :param mappings: Mappings specifying how to import the data contained in the CSV/JSON.
+        :param input_file: the JSON or CSV file to import
+        :param options: Options for the import.
+        :param named_graph: The named graph to import the mapped CSV/JSON into.
 
-        Returns:
-            r.ok
-
-        Examples:
-            >>> admin.import_file(
-                  'mydb', File('mappings.ttl'),
-                  'test.csv'
-                )
+        :return: was the import successful?
         """
 
         if mappings is not None:
@@ -700,46 +694,35 @@ class Admin:
 
         return r.ok
 
-    def datasource(self, name):
+    def datasource(self, name: str) -> "DataSource":
         """Retrieves an object representing a DataSource.
 
-        Args:
-          name (str): The name of the data source
-
-        Returns:
-          DataSource: The DataSource object
+        :param name: The name of the data source
         """
         return DataSource(name, self.client)
 
-    def datasources(self):
-        """Retrieves all data sources.
-
-        Returns:
-          list[DataSources]: A list of DataSources
-        """
+    def datasources(self) -> List["DataSource"]:
+        """Retrieves all data sources."""
         r = self.client.get("/admin/data_sources")
         data_sources = r.json()["data_sources"]
         return list(map(lambda name: DataSource(name, self.client), data_sources))
 
-    def datasources_info(self):
-        """List data sources info
+    def datasources_info(self) -> List[Dict]:
+        """List all data sources with their details
 
-        Returns:
-          list: A list of data sources info
+        :return: a list of data sources with their details
         """
 
         r = self.client.get("/admin/data_sources/list")
         return r.json()["data_sources"]
 
-    def new_datasource(self, name, options):
+    def new_datasource(self, name: str, options: Dict) -> "DataSource":
         """Creates a new DataSource.
 
-        Args:
-          name (str): The name of the data source
-          options (dict): Data source options
+        :param name: The name of the data source
+        :param options: Data Source options
 
-        Returns:
-          User: The new DataSource object
+        :return: The new DataSource object
         """
 
         if options is None:
@@ -750,11 +733,10 @@ class Admin:
         self.client.post("/admin/data_sources", json=meta)
         return DataSource(name, self.client)
 
-    def get_server_properties(self):
+    def get_server_properties(self) -> Dict:
         """Get the value of any set server-level properties
 
-        Returns
-            dict: Server properties
+        :return: server properties
         """
 
         r = self.client.get("/admin/properties")
@@ -768,36 +750,34 @@ class Admin:
     #     :return:
     #     """
 
-    def validate(self):
+    def validate(self) -> bool:
         """Validates an admin connection.
 
-        Returns:
-          bool: The connection state
+        :return: whether the connection is valid or not
         """
         r = self.client.get("/admin/users/valid")
         return r.status_code == 200
 
-    def cluster_list_standby_nodes(self):
+    def cluster_list_standby_nodes(self) -> Dict:
         """
         List standby nodes
-        :return: Returns the registry ID for the standby nodes.
-        :rtype: dict
+
+        :return: all standby nodes in the cluster
         """
         r = self.client.get("/admin/cluster/standby/registry")
         return r.json()
 
-    def cluster_join(self):
+    def cluster_join(self) -> None:
         """
         Instruct a standby node to join its cluster as a full node
         """
         self.client.put("/admin/cluster/standby/join")
 
-    def standby_node_pause_status(self):
+    def standby_node_pause_status(self) -> Dict:
         """
         Get the pause status of a standby node
 
-        :return: Pause status of a standby node, possible values are: "WAITING", "SYNCING", "PAUSING", "PAUSED"
-        :rtype: dict
+        :return: Pause status of a standby node, possible values are: ``WAITING``, ``SYNCING``, ``PAUSING``, ``PAUSED``
 
         See also:
             `HTTP API - Get Paused State of Standby Node <https://stardog-union.github.io/http-docs/#operation/getPauseState>`_
@@ -806,13 +786,12 @@ class Admin:
         r = self.client.get("/admin/cluster/standby/pause")
         return r.json()
 
-    def standby_node_pause(self, pause):
+    def standby_node_pause(self, pause: bool) -> bool:
         """
         Pause/Unpause standby node
-        Args:
-          *pause: (boolean): True for pause, False for unpause
-        :return: Returns True if the pause status was modified successfully, false if it failed.
-        :rtype: bool
+
+        :param pause: ``True`` should be provided to pause the standby node. ``False`` should be provided to unpause.
+        :return: whether the pause status was successfully changed or not.
         """
         if pause:
             r = self.client.put("/admin/cluster/standby/pause?pause=true")
@@ -820,31 +799,31 @@ class Admin:
             r = self.client.put("/admin/cluster/standby/pause?pause=false")
         return r.status_code == 200
 
-    def cluster_revoke_standby_access(self, registry_id):
+    def cluster_revoke_standby_access(self, registry_id: str) -> None:
         """
         Instruct a standby node to stop syncing
-        Args:
-          *registry_id: (string): Id of the standby node to stop syncing.
+
+        :param registry_id: ID of the standby node.
         """
         self.client.delete("/admin/cluster/standby/registry/" + registry_id)
 
-    def cluster_start_readonly(self):
+    def cluster_start_readonly(self) -> None:
         """
         Start read only mode
         """
         self.client.put("/admin/cluster/readonly")
 
-    def cluster_stop_readonly(self):
+    def cluster_stop_readonly(self) -> None:
         """
         Stops read only mode
         """
         self.client.delete("/admin/cluster/readonly")
 
-    def cluster_coordinator_check(self):
+    def cluster_coordinator_check(self) -> bool:
         """
         Determine if a specific cluster node is the cluster coordinator
-        :return: True if the node is a coordinator, false if not.
-        :rtype: Bool
+
+        :return: whether the node is a coordinator or not.
         """
         r = self.client.get("/admin/cluster/coordinator")
         return r.status_code == 200
@@ -859,101 +838,100 @@ class Admin:
     #     r = self.client.post('/admin/cluster/diagnostics')
     #     return r
 
-    def cluster_status(self):
+    def cluster_status(self) -> Dict:
         """Prints status information for each node
         in the cluster
 
-        :return: Nodes of the cluster and extra information
-        :rtype: dict
+        :return: status information about each node in the cluster
         """
         r = self.client.get("/admin/cluster/status")
         return r.json()
 
-    def cluster_info(self):
+    def cluster_info(self) -> Dict:
         """Prints info about the nodes in the Stardog
-        Pack cluster.
+        cluster.
 
-        :return: Nodes of the cluster
-        :rtype: dict
+        :return: information about nodes in the cluster
         """
         r = self.client.get("/admin/cluster")
         return r.json()
 
-    def cluster_shutdown(self):
+    def cluster_shutdown(self) -> bool:
         """
-        Shutdown all nodes
-        :return: True if the cluster got shutdown successfully.
-        :rtype: bool
+        Shutdown all nodes in the cluster
+
+        :return: whether the cluster was shutdown successfully or not.
         """
         r = self.client.post("/admin/shutdownAll")
         return r.status_code == 200
 
-    def cache(self, name):
+    def cache(self, name: str) -> "Cache":
         """Retrieve an object representing a cached dataset.
 
-        Returns:
-          Cache: The requested cache
+        :param name: the name of the cache to retrieve
         """
         return Cache(name, self.client)
 
-    def cache_status(self, *names):
-        """Retrieves the status of one or more cached graphs or queries.
+    def cache_status(self, *names: str) -> List[Dict]:
+        """Retrieves the status of one or more cached graphs.
 
-        Args:
-          *names: (str): Names of the cached graphs or queries
-        Returns:
-          list[str]: List of statuses
+        :param names: Names of the cached graphs to retrieve status for
+
+        :return: list of statuses
         """
         return self.client.post("/admin/cache/status", json=names).json()
 
-    def cached_status(self):
-        """Retrieves all cached queries.
-
-        Returns:
-          list[Cache]: A list of Cache objects
-        """
+    def cached_status(self) -> List["Cache"]:
+        """Retrieves all cached graphs."""
         r = self.client.get("/admin/cache/status")
         cache_names = [cache_name["name"] for cache_name in r.json()]
         return list(map(lambda name: Cache(name, self.client), cache_names))
 
-    def cached_queries(self):
-        """Retrieves all cached queries. This method is deprecated in Stardog 8+
+    def cached_queries(self) -> List["Cache"]:
+        """
+        Retrieves all cached queries.
 
-        Returns:
-          list[Cache]: A list of Cache objects
+        .. warning::
+            This method is deprecated in Stardog 8+
+
+        :return: cached queries
+
         """
         r = self.client.get("/admin/cache/queries")
         cache_names = [cache_name["name"] for cache_name in r.json()]
         return list(map(lambda name: Cache(name, self.client), cache_names))
 
-    def cached_graphs(self):
-        """Retrieves all cached graphs.
-
-        Returns:
-          list[Cache]: A list of Cache objects
-        """
+    def cached_graphs(self) -> List["Cache"]:
+        """Retrieves all cached graphs."""
         r = self.client.get("/admin/cache/graphs")
         cache_names = [cache_name["name"] for cache_name in r.json()]
         return list(map(lambda name: Cache(name, self.client), cache_names))
 
     def new_cached_query(
-        self, name, target, query, database, refresh_script=None, register_only=False
-    ):
+        self,
+        name: str,
+        target: str,
+        query: str,
+        database: str,
+        refresh_script: Optional[str] = None,
+        register_only: bool = False,
+    ) -> "Cache":
         """Creates a new cached query.
 
-        Args:
-          name (str): The name (URI) of the cached query
-          target (str): The name (URI) of the cache target
-          query (str): The query to cache
-          database (str): The name of the database
-          refresh_script (str, optional): A SPARQL insert query to run
-            when refreshing the cache
-          register_only (bool): Default: false. If true, register a
-            cached dataset without loading data from the source graph
-            or query into the cache target's databases
+        .. warning::
+            This method is deprecated in Stardog 8+
 
-        Returns:
-          Cache: The new Cache
+        :param name: The name (URI) of the cached query
+        :param target: The name (URI) of the cache target
+        :param query: The query to cache
+        :param database: The name of the database
+        :param refresh_script: A SPARQL insert query to run
+          when refreshing the cache
+        :param register_only: If ``True``, register a
+          cached dataset without loading data from the source graph
+          or query into the cache target's databases
+
+        :return: the new Cache
         """
 
         params = {
@@ -974,26 +952,25 @@ class Admin:
 
     def new_cached_graph(
         self,
-        name,
-        target,
-        graph,
-        database=None,
-        refresh_script=None,
-        register_only=False,
-    ):
+        name: str,
+        target: str,
+        graph: str,
+        database: Optional[str] = None,
+        refresh_script: Optional[str] = None,
+        register_only: bool = False,
+    ) -> "Cache":
         """Creates a new cached graph.
 
-        Args:
-          name (str): The name (URI) of the cached query
-          target (str): The name (URI) of the cache target
-          graph (str): The name of the graph to cache
-          database (str): The name of the database. Optional for virtual graphs, mandatory for named graphs.
-          refresh_script (str): An optional SPARQL Insert query to run when refreshing the cache.
-          register_only (bool): An optional value that if true, register a cached dataset without loading data from the source graph or query into the cache target's databases.
+        :param name: The name (URI) of the cached query
+        :param target: The name (URI) of the cache target
+        :param graph: The name of the graph to cache
+        :param database: The name of the database. Optional for virtual graphs, required for named graphs.
+        :param refresh_script: An optional SPARQL update query to run when refreshing the cache.
+        :param register_only: An optional value that if ``True``, register a cached dataset without loading data from the source graph or query into the cache target's databases.
 
 
-        Returns:
-          Cache: The new Cache"""
+        :return: The new Cache
+        """
 
         params = {
             "name": name,
@@ -1013,32 +990,32 @@ class Admin:
         self.client.post("/admin/cache", json=params)
         return Cache(name, self.client)
 
-    def cache_targets(self):
-        """Retrieves all cache targets.
-
-        Returns:
-          list[CacheTarget]: A list of CacheTarget objects
-        """
+    def cache_targets(self) -> List["CacheTarget"]:
+        """Retrieves all cache targets."""
         r = self.client.get("/admin/cache/target")
         return list(
             map(lambda target: CacheTarget(target["name"], self.client), r.json())
         )
 
     def new_cache_target(
-        self, name, hostname, port, username, password, use_existing_db=False
-    ):
+        self,
+        name: str,
+        hostname: str,
+        port: int,
+        username: str,
+        password: str,
+        use_existing_db: bool = False,
+    ) -> "CacheTarget":
         """Creates a new cache target.
 
-        Args:
-          name (str): The name of the cache target
-          hostname (str): The hostname of the cache target server
-          port (int): The port of the cache target server
-          username (int): The username for the cache target
-          password (int): The password for the cache target
-          use_existing_db (bool): If true, check for an existing cache database to use before creating a new one
+        :param name: The name of the cache target
+        :param hostname: The hostname of the cache target server
+        :param port: The port of the cache target server
+        :param username: The username for the cache target
+        :param password: The password for the cache target
+        :param use_existing_db: If ``True``, check for an existing cache database to use before creating a new one
 
-        Returns:
-          CacheTarget: The new CacheTarget
+        :return: the new CacheTarget
         """
         params = {
             "name": name,
@@ -1080,18 +1057,16 @@ class Database:
         self.client.get(self.path + "/options")
 
     @property
-    def name(self):
+    def name(self) -> str:
         """The name of the database."""
         return self.database_name
 
-    def get_options(self, *options):
+    def get_options(self, *options: str) -> Dict:
         """Get the value of specific metadata options for a database
 
-        Args:
-          *options (str): Database option names
+        :param options: Database option names
 
-        Returns:
-          dict: Database options
+        :return: Database options
 
         Examples
           >>> db.get_options('search.enabled', 'spatial.enabled')
@@ -1102,51 +1077,52 @@ class Database:
         r = self.client.put(self.path + "/options", json=meta)
         return r.json()
 
-    def get_all_options(self):
+    def get_all_options(self) -> Dict:
         """Get the value of every metadata option for a database
 
-        :return: Dict detailing all database metadata
-        :rtype: Dict
+        :return: All database metadata
         """
         r = self.client.get(self.path + "/options")
         return r.json()
 
-    def set_options(self, options):
+    def set_options(self, options: Dict) -> None:
         """Sets database options.
 
-        The database must be offline.
+        :param options: Database options
 
-        Args:
-          options (dict): Database options
+        .. note::
+            The database must be offline to set some options (e.g. ``search.enabled``).
 
-        Examples
+        Examples:
             >>> db.set_options({'spatial.enabled': False})
         """
 
         r = self.client.post(self.path + "/options", json=options)
         return r.status_code == 200
 
-    def optimize(self):
+    def optimize(self) -> None:
         """Optimizes a database."""
         self.client.put(self.path + "/optimize")
 
-    def verify(self):
+    def verify(self) -> None:
         """verifies a database."""
         self.client.post(self.path + "/verify")
 
-    def repair(self):
+    def repair(self) -> bool:
         """Attempt to recover a corrupted database.
 
-        The database must be offline.
+        .. note::
+            The database must be offline.
+
+        :return: whether the database was successfully repaired or not
         """
         r = self.client.post(self.path + "/repair")
         return r.status_code == 200
 
-    def backup(self, *, to=None):
+    def backup(self, *, to: Optional[str] = None) -> None:
         """Create a backup of a database on the server.
 
-        Args:
-          to (string, optional): specify a path on the server to store
+        :param to: specify a path on the Stardog server's file system to store
             the backup
 
         See Also:
@@ -1155,16 +1131,19 @@ class Database:
         params = {"to": to} if to else {}
         self.client.put(self.path + "/backup", params=params)
 
-    def online(self):
+    def online(self) -> None:
         """Sets a database to online state."""
         self.client.put(self.path + "/online")
 
-    def offline(self):
+    def offline(self) -> None:
         """Sets a database to offline state."""
         self.client.put(self.path + "/offline")
 
     def copy(self, to):
         """Makes a copy of this database under another name.
+
+        .. warning::
+            This method is deprecated and not valid for Stardog versions 6+.
 
         The database must be offline.
 
@@ -1177,34 +1156,32 @@ class Database:
         self.client.put(self.path + "/copy", params={"to": to})
         return Database(to, self.client)
 
-    def drop(self):
+    def drop(self) -> None:
         """Drops the database."""
         self.client.delete(self.path)
 
-    def namespaces(self):
+    def namespaces(self) -> Dict:
         """
         Retrieve the namespaces stored in the database
 
         :return: A dict listing the prefixes and IRIs of the stored namespaces
-        :rtype: Dict
 
         See also:
-        `HTTPI API - Get Namespaces <https://stardog-union.github.io/http-docs/#operation/getNamespaces>`_
+            `HTTPI API - Get Namespaces <https://stardog-union.github.io/http-docs/#operation/getNamespaces>`_
         """
         r = self.client.get(f"/{self.database_name}/namespaces")
         return r.json()["namespaces"]
 
-    def import_namespaces(self, content):
+    def import_namespaces(self, content: Content) -> Dict:
         """
-        Args:
-          content (Content): RDF File containing prefix declarations
-            Imports namespace prefixes from an RDF file
-            that contains prefix declarations into the database, overriding any
-            previous mappings for those prefixes. Only the prefix declarations in
-            the file are processed, the rest of the file is not parsed.
+        Imports namespace prefixes from an RDF file
+        that contains prefix declarations into the database, overriding any
+        previous mappings for those prefixes. Only the prefix declarations in
+        the file are processed, the rest of the file is not parsed.
+
+        :param content: RDF File containing prefix declarations
 
         :return: Dictionary with all namespaces after import
-        :rtype: Dict
         """
 
         with content.data() as data:
@@ -1219,10 +1196,13 @@ class Database:
 
         return r.json()
 
-    def add_namespace(self, prefix, iri):
+    def add_namespace(self, prefix: str, iri: str) -> bool:
         """Adds a specific namespace to a database
-        :return: True if the operation succeeded.
-        :rtype: Bool
+
+        :param prefix: the prefix of the namespace to be added
+        :param iri: the iri associated with the ``prefix`` to be added
+
+        :return: whether the operation succeeded or not.
         """
 
         # easy way to check if a namespace already exists
@@ -1239,11 +1219,12 @@ class Database:
         result = self.set_options({"database.namespaces": namespaces})
         return result
 
-    def remove_namespace(self, prefix) -> bool:
+    def remove_namespace(self, prefix: str) -> bool:
         """Removes a specific namespace from a database
 
-        :return: True if the operation succeeded.
-        :rtype: Bool
+        :param prefix: the prefix of the namespace to be removed
+
+        :return: whether the operation succeeded or not.
         """
 
         # easy way to check if a namespace already exists
@@ -1274,7 +1255,9 @@ class StoredQuery:
         `Stardog Docs - Stored Queries <https://docs.stardog.com/operating-stardog/database-administration/stored-queries>`_
     """
 
-    def __init__(self, name, client, details=None):
+    def __init__(
+        self, name: str, client: client.Client, details: Optional[Dict] = None
+    ):
         """Initializes a stored query.
 
         Use :meth:`stardog.admin.Admin.stored_query`,
@@ -1301,41 +1284,41 @@ class StoredQuery:
         self.details.update(details.json()["queries"][0])
 
     @property
-    def name(self):
+    def name(self) -> str:
         """The name of the stored query."""
         return self.query_name
 
     @property
-    def description(self):
+    def description(self) -> str:
         """The description of the stored query."""
         return self.details["description"]
 
     @property
-    def creator(self):
+    def creator(self) -> str:
         """The creator of the stored query."""
         return self.details["creator"]
 
     @property
-    def database(self):
+    def database(self) -> str:
         """The database the stored query applies to."""
         return self.details["database"]
 
     @property
-    def query(self):
+    def query(self) -> str:
         """The text of the stored query."""
         return self.details["query"]
 
     @property
-    def shared(self):
+    def shared(self) -> bool:
         """The value of the shared property."""
         return self.details["shared"]
 
     @property
-    def reasoning(self):
+    def reasoning(self) -> bool:
         """The value of the reasoning property."""
         return self.details["reasoning"]
 
-    def update(self, **options):
+    def update(self, **options) -> None:
         """Updates the Stored Query.
 
         Args:
@@ -1354,7 +1337,7 @@ class StoredQuery:
         self.client.put("/admin/queries/stored", json=options)
         self.__refresh()
 
-    def delete(self):
+    def delete(self) -> None:
         """Deletes the Stored Query."""
         self.client.delete(self.path)
 
@@ -1365,7 +1348,7 @@ class StoredQuery:
 class User:
     """Represents a Stardog user"""
 
-    def __init__(self, name, client):
+    def __init__(self, name: str, client: client.Client):
         """Initializes a User.
 
         Use :meth:`stardog.admin.Admin.user`,
@@ -1380,59 +1363,51 @@ class User:
         self.client.get(self.path)
 
     @property
-    def name(self):
-        """str: The user name."""
+    def name(self) -> str:
+        """The username."""
         return self.username
 
-    def set_password(self, password):
+    def set_password(self, password: str) -> None:
         """Sets a new password.
 
-        Args:
-          password (str)
+        :param password: the new password for the user
+
         """
         self.client.put(self.path + "/pwd", json={"password": password})
 
-    def is_enabled(self):
+    def is_enabled(self) -> bool:
         """Checks if the user is enabled.
 
-        Returns:
-          bool: User activation state
+        :return: whether the user is enabled or not
         """
         r = self.client.get(self.path + "/enabled")
         return bool(r.json()["enabled"])
 
-    def set_enabled(self, enabled):
+    def set_enabled(self, enabled: bool) -> None:
         """Enables or disables the user.
 
-        Args:
-          enabled (bool): Desired User state
+        :param enabled: Desired state. ``True`` for enabled, ``False`` for disabled.
         """
         self.client.put(self.path + "/enabled", json={"enabled": enabled})
 
-    def is_superuser(self):
-        """Checks if the user is a super user.
+    def is_superuser(self) -> bool:
+        """Checks if the user is a superuser.
 
-        Returns:
-          bool: Superuser state
+        :return: whether the user is a superuser or not.
         """
         r = self.client.get(self.path + "/superuser")
         return bool(r.json()["superuser"])
 
-    def roles(self):
-        """Gets all the User's roles.
-
-        Returns:
-          list[Role]
-        """
+    def roles(self) -> List["Role"]:
+        """Gets all the User's roles."""
         r = self.client.get(self.path + "/roles")
         roles = r.json()["roles"]
         return list(map(lambda name: Role(name, self.client), roles))
 
-    def add_role(self, role):
+    def add_role(self, role: Union["Role", str]) -> None:
         """Adds an existing role to the user.
 
-        Args:
-          role (str or Role): The role to add or its name
+        :param role: The :class:`stardog.admin.Role` or name of the role to add
 
         Examples:
             >>> user.add_role('reader')
@@ -1440,11 +1415,10 @@ class User:
         """
         self.client.post(self.path + "/roles", json={"rolename": role})
 
-    def set_roles(self, *roles):
+    def set_roles(self, *roles: Union[str, "Role"]) -> None:
         """Sets the roles of the user.
 
-        Args:
-          *roles (str or Role): The roles to add the User to
+        :param roles: The :class:`stardog.admin.Role` (s) or name of the role(s) to add to the user
 
         Examples
             >>> user.set_roles('reader', admin.role('writer'))
@@ -1452,11 +1426,10 @@ class User:
         roles = list(map(self.__rolename, roles))
         self.client.put(self.path + "/roles", json={"roles": roles})
 
-    def remove_role(self, role):
+    def remove_role(self, role: Union[str, "Role"]) -> None:
         """Removes a role from the user.
 
-        Args:
-          role (str or Role): The role to remove or its name
+        :param role: The :class:`stardog.admin.Role` or name of the role to remove
 
         Examples
             >>> user.remove_role('reader')
@@ -1464,33 +1437,32 @@ class User:
         """
         self.client.delete(self.path + "/roles/" + role)
 
-    def delete(self):
+    def delete(self) -> None:
         """Deletes the user."""
         self.client.delete(self.path)
 
-    def permissions(self):
+    def permissions(self) -> Dict:
         """Gets the user permissions.
 
         See Also:
             `Stardog Docs - Permissions <https://docs.stardog.com/operating-stardog/security/security-model#permissions>`_
-        Returns:
-          dict: User permissions
+
+        :return: user permissions
         """
         r = self.client.get("/admin/permissions/user/{}".format(self.name))
         return r.json()["permissions"]
 
-    def add_permission(self, action, resource_type, resource):
+    def add_permission(self, action: str, resource_type: str, resource: str) -> None:
         """Add a permission to the user.
+
+        :param action: Action type (e.g., ``read``, ``write``)
+        :param resource_type: Resource type (e.g., ``user``, ``db``)
+        :param resource: Target resource (e.g., ``username``, ``*``)
 
         See Also:
             `Stardog Docs - Grant Permissions to a User <https://docs.stardog.com/operating-stardog/security/managing-users-and-roles#grant-explicit-permissions-to-a-user>`_
 
             `HTTP API - Grant permission to a User <https://stardog-union.github.io/http-docs/#tag/Permissions/operation/addUserPermission>`_
-
-        Args:
-          action (str): Action type (e.g., 'read', 'write')
-          resource_type (str): Resource type (e.g., 'user', 'db')
-          resource (str): Target resource (e.g., 'username', '*')
 
         Examples
             >>> user.add_permission('read', 'user', 'username')
@@ -1503,20 +1475,20 @@ class User:
         }
         self.client.put("/admin/permissions/user/{}".format(self.name), json=meta)
 
-    def remove_permission(self, action, resource_type, resource):
+    def remove_permission(self, action: str, resource_type: str, resource: str):
         """Removes a permission from the user.
 
-        Args:
-          action (str): Action type (e.g., 'read', 'write')
-          resource_type (str): Resource type (e.g., 'user', 'db')
-          resource (str): Target resource (e.g., 'username', '*')
+        :param action: Action type (e.g., ``read``, ``write``)
+        :param resource_type: Resource type (e.g., ``user``, ``db``)
+        :param resource: Target resource (e.g., ``username``, ``*``)
+
+        See Also:
+            `HTTP API - Revoke User Permission <https://stardog-union.github.io/http-docs/#tag/Permissions/operation/deleteUserPermission>`_
 
         Examples:
             >>> user.remove_permission('read', 'user', 'username')
             >>> user.remove_permission('write', '*', '*')
 
-        See Also:
-            `HTTP API - Revoke User Permission <https://stardog-union.github.io/http-docs/#tag/Permissions/operation/deleteUserPermission>`_
         """
         meta = {
             "action": action,
@@ -1528,11 +1500,10 @@ class User:
             "/admin/permissions/user/{}/delete".format(self.name), json=meta
         )
 
-    def effective_permissions(self):
+    def effective_permissions(self) -> Dict:
         """Gets the user's effective permissions.
 
-        Returns:
-          dict: User effective permissions
+        :return: User's effective permissions
         """
         r = self.client.get("/admin/permissions/effective/user/" + self.name)
         return r.json()["permissions"]
@@ -1681,21 +1652,35 @@ class VirtualGraph:
         self.client.get(f"{self.path}/info")
 
     @property
-    def name(self):
+    def name(self) -> str:
         """The name of the virtual graph."""
         return self.graph_name
 
-    def update(self, name, mappings, options={}, datasource=None, db=None):
+    def update(
+        self,
+        name: str,
+        mappings: Content,
+        options: Dict = {},
+        datasource: Optional[str] = None,
+        db: Optional[str] = None,
+    ) -> None:
         """Updates the Virtual Graph.
 
-        Args:
-          name (str): The new name
-          mappings (Content): New mapping contents
-          options (dict): New options
+        :param name: The new name
+        :param mappings: New mapping contents
+        :param options: New virtual graph options
+        :param datasource: new data source for the virtual graph
+        :param db: the database to associate with the virtual graph
 
         Examples:
-            >>> vg.update('users', File('mappings.ttl'),
-                         {'jdbc.driver': 'com.mysql.jdbc.Driver'})
+
+        .. code-block:: python
+
+            vg.update(
+                    name='users',
+                    mappings=File('mappings.ttl'),
+                    options={'jdbc.driver': 'com.mysql.jdbc.Driver'}
+            )
         """
         if mappings:
             with mappings.data() as data:
@@ -1720,80 +1705,68 @@ class VirtualGraph:
         self.client.put(self.path, json=meta)
         self.graph_name = name
 
-    def delete(self):
-        """Deletes the Virtual Graph."""
+    def delete(self) -> None:
+        """Deletes the virtual graph."""
         self.client.delete(self.path)
 
-    def options(self):
-        """Gets Virtual Graph options.
-
-        Returns:
-          dict: Options
-        """
+    def options(self) -> Dict:
+        """Gets virtual graph options."""
         r = self.client.get(self.path + "/options")
         return r.json()["options"]
 
-    def info(self):
-        """Gets Virtual Graph info.
-
-        Returns:
-          dict: Info
-        """
+    def info(self) -> Dict:
+        """Gets virtual graph info."""
 
         r = self.client.get(self.path + "/info")
         return r.json()["info"]
 
     # should return object or name?
-    def get_datasource(self):
-        """Gets datasource associated with the VG
+    def get_datasource(self) -> str:
+        """Gets datasource associated with the virtual graph
 
-        :return: datasource name
+        :return: datasource name with ``data-source://`` prefix removed
         """
         return self.info()["data_source"].replace("data-source://", "")
 
     # should return object or name?
-    def get_database(self):
-        """Gets database associated with the VirtualGraph.
+    def get_database(self) -> str:
+        """Gets database associated with the virtual graph.
 
-        Returns:
-          string: Database name
+        :return: the database name
         """
 
         r = self.client.get(self.path + "/database")
         return r.text
 
-    def mappings_string(self, syntax="STARDOG"):
-        """Returns graph mappings as RDF
-        Args:
-          syntax (str): The desired RDF syntax of the mappings (STARDOG, R2RML, or SMS2).
-          Defaults to 'STARDOG'
+    def mappings_string(self, syntax: str = "STARDOG"):
+        """Returns graph mappings from virtual graph
 
-        :return: Mappings in given content type
-        :rtype: string
+        :param syntax: The desired syntax of the mappings (``'STARDOG'``, ``'R2RML'``, or ``'SMS2'``).
+
+        :return: Mappings in desired ``syntax``
         """
         r = self.client.get(f"{self.path}/mappingsString/{syntax}")
         return r.content
 
     # Should test this. The docs state the path is /mappingsString, but this one goes to /mappings.
     # Either the docs, or this implementation is wrong.
-    def mappings(self, content_type=content_types.TURTLE):
-        """Gets the Virtual Graph mappings (Deprecated, see mappings_string instead).
+    def mappings(self, content_type: str = content_types.TURTLE) -> bytes:
+        """Gets the Virtual Graph mappings
 
-        Args:
-          content_type (str): Content type for results.
-          Defaults to 'text/turtle'
+        .. warning::
+            **Deprecated**: :meth:`stardog.admin.VirtualGraph.mappings_string` should be preferred.
+
+        :param content_type: Content type for mappings.
 
         :return: Mappings in given content type
-        :rtype: bytes
         """
         r = self.client.get(self.path + "/mappings", headers={"Accept": content_type})
         return r.content
 
-    def available(self):
-        """Checks if the Virtual Graph is available.
+    def available(self) -> bool:
+        """Checks if the virtual graph is available.
 
-        Returns:
-          bool: Availability state
+        :return: whether the virtual graph is available or not
         """
         r = self.client.get(self.path + "/available")
         return bool(r.json())
@@ -1820,7 +1793,7 @@ class DataSource:
         `Stardog Docs - Data Sources <https://docs.stardog.com/virtual-graphs/data-sources>`_
     """
 
-    def __init__(self, name, client):
+    def __init__(self, name: str, client: client.Client):
         """Initializes a DataSource.
 
         Use :meth:`stardog.admin.Admin.data_source`,
@@ -1837,34 +1810,38 @@ class DataSource:
         self.client.get(f"{self.path}/info")
 
     @property
-    def name(self):
+    def name(self) -> str:
         """The name of the data source."""
         return self.data_source_name
 
-    def available(self):
+    def available(self) -> bool:
         """Checks if the data source is available.
 
-        Returns:
-          bool: Availability state
+        :return: whether the data source is available or not
         """
         r = self.client.get(self.path + "/available")
         return bool(r.json())
 
-    def refresh_count(self, meta=None):
-        """Refresh table row-count estimates"""
+    def refresh_count(self, meta: Optional[Dict] = None) -> None:
+        """Refresh table row-count estimates
+
+        :param meta: dict containing the table to refresh. Examples: ``{"name": "catalog.schema.table"}``,
+            ``{"name": "schema.table"}``, ``{"name": "table"}``
+
+        See also:
+            `HTTP API - Refresh table row-count estimates  <https://stardog-union.github.io/http-docs/#tag/Data-Sources/operation/refreshCounts>`_
+        """
 
         if meta is None:
             meta = {}
 
         self.client.post(self.path + "/refresh_counts", json=meta)
 
-    def update(self, options=None, force=False):
+    def update(self, options: Optional[Dict] = None, force: bool = False) -> None:
         """Update data source
 
-        Args:
-            options (dict): Dictionary with data source options (optional)
-            force (boolean, optional): a data source will not be updated while
-            in use unless the force flag is set to True
+        :param options: Dict with data source options
+        :param force: a data source will not be updated while in use unless ``force=True``
 
         Examples:
             >>> admin.update({"sql.dialect": "MYSQL"})
@@ -1880,40 +1857,54 @@ class DataSource:
 
         self.client.put(self.path, json=meta)
 
-    def delete(self):
+    def delete(self) -> None:
         """Deletes a data source"""
 
         self.client.delete(self.path)
 
-    def online(self):
+    def online(self) -> None:
         """Online a data source"""
 
         self.client.post(self.path + "/online")
 
-    def info(self):
+    def info(self) -> Dict:
         """Get data source info
 
-        Returns:
-          dict: Info
+        :return: data source information
         """
 
         r = self.client.get(self.path + "/info")
         return r.json()["info"]
 
-    def refresh_metadata(self, meta=None):
-        """Refresh metadata"""
+    def refresh_metadata(self, meta: Optional[Dict] = None) -> None:
+        """Refresh metadata for one or all tables that are accessible to a data source. Will clear the saved metadata for a data source
+        and reload all of its dependent virtual graphs with fresh metadata.
+
+        :param meta: dict containing the table to refresh. Examples: ``{"name": "catalog.schema.table"}``,
+            ``{"name": "schema.table"}``, ``{"name": "table"}``
+
+        See also:
+            `Stardog Docs - Refreshing Data Source Metadata <https://docs.stardog.com/virtual-graphs/data-sources/#refreshing-metadata>`_
+
+            `HTTP API - Refresh Data Source Metadata  <https://stardog-union.github.io/http-docs/#tag/Data-Sources/operation/refreshMetadata>`_
+
+            `Stardog CLI - stardog-admin data-source refresh-metadata <https://docs.stardog.com/stardog-admin-cli-reference/data-source/data-source-refresh-metadata>`_
+        """
 
         if meta is None:
             meta = {}
 
         self.client.post(self.path + "/refresh_metadata", json=meta)
 
-    def share(self):
-        """Share data source"""
+    def share(self) -> None:
+        """Share a private data source. When a virtual graph is created without specifying a data source name,
+        a private data source is created for that, and only that virtual graph. This methods makes the data
+        source available to other virtual graphs, as well as decouples the data source life cycle from the
+        original virtual graph."""
 
         self.client.post(self.path + "/share")
 
-    def get_options(self):
+    def get_options(self) -> List[Dict]:
         """Get data source options"""
 
         r = self.client.get(self.path + "/options")
@@ -1964,17 +1955,17 @@ class Cache:
         self.client = client
         self.status()  # raises exception if cache doesn't exist on the server
 
-    def drop(self):
+    def drop(self) -> None:
         """Drops the cache."""
         url_encoded_name = urllib.parse.quote_plus(self.name)
         self.client.delete("/admin/cache/{}".format(url_encoded_name))
 
-    def refresh(self):
+    def refresh(self) -> None:
         """Refreshes the cache."""
         url_encoded_name = urllib.parse.quote_plus(self.name)
         self.client.post("/admin/cache/refresh/{}".format(url_encoded_name))
 
-    def status(self):
+    def status(self) -> Dict:
         """Retrieves the status of the cache."""
         r = self.client.post("/admin/cache/status", json=[self.name])
         return r.json()

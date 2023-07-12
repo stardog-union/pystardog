@@ -40,6 +40,7 @@ release = ""
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinx_autodoc_typehints",
     "sphinx.ext.doctest",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
@@ -184,6 +185,9 @@ epub_exclude_files = ["search.html"]
 
 
 # -- Extension configuration -------------------------------------------------
+
+# sphinx_autodoc_typehints
+typehints_defaults = "comma"
 
 # Napoleon settings
 napoleon_numpy_docstring = False
