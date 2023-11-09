@@ -376,7 +376,7 @@ class Connection:
         :param base_uri: Base URI for the parsing of the query
         :param limit: Maximum number of results to return
         :param offset: Offset into the result set
-        :param timeout: Number of ms after which the query should
+        :param timeout: Number of seconds after which the query should
           timeout. ``0`` or less implies no timeout
         :param reasoning: Enable reasoning for the query
         :param bindings: Map between query variables and their values
