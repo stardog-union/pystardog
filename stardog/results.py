@@ -6,17 +6,19 @@ import copy
 import reprlib
 from collections import UserDict
 from collections.abc import Sequence
-from typing import Dict, Iterator, List
-from typing import Literal as LiteralType
-from typing import Optional, TypedDict, Union
 
-from rdflib import BNode, Literal, URIRef
+# from typing import Literal as LiteralType
+from typing import Dict, Iterator, List, Literal, Optional, TypedDict, Union
+
+from rdflib import BNode
+from rdflib import Literal as RDFLiteral
+from rdflib import URIRef
 
 
 class RDFTerm(TypedDict, total=False):
     """An RDF term as its encoded in JSON in SPARQL JSON Query Results."""
 
-    type: LiteralType["bnode", "uri", "literal"]
+    type: Literal["bnode", "uri", "literal"]
     """The type of RDF term encoded in this dict"""
     value: str
     """The value of the RDF term. For URIs, this is the URI itself;
@@ -56,7 +58,7 @@ class SPARQLQueryResultsJSON(TypedDict):
     """Contains the solution(s) to the query."""
 
 
-def rdf_term_to_rdflib(rdf_term: RDFTerm) -> Union[URIRef, Literal, BNode]:
+def rdf_term_to_rdflib(rdf_term: RDFTerm) -> Union[URIRef, RDFLiteral, BNode]:
     """
     Convert the JSON encoded RDF term from SPARQL JSON Query results to its `rdflib <https://rdflib.readthedocs.io/en/stable/intro_to_creating_rdf.html>`_ equivalent.
 
@@ -71,7 +73,7 @@ def rdf_term_to_rdflib(rdf_term: RDFTerm) -> Union[URIRef, Literal, BNode]:
     if term_type == "literal":
         datatype = rdf_term.get("datatype")
         lang = rdf_term.get("lang")
-        return Literal(value, datatype=datatype, lang=lang)
+        return RDFLiteral(value, datatype=datatype, lang=lang)
 
     if term_type == "bnode":
         return BNode(value)
@@ -262,11 +264,11 @@ class BindingSet(UserDict):
         """
         return self._raw.get(key, default_value)
 
-    def to_list(self) -> List[Union[URIRef, BNode, Literal]]:
+    def to_list(self) -> List[Union[URIRef, BNode, RDFLiteral]]:
         """Converts the binding set to a list of converted rdflib equivalents."""
         return list(self.values())
 
-    def __getattr__(self, var: str) -> Union[URIRef, BNode, Literal]:
+    def __getattr__(self, var: str) -> Union[URIRef, BNode, RDFLiteral]:
         if var in self:
             return self[var]
         raise AttributeError(
