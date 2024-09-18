@@ -6,8 +6,6 @@ import copy
 import reprlib
 from collections import UserDict
 from collections.abc import Sequence
-
-# from typing import Literal as LiteralType
 from typing import Dict, Iterator, List, Literal, Optional, TypedDict, Union
 
 from rdflib import BNode
