@@ -452,6 +452,7 @@ def test_update_with_remove_graph_uri(db, conn: connection.Connection):
 
 
 @pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.options({"reasoning.schema.graphs": "tag:stardog:api:context:default"})
 @pytest.mark.conn_dbname("pystardog-test-database")
 def test_queries(db, conn):
     # add

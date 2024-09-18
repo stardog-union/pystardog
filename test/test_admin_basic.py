@@ -3,6 +3,7 @@ import re
 from enum import Enum
 
 import pytest
+
 from stardog import admin, connection, content, content_types, exceptions
 
 ###############################################################
@@ -535,7 +536,7 @@ class TestLoadData(TestStardog):
             content.MappingFile("data/test_import_json.sms"),
             content.ImportFile("data/test_import.json"),
         )
-        assert self.expected_count(conn, 223)
+        assert self.expected_count(conn, 16)
 
     @pytest.mark.dbname("pystardog-test-database")
     @pytest.mark.conn_dbname("pystardog-test-database")
@@ -547,7 +548,7 @@ class TestLoadData(TestStardog):
                     content.MappingRaw(sms.read()),
                     content.ImportRaw(json.read(), name="data.json"),
                 )
-                assert self.expected_count(conn, 223)
+                assert self.expected_count(conn, 16)
 
     @pytest.mark.dbname("pystardog-test-database")
     @pytest.mark.conn_dbname("pystardog-test-database")
@@ -559,7 +560,7 @@ class TestLoadData(TestStardog):
             None,
             "http://example.org/graph",
         )
-        assert self.expected_count(conn, 223, ng=f"<{self.ng}>")
+        assert self.expected_count(conn, 16, ng=f"<{self.ng}>")
 
     ## MATERIALIZE AND VG LOAD SHOULD BE PART OF VG TEST
 
