@@ -36,6 +36,14 @@ run_connection_suite: &run_connection_suite
       set -x
       pytest test/test_connection.py -s
 
+run_results_suite: &run_results_suite
+  run:
+    name: Runs the test_results suite
+    no_output_timeout: 15m
+    command: |
+      set -x
+      pytest test/test_results.py -s
+
 run_test_server_admin_suite: &run_test_server_admin_suite
   run:
     name: Runs the test_server_admin suite
@@ -99,7 +107,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            pip install -r test-requirements.txt
+            pip install -r test-requirements.txt -r requirements.txt
 
       - run:
           name: Black

@@ -28,6 +28,15 @@ stardog.content
     :show-inheritance:
     :special-members: __init__
 
+stardog.results
+---------------
+
+.. automodule:: stardog.results
+    :members:
+    :undoc-members:
+    :show-inheritance:
+    :special-members: __init__
+
 stardog.exceptions
 ------------------
 
