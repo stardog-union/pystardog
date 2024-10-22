@@ -12,6 +12,8 @@ pystardog
 
    README.md
    source/stardog
+   source/stardog.cloud
+
 
 Indices and tables
 ==================

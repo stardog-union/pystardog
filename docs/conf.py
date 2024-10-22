@@ -40,12 +40,19 @@ release = ""
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinxcontrib.autodoc_pydantic",
     "sphinx_autodoc_typehints",
     "sphinx.ext.doctest",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "recommonmark",
 ]
+
+# https://autodoc-pydantic.readthedocs.io/en/stable/users/installation.html
+autodoc_pydantic_model_show_json = False
+autodoc_pydantic_settings_show_json = False
+autosummary_generate = True
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]

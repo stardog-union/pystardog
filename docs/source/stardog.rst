@@ -1,8 +1,12 @@
-Modules
-=======
+Stardog
+#######
+
+
+API Reference
+*********************
 
 stardog.connection
-------------------
+==================
 
 .. automodule:: stardog.connection
     :members:
@@ -11,7 +15,7 @@ stardog.connection
     :special-members: __init__
 
 stardog.admin
--------------
+=============
 
 .. automodule:: stardog.admin
     :members:
@@ -20,7 +24,7 @@ stardog.admin
     :special-members: __init__
 
 stardog.content
----------------
+===============
 
 .. automodule:: stardog.content
     :members:
@@ -29,7 +33,7 @@ stardog.content
     :special-members: __init__
 
 stardog.results
----------------
+===============
 
 .. automodule:: stardog.results
     :members:
@@ -38,7 +42,7 @@ stardog.results
     :special-members: __init__
 
 stardog.exceptions
-------------------
+==================
 
 .. automodule:: stardog.exceptions
     :members:
