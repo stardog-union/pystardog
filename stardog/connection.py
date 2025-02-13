@@ -334,6 +334,7 @@ class Connection:
             "using-named-graph-uri": kwargs.get("using_named_graph_uri"),
             "remove-graph-uri": kwargs.get("remove_graph_uri"),
             "insert-graph-uri": kwargs.get("insert_graph_uri"),
+            "schema": kwargs.get("schema"),
         }
 
         # query bindings
