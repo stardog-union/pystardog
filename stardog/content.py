@@ -2,6 +2,7 @@
 """
 import contextlib
 import os
+import uuid
 from typing import Optional
 
 import requests
@@ -183,6 +184,7 @@ class ImportRaw(Content):
         content_type: Optional[str] = None,
         content_encoding: Optional[str] = None,
         name: Optional[str] = None,
+        iri: Optional[str] = None,
     ):
         """Initializes a Raw object.
 
@@ -192,6 +194,8 @@ class ImportRaw(Content):
         :param content_type: Content type
         :param content_encoding: Content encoding
         :param name: Object name
+        :param iri: IRI that uniquely identifies this content.
+            It will default to "file://``name``" if omitted.
 
         .. note::
             if ``name`` is provided like a pseudo filename (i.e. ``'data.csv'``, ``'data.tsv'``, or ``'data.json'``), it will auto-detect most
@@ -214,6 +218,9 @@ class ImportRaw(Content):
         self.content_encoding = content_encoding if content_encoding else c_enc
         self.input_type = input_type if input_type else c_input_type
         self.separator = separator if separator else c_separator
+        self.iri = (
+            iri if iri else f"file://{name}" if name else f"stream://{uuid.uuid4()}"
+        )
 
     @contextlib.contextmanager
     def data(self):
@@ -231,6 +238,7 @@ class ImportFile(Content):
         content_encoding: Optional[str] = None,
         separator: Optional[str] = None,
         name: Optional[str] = None,
+        iri: Optional[str] = None,
     ):
         """Initializes a File object.
 
@@ -241,6 +249,8 @@ class ImportFile(Content):
         :param separator: Required if ``input_type`` is ``'DELIMITED'``. Use ``','`` for a CSV. Use ``\\\\t`` for a TSV.
         :param name: Object name.
             It will be automatically detected from the ``file`` if omitted.
+        :param iri: IRI that uniquely identifies this file.
+            It will default to "file://``name``" if omitted.
 
 
         .. note::
@@ -266,6 +276,7 @@ class ImportFile(Content):
         self.separator = separator if separator else c_separator
 
         self.name = name if name else os.path.basename(file)
+        self.iri = iri if iri else f"file://{self.name}"
 
     @contextlib.contextmanager
     def data(self):

@@ -679,6 +679,7 @@ class Admin:
             payload["named_graph"] = named_graph
 
         payload["input_file_type"] = input_file.input_type
+        payload["input_file_iri"] = input_file.iri
 
         with input_file.data() as data:
             r = self.client.post(
