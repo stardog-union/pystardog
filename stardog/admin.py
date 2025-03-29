@@ -14,6 +14,8 @@ from stardog.content import Content, ImportFile, ImportRaw, MappingFile, Mapping
 from . import content_types as content_types
 from .http import client
 
+DEFAULT_MAPPINGS_SYNTAX = "SMS"
+
 
 class Admin:
     """Admin Connection.
@@ -532,10 +534,10 @@ class Admin:
                     options = {"mappings.syntax": mappings.syntax}
             else:
                 if options:
-                    options["mappings.syntax"] = "STARDOG"
+                    options["mappings.syntax"] = DEFAULT_MAPPINGS_SYNTAX
                 else:
                     options = {
-                        "mappings.syntax": "STARDOG"
+                        "mappings.syntax": DEFAULT_MAPPINGS_SYNTAX
                     }  # this is the default of the original method
 
             with mappings.data() as data:
@@ -598,10 +600,10 @@ class Admin:
                     options = {"mappings.syntax": mappings.syntax}
             else:
                 if options:
-                    options["mappings.syntax"] = "STARDOG"
+                    options["mappings.syntax"] = DEFAULT_MAPPINGS_SYNTAX
                 else:
                     options = {
-                        "mappings.syntax": "STARDOG"
+                        "mappings.syntax": DEFAULT_MAPPINGS_SYNTAX
                     }  # this is the default of the original method
 
             with mappings.data() as data:
@@ -1738,7 +1740,7 @@ class VirtualGraph:
         r = self.client.get(self.path + "/database")
         return r.text
 
-    def mappings_string(self, syntax: str = "STARDOG"):
+    def mappings_string(self, syntax: str = DEFAULT_MAPPINGS_SYNTAX):
         """Returns graph mappings from virtual graph
 
         :param syntax: The desired syntax of the mappings (``'STARDOG'``, ``'R2RML'``, or ``'SMS2'``).

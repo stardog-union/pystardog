@@ -84,7 +84,7 @@ class TestStardog:
             "jdbc.driver": "com.mysql.jdbc.Driver",
             "jdbc.username": "user",
             "jdbc.password": "pass",
-            "mappings.syntax": "STARDOG",
+            "mappings.syntax": "SMS",
             "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?useSSL=false",
         }
 
@@ -377,7 +377,7 @@ class TestDataSource(TestStardog):
             "jdbc.driver": "com.mysql.jdbc.Driver",
             "jdbc.username": "user",
             "jdbc.password": "pass",
-            "mappings.syntax": "STARDOG",
+            "mappings.syntax": "SMS",
             "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?useSSL=false",
             "new_option": "new option",
         }
@@ -393,7 +393,7 @@ class TestDataSource(TestStardog):
             "jdbc.driver": "com.mysql.jdbc.Driver",
             "jdbc.username": "user",
             "jdbc.password": "pass",
-            "mappings.syntax": "STARDOG",
+            "mappings.syntax": "SMS",
             "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?useSSL=false",
             "new_option": "new option",
         }
@@ -570,7 +570,7 @@ class TestLoadData(TestStardog):
         if self.run_vg_test:
             admin.materialize_virtual_graph(
                 db.name,
-                content.MappingFile("data/music_mappings.ttl", "STARDOG"),
+                content.MappingFile("data/music.sms", "SMS"),
                 None,
                 self.music_options,
             )
@@ -584,7 +584,7 @@ class TestLoadData(TestStardog):
         if self.run_vg_test:
             admin.materialize_virtual_graph(
                 db.name,
-                content.MappingFile("data/music_mappings.ttl", "STARDOG"),
+                content.MappingFile("data/music.sms", "SMS"),
                 None,
                 self.music_options,
             )
@@ -599,7 +599,7 @@ class TestLoadData(TestStardog):
         if self.run_vg_test:
             admin.materialize_virtual_graph(
                 db.name,
-                content.MappingFile("data/music_mappings.ttl", "STARDOG"),
+                content.MappingFile("data/music.sms", "SMS"),
                 datasource.name,
             )
             assert self.expected_count(conn, 37)
@@ -610,10 +610,10 @@ class TestLoadData(TestStardog):
     @pytest.mark.conn_dbname("pystardog-test-database")
     def test_materialize_graph_from_content(self, admin, db, conn):
         if self.run_vg_test:
-            with open("data/music_mappings.ttl") as f:
+            with open("data/music.sms") as f:
                 admin.materialize_virtual_graph(
                     db.name,
-                    content.MappingRaw(f.read(), "STARDOG"),
+                    content.MappingRaw(f.read(), "SMS"),
                     None,
                     self.music_options,
                 )
@@ -627,7 +627,7 @@ class TestLoadData(TestStardog):
         if self.run_vg_test:
             admin.materialize_virtual_graph(
                 db.name,
-                content.MappingFile("data/music_mappings.ttl", "STARDOG"),
+                content.MappingFile("data/music.sms", "SMS"),
                 None,
                 self.music_options,
                 self.ng,
@@ -642,7 +642,7 @@ class TestLoadData(TestStardog):
         if self.run_vg_test:
             admin.materialize_virtual_graph(
                 db.name,
-                content.MappingFile("data/music_mappings.ttl", "STARDOG"),
+                content.MappingFile("data/music.sms", "SMS"),
                 datasource.name,
                 None,
                 self.ng,
@@ -655,10 +655,10 @@ class TestLoadData(TestStardog):
     @pytest.mark.conn_dbname("pystardog-test-database")
     def test_materialize_graph_from_content_with_ng(self, admin, db, conn):
         if self.run_vg_test:
-            with open("data/music_mappings.ttl") as f:
+            with open("data/music.sms") as f:
                 admin.materialize_virtual_graph(
                     db.name,
-                    content.MappingRaw(f.read(), "STARDOG"),
+                    content.MappingRaw(f.read(), "SMS"),
                     None,
                     self.music_options,
                     self.ng,
@@ -673,7 +673,7 @@ class TestLoadData(TestStardog):
         if self.run_vg_test:
             admin.import_virtual_graph(
                 db.name,
-                content.File("data/music_mappings.ttl"),
+                content.File("data/music.sms"),
                 self.ng,
                 False,
                 self.music_options,
@@ -690,7 +690,7 @@ class TestVirtualGraph(TestStardog):
             "jdbc.driver": "com.mysql.jdbc.Driver",
             "jdbc.username": "user",
             "jdbc.password": "pass",
-            "mappings.syntax": "STARDOG",
+            "mappings.syntax": "SMS",
             "jdbc.url": "jdbc:mysql://pystardog_mysql_music/music?allowPublicKeyRetrieval=true&useSSL=false",
         }
         return options
@@ -700,7 +700,7 @@ class TestVirtualGraph(TestStardog):
             "jdbc.driver": "com.mysql.jdbc.Driver",
             "jdbc.username": "user",
             "jdbc.password": "pass",
-            "mappings.syntax": "STARDOG",
+            "mappings.syntax": "SMS",
             "jdbc.url": "jdbc:mysql://pystardog_mysql_videos/videos?allowPublicKeyRetrieval=true&useSSL=false",
         }
         return properties
@@ -746,22 +746,24 @@ class TestVirtualGraph(TestStardog):
     @pytest.mark.use_music_datasource(True)
     @pytest.mark.virtual_graph_options(_music_options())
     def test_vg_mappings(self, virtual_graph):
-        # default is STARDOG
+        # default is SMS
         assert (
-            "@prefix : <http://api.stardog.com/> ."
-            == virtual_graph.mappings_string().decode("utf-8")[0:37]
+            virtual_graph.mappings_string()
+            .decode("utf-8")
+            .startswith("PREFIX : <http://api.stardog.com/>")
         )
 
         # we test the first string of the entire response, as the rest of the response contains randomly generated
         # strings each time a mapping is generated, hence we can't know beforehand what to compare it to.
         # we assume that if the first line of the response is what we expect, the rest of the mappings are retrieved successfully as well.
         assert (
-            "@prefix : <http://api.stardog.com/> ."
-            == virtual_graph.mappings_string("R2RML").decode("utf-8")[0:37]
+            virtual_graph.mappings_string("R2RML")
+            .decode("utf-8")
+            .startswith("@prefix : <http://api.stardog.com/> .")
         )
 
     @pytest.mark.use_music_datasource(True)
-    @pytest.mark.mappings(content.File("test/data/music_mappings.ttl"))
+    @pytest.mark.mappings(content.File("test/data/music.sms"))
     def test_create_vg_with_custom_mappings(self, virtual_graph):
         assert (
             "PREFIX : <http://stardog.com/tutorial/>"
@@ -824,7 +826,7 @@ class TestVirtualGraph(TestStardog):
         # tests passing mappings
         admin.import_virtual_graph(
             "test-import-db",
-            mappings=content.File("test/data/music_mappings.ttl"),
+            mappings=content.File("test/data/music.sms"),
             named_graph=graph_name,
             remove_all=True,
             options=music_options,
