@@ -1,0 +1,90 @@
+PREFIX : <http://stardog.com/tutorial/>
+
+MAPPING :AlbumMapping
+FROM SQL {
+  SELECT * FROM Album
+}
+TO {
+  ?album a :Album ;
+           :name ?name ;
+           :artist ?artist ;
+           :date ?release_date
+}
+WHERE {
+  BIND(template("http://stardog.com/tutorial/Album{id}") AS ?album)
+  BIND(template("http://stardog.com/tutorial/Artist{artist}") AS ?artist)
+};
+
+MAPPING :ArtistMapping
+FROM SQL {
+  SELECT * FROM Artist
+}
+TO {
+  ?artist :name ?name ;
+          :description ?description
+}
+WHERE {
+  BIND(template("http://stardog.com/tutorial/Artist{id}") AS ?artist)
+};
+
+MAPPING :SoloArtistMapping
+FROM SQL {
+  SELECT * FROM Artist WHERE type = 1
+}
+TO {
+  ?artist a :SoloArtist
+}
+WHERE {
+  BIND(template("http://stardog.com/tutorial/Artist{id}") AS ?artist)
+};
+
+MAPPING :BandMapping
+FROM SQL {
+  SELECT * FROM Artist WHERE type = 2
+}
+TO {
+  ?artist a :Band
+}
+WHERE {
+  BIND(template("http://stardog.com/tutorial/Artist{id}") AS ?artist)
+};
+
+MAPPING :MemberMapping
+FROM SQL {
+  SELECT * FROM Membership
+}
+TO {
+  ?band :member ?member
+}
+WHERE {
+  BIND(template("http://stardog.com/tutorial/Artist{band}") AS ?band)
+  BIND(template("http://stardog.com/tutorial/Artist{artist}") AS ?member)
+};
+
+MAPPING :SongMapping
+FROM SQL {
+  SELECT * FROM Track
+}
+TO {
+  ?song a :Song ;
+        :name ?name ;
+        :length ?length .
+
+  ?album :track ?song .
+}
+WHERE {
+  BIND(template("http://stardog.com/tutorial/Song{id}") AS ?song)
+  BIND(template("http://stardog.com/tutorial/Album{album}") AS ?album)
+};
+
+MAPPING :SongwriterMapping
+FROM SQL {
+  SELECT * FROM Songwriter
+}
+TO {
+  ?song :writer ?writer
+}
+WHERE {
+  BIND(template("http://stardog.com/tutorial/Song{song}") AS ?song)
+  BIND(template("http://stardog.com/tutorial/Artist{writer}") AS ?writer)
+}
