@@ -39,10 +39,7 @@ class SPARQLQueryResults(TypedDict):
     """The ``results`` member of the SPARQL JSON Query results"""
 
     bindings: List[Dict[str, RDFTerm]]
-    """
-    Each binding is a dictionary of `variable_name: RDFTerm` representing a solution
-    to the query.
-    """
+    """ Each binding is a dictionary of ``variable_name: RDFTerm`` representing a solution to the query."""
 
 
 class SPARQLQueryResultsJSON(TypedDict):
