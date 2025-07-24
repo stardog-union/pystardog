@@ -3,10 +3,11 @@
 """
 
 import json
-from typing import Dict, List, Optional, Tuple, Union
-import contextlib2
 import urllib
 from time import sleep
+from typing import Dict, List, Optional, Tuple, Union
+
+import contextlib2
 from requests.auth import AuthBase
 
 from stardog.content import Content, ImportFile, ImportRaw, MappingFile, MappingRaw
@@ -1370,13 +1371,28 @@ class User:
         """The username."""
         return self.username
 
-    def set_password(self, password: str) -> None:
+    def set_password(
+        self, password: str, current_password: Optional[str] = None
+    ) -> None:
         """Sets a new password.
 
-        :param password: the new password for the user
+        .. note::
+            For Stardog 11+, the current password must be provided to change the password.
 
+        :param password: the new password for the user
+        :param current_password: current password (required for Stardog 11+)
         """
-        self.client.put(self.path + "/pwd", json={"password": password})
+        server_metrics = self.client.get("/admin/status").json()
+        version_string = server_metrics.get("dbms.version", {"value": "0.0.0"})["value"]
+        major_version = int(version_string.split(".")[0])
+
+        payload = {"password": password}
+        if major_version >= 11:
+            if not current_password:
+                raise ValueError("current_password must be provided for Stardog 11+")
+            payload["current_password"] = current_password
+
+        self.client.put(self.path + "/pwd", json=payload)
 
     def is_enabled(self) -> bool:
         """Checks if the user is enabled.

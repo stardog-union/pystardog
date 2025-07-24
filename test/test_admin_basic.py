@@ -1,6 +1,6 @@
 import os
-import re
 from enum import Enum
+from unittest.mock import Mock
 
 import pytest
 
@@ -120,7 +120,7 @@ class TestUsers(TestStardog):
     @pytest.mark.user_username("userCanChangePass")
     @pytest.mark.user_password("userCanChangePass")
     def test_user_can_change_password(self, conn_string, user):
-        user.set_password("new_password")
+        user.set_password("new_password", current_password="userCanChangePass")
         with admin.Admin(
             endpoint=conn_string["endpoint"],
             username="userCanChangePass",
@@ -147,6 +147,45 @@ class TestUsers(TestStardog):
     def test_user_roles(self, user):
         assert len(user.roles()) == 0
 
+    def test_set_password_pre11_no_current_password_required(self):
+
+        mock_client = Mock()
+
+        # Mock version response (pre-11)
+        mock_client.get.return_value.json.return_value = {
+            "dbms.version": {"value": "10.1.0"}
+        }
+
+        user = admin.User("testuser", mock_client)
+        user.set_password("newpass")
+
+        mock_client.put.assert_called_once_with(
+            "/admin/users/testuser/pwd", json={"password": "newpass"}
+        )
+
+    def test_set_password_v11_requires_current_password(self):
+
+        mock_client = Mock()
+
+        # Mock version response (v11+)
+        mock_client.get.return_value.json.return_value = {
+            "dbms.version": {"value": "11.0.0"}
+        }
+
+        user = admin.User("testuser", mock_client)
+
+        # Should raise error without current_password
+        with pytest.raises(ValueError, match="current_password must be provided"):
+            user.set_password("newpass")
+
+        # Should work with current_password
+        user.set_password("newpass", current_password="oldpass")
+        mock_client.put.assert_called_with(
+            "/admin/users/testuser/pwd",
+            json={"password": "newpass", "current_password": "oldpass"},
+        )
+
+    def test_user_roles_functionality(self, user):
         user.add_role("reader")
         roles = user.roles()
         assert len(user.roles()) == 1
