@@ -120,6 +120,10 @@ class TestUsers(TestStardog):
     @pytest.mark.user_username("userCanChangePass")
     @pytest.mark.user_password("userCanChangePass")
     def test_user_can_change_password(self, conn_string, user):
+
+        with pytest.raises(ValueError, match="current_password must be provided"):
+            user.set_password("newpass")
+
         user.set_password("new_password", current_password="userCanChangePass")
         with admin.Admin(
             endpoint=conn_string["endpoint"],
