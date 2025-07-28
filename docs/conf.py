@@ -20,8 +20,8 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "pystardog"
-copyright = "2019, Pedro Oliveira, John Bresnahan, Stephen Nowell"
-author = "Pedro Oliveira, John Bresnahan, Stephen Nowell"
+copyright = "2025 Stardog Union"
+author = "Stardog Union"
 
 # The short X.Y version
 version = ""
@@ -44,7 +44,6 @@ extensions = [
     "sphinx.ext.doctest",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
-    "recommonmark",
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -70,23 +69,20 @@ language = "en"
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path.
 exclude_patterns = ["_build", "Thumbs.db", ".DS_Store"]
-
-# The name of the Pygments (syntax highlighting) style to use.
-pygments_style = None
-
-
-# -- Options for HTML output -------------------------------------------------
-
-# The theme to use for HTML and HTML Help pages.  See the documentation for
-# a list of builtin themes.
-#
-html_theme = "sphinx_rtd_theme"
+html_theme = "furo"
 
 # Theme options are theme-specific and customize the look and feel of a theme
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    "source_repository": "https://github.com/stardog-union/pystardog/",
+    "source_branch": "main",
+    "source_directory": "docs/",
+    "sidebar_hide_name": False,
+    "navigation_with_keys": True,
+    "top_of_page_button": "edit",
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
