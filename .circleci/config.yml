@@ -10,7 +10,7 @@ installs_supported_python_versions: &installs_supported_python_versions
       sudo apt-get update -y
       yes | sudo add-apt-repository ppa:deadsnakes/ppa || true
       sudo apt-get install python3.{9,10,11,12,13} -yq
-      sudo apt-get install python3.{9}-distutils -yq
+      sudo apt-get install python3.9-distutils -yq
 
 run_basic_admin_suite: &run_basic_admin_suite
   run:
