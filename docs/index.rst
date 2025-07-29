@@ -6,13 +6,28 @@
 pystardog
 =========
 
+.. image:: https://sdcloud-assets-cdn.cloud.stardog.com/auth0/stardog_logo.png
+   :alt: Stardog Logo
+   :width: 200px
+
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: User Guide:
 
-   README.md
+   getting-started
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Modules:
+
    source/stardog
    source/stardog.cloud
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Development:
+
+   contributing
 
 
 Indices and tables
