@@ -27,7 +27,17 @@ pystardog is on [PyPI](https://pypi.org/project/pystardog/). To install:
 pip install pystardog
 ```
 
-## Quick Example
+For Stardog Cloud functionality:
+
+```shell
+pip install pystardog[cloud]
+```
+
+## Quick Examples
+
+### Stardog Server (Local/Remote Endpoint)
+
+Connect to a Stardog server instance to manage databases and execute queries:
 
 ```python
 import stardog
@@ -48,6 +58,23 @@ with stardog.Admin(**conn_details) as admin:
     results = conn.select('select * { ?a ?p ?o }')
 
   db.drop()
+```
+
+### Stardog Cloud (Voicebox)
+
+Use Stardog's cloud-based natural language query interface:
+
+```python
+import stardog.cloud
+
+with stardog.cloud.Client() as client:
+    voicebox = client.voicebox_app(
+        app_api_token="your-voicebox-token",
+        client_id="your-client-id"
+    )
+    answer = voicebox.ask("How many products were sold in 2023?")
+    print(answer.content)
+    print(f"SPARQL: {answer.sparql_query}")
 ```
 
 ## Interactive Tutorial
