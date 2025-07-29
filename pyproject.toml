@@ -34,6 +34,10 @@ Homepage = "https://github.com/stardog-union/pystardog"
 Repository = "https://github.com/stardog-union/pystardog"
 
 [project.optional-dependencies]
+cloud = [
+    "httpx>=0.24.0",
+    "pydantic>=2.0.0",
+]
 dev = [
     "pytest==8.4.1",
     "black==22.3.0",
@@ -47,6 +51,7 @@ docs = [
     "sphinx-autodoc-typehints==1.23.0",
     "sphinx-autobuild==2021.3.14",
     "recommonmark==0.5.0",
+    "autodoc_pydantic>=2.0.0",
 ]
 build = [
     "build>=1.0.0",
