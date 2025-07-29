@@ -79,8 +79,6 @@ markers = [
 line-length = 88
 target-version = ['py39']
 
-[tool.flake8]
-ignore = ["E203", "E501", "W503"]
 
 [tool.pylint."MESSAGES CONTROL"]
 disable = "all"
