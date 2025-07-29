@@ -3,6 +3,15 @@ Stardog Cloud
 
 The :obj:`stardog.cloud` subpackage provides clients for accessing Stardog Cloud services, such as `Stardog Voicebox <https://stardog.ai/>`_.
 
+Installation
+************
+
+To use Stardog Cloud functionality, install pystardog with the cloud optional dependencies:
+
+.. code-block:: bash
+
+    pip install pystardog[cloud]
+
 .. list-table:: Clients
     :widths: 50 50
     :header-rows: 1

@@ -1,6 +1,7 @@
 Stardog
 #######
 
+The core :obj:`stardog` module provides functionality for connecting to and working with local or remote Stardog knowledge graph endpoints. Use this module for database administration, executing SPARQL queries, and managing data in your Stardog knowledge graphs.
 
 API Reference
 *********************
