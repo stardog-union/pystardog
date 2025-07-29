@@ -109,3 +109,6 @@ venv.bak/
 
 # sd license files
 stardog-license-key.bin
+
+# test files/data
+data/
