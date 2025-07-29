@@ -38,7 +38,6 @@ dev = [
     "pytest==8.4.1",
     "black==22.3.0",
     "requests-mock==1.10.0",
-    "pylint==2.15.9",
     "flake8==7.1.1",
     "tox==4.2.6",
 ]
@@ -80,9 +79,6 @@ line-length = 88
 target-version = ['py39']
 
 
-[tool.pylint."MESSAGES CONTROL"]
-disable = "all"
-enable = ["F", "E", "W"]
 
 [tool.tox]
 legacy_tox_ini = """

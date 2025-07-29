@@ -120,12 +120,6 @@ jobs:
           command: |
             flake8 stardog 
 
-      - run:
-          # We allow pylint to fail since it's too strict.
-          # We should fix these slowly, and come up with a proper configuration to enable limited checks.
-          name: pylint
-          command: |
-            pylint stardog --exit-zero
 
   basic_test_suite_single_node:
     machine:
