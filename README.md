@@ -5,7 +5,7 @@ a Python wrapper for communicating with the Stardog HTTP server.
 
 **Docs**: [http://pystardog.readthedocs.io](http://pystardog.readthedocs.io)
 
-**Requirements**: Python 3.8+
+**Requirements**: Python 3.9+
 
 ## What is it?
 
