@@ -1,0 +1,99 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "pystardog"
+version = "0.18.1"
+authors = [
+    {name = "Stardog Union", email = "support@stardog.com"}
+]
+description = "Use Stardog with Python!"
+readme = "README.md"
+license = {text = "Apache-2.0"}
+requires-python = ">=3.9"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.9",
+    "Programming Language :: Python :: 3.10", 
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "License :: OSI Approved :: Apache Software License",
+    "Operating System :: OS Independent",
+]
+dependencies = [
+    "requests>=2.31.0",
+    "requests-toolbelt>=1.0.0",
+    "contextlib2>=0.5.5",
+    "rdflib>=6.0.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/stardog-union/pystardog"
+Repository = "https://github.com/stardog-union/pystardog"
+
+[project.optional-dependencies]
+dev = [
+    "pytest==8.4.1",
+    "black==22.3.0",
+    "requests-mock==1.10.0",
+    "flake8==7.1.1",
+    "tox==4.2.6",
+]
+docs = [
+    "Sphinx==6.2.1",
+    "sphinx-rtd-theme==1.2.2",
+    "sphinx-autodoc-typehints==1.23.0",
+    "sphinx-autobuild==2021.3.14",
+    "recommonmark==0.5.0",
+]
+build = [
+    "build>=1.0.0",
+    "twine>=6.1.0",
+]
+
+[tool.setuptools.packages.find]
+include = ["stardog*"]
+
+[tool.pytest.ini_options]
+markers = [
+    "query_name: name of a stored query",
+    "dbname: name of a database to be created",
+    "options: db options",
+    "contents: contents to pass to the db",
+    "kwargs: allow extra options to database creation. (only used to add the copy_to_server flag)",
+    "ds_name: name of the datasource to be created",
+    "user_username: name of the username to be create",
+    "user_password: password for the user to create.",
+    "vgname: name of the virtual graph to be created",
+    "use_music_datasource: Whether we want to use the music datasource as default",
+    "virtual_graph_options: virtual graph options",
+    "mappings: mappings to be used in a VG creation",
+    "database_name: name of the DB to associate the VG with.",
+    "conn_dbname: database name to be used with the stardog client.",
+]
+
+[tool.black]
+line-length = 88
+target-version = ['py39']
+
+
+
+[tool.tox]
+legacy_tox_ini = """
+[tox]
+envlist = py3{13,12,11,10,9}
+
+[testenv]
+deps = -e {toxinidir}[dev]
+commands = pytest -s test/test_import.py test/test_star_import.py test/test_admin_basic.py test/test_connection.py test/test_server_admin.py test/test_unit.py test/test_utils.py
+
+[testenv:cluster]
+deps = -e {toxinidir}[dev]
+commands = pytest test/test_cluster.py -s
+
+[testenv:single_node]
+deps = -e {toxinidir}[dev]
+commands = pytest test/test_single_node.py -s
+"""

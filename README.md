@@ -64,8 +64,8 @@ Documentation is available at [http://pystardog.readthedocs.io](http://pystardog
 The docs can be built locally using [Sphinx](https://www.sphinx-doc.org/en/master/):
 
   ```shell
+  pip install -e ".[docs]"
   cd docs
-  pip install -r requirements.txt
   make html
   ```
 
@@ -100,8 +100,8 @@ will yield the following documentation after Sphinx processes it:
 Docs can be rebuilt automatically when saving a Python file by utilizing [`sphinx-autobuild`](https://github.com/executablebooks/sphinx-autobuild)
 
 ```shell
+pip install -e ".[docs]"
 cd docs
-pip install -r requirements.txt requirements-dev.txt
 make livehtml
 ```
 
@@ -177,15 +177,15 @@ although we also provide a cluster set up for further testing.
     docker-compose -f docker-compose.cluster.yml up -d
     ```
 
-2. Create a virtual environment with the necessary dependencies:
+2. Install the package in development mode with dependencies:
 
     ```shell
-    # Create a virtualenv and activate it
-    virtualenv -p $(which python3) venv
+    # Create a virtual environment and activate it
+    python -m venv venv
     source venv/bin/activate
 
-    # Install dependencies
-    pip install -r requirements.txt -r test-requirements.txt 
+    # Install in development mode with dev dependencies
+    pip install -e ".[dev]"
     ```
 
 3. Run the test suite:
@@ -209,12 +209,45 @@ although we also provide a cluster set up for further testing.
 To format all the Python code:
 
   ```shell
-  # make sure black is install
-  virtualenv -p $(which python3) venv
-  . venv/bin/activate
-  pip install -r test-requirements.txt
+  # Create and activate virtual environment
+  python -m venv venv
+  source venv/bin/activate
+  pip install -e ".[dev]"
 
   # run black formatter
   black .
   ```
+
+### Running Tests with Tox
+
+To run tests across multiple Python versions:
+
+```shell
+# Run tests for all supported Python versions
+tox
+
+# Run tests for a specific Python version
+tox -e py312
+
+# Run cluster-specific tests
+tox -e cluster
+
+# Run single-node-specific tests  
+tox -e single_node
+```
+
+### Building and Publishing
+
+To build and publish the package to PyPI:
+
+```shell
+# Install build dependencies
+pip install -e ".[build]"
+
+# Build the package
+python -m build
+
+# Upload to PyPI (requires authentication)
+twine upload dist/*
+```
 

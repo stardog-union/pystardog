@@ -89,7 +89,7 @@ setup_pytest: &setup_pytest
 
       sudo apt-get update -y
       sudo apt-get install python3-pip -y
-      pip3 install -r test-requirements.txt -r requirements.txt
+      pip3 install -e .[dev]
 
 
 pull_license: &pull_license
@@ -107,7 +107,7 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            pip install -r test-requirements.txt -r requirements.txt
+            pip install -e .[dev]
 
       - run:
           name: Black
@@ -120,12 +120,6 @@ jobs:
           command: |
             flake8 stardog 
 
-      - run:
-          # We allow pylint to fail since it's too strict.
-          # We should fix these slowly, and come up with a proper configuration to enable limited checks.
-          name: pylint
-          command: |
-            pylint stardog --exit-zero
 
   basic_test_suite_single_node:
     machine:
