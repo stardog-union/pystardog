@@ -20,11 +20,11 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "pystardog"
-copyright = "2019, Pedro Oliveira, John Bresnahan, Stephen Nowell"
-author = "Pedro Oliveira, John Bresnahan, Stephen Nowell"
+copyright = "2025 Stardog Union"
+author = "Stardog Union"
 
 # The short X.Y version
-version = ""
+version = "0.18.1"
 # The full version, including alpha/beta/rc tags
 release = ""
 
@@ -93,7 +93,13 @@ html_theme = "sphinx_rtd_theme"
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    "navigation_depth": 6,
+    "collapse_navigation": False,
+    "sticky_navigation": True,
+    "includehidden": True,
+    "titles_only": False,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
