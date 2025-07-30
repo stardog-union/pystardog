@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Awaitable, List, Literal, Optional, cast
+from typing import TYPE_CHECKING, Awaitable, List, Optional, cast
 
 if TYPE_CHECKING:
     from .client import BaseClient, ResponseType
 
 import httpx
-from pydantic import BaseModel, Field, computed_field
+from pydantic import BaseModel, Field, computed_field, ConfigDict
 
 
 class VoiceboxAppSettings(BaseModel):
@@ -25,22 +25,15 @@ class VoiceboxAppSettings(BaseModel):
 
 
 class VoiceboxAction(BaseModel):
+    model_config = ConfigDict(extra='allow')
+    
     label: Optional[str] = None
-    type: Literal[
-        "chart",
-        "csv",
-        "external_llm",
-        "iri",
-        "profiling",
-        "rewritten_query",
-        "sparql",
-        "url",
-        "modeling_and_mapping",
-    ]
+    type: str
     value: str
 
 
 class VoiceboxAnswer(BaseModel):
+    model_config = ConfigDict(extra='allow')
 
     content: str
     """The main response to your question. This is intended to display to an end user."""
@@ -50,7 +43,7 @@ class VoiceboxAnswer(BaseModel):
     """
     message_id: str
     """The id (UUID) of the Voicebox message."""
-    actions: List[VoiceboxAction] = Field(exclude=True)
+    actions: List[VoiceboxAction] = Field(default_factory=list)
     """The raw "actions" returned by Voicebox. Generally, you can just use the properties like :obj:`stardog.cloud.voicebox.VoiceboxAnswer.interpreted_question`
     or :obj:`stardog.cloud.voicebox.VoiceboxAnswer.sparql_query` instead of filtering the actions for these specific ones."""
 
@@ -95,12 +88,15 @@ class VoiceboxApp:
         self.client = client
         self.client_id = client_id
 
-    def _create_headers(self, api_token: str, client_id: Optional[str] = None) -> dict:
+    def _create_headers(self, api_token: str, client_id: Optional[str] = None, stardog_auth_token_override: Optional[str] = None) -> dict:
         """Create HTTP headers needed for Voicebox requests"""
-        return {
+        headers = {
             "Authorization": f"Bearer {api_token}",
             "X-Client-Id": client_id or self.client_id,
         }
+        if stardog_auth_token_override:
+            headers["X-SD-Auth-Token"] = stardog_auth_token_override
+        return headers
 
     def _check_client_id(self, client_id: Optional[str]):
         if not self.client_id and not client_id:
@@ -171,6 +167,7 @@ class VoiceboxApp:
         question: str,
         conversation_id: Optional[str] = None,
         client_id: Optional[str] = None,
+        stardog_auth_token_override: Optional[str] = None,
     ) -> VoiceboxAnswer:
         """
         Ask a question to Voicebox.
@@ -179,12 +176,14 @@ class VoiceboxApp:
         :param conversation_id: the id of the Voicebox conversation on Stardog Cloud. If not provided, a new conversation will be created and the conversation id will be returned in the response.
         :param client_id: only required only if ``client_id`` was not provided when creating
             a ``Voicebox`` instance
+        :param stardog_auth_token_override: optional bearer token to override the default Stardog token associated with your Voicebox app token. This is especially useful when your Voicebox App connects to Stardog via an SSO provider (e.g., Microsoft Entra) and you need to supply your own SSO-issued token to authenticate requests to your Stardog server
         """
         self._check_client_id(client_id)
 
         headers = self._create_headers(
             self.app_api_token,
             client_id or self.client_id,
+            stardog_auth_token_override,
         )
 
         response = cast(
@@ -210,6 +209,7 @@ class VoiceboxApp:
         question: str,
         conversation_id: Optional[str] = None,
         client_id: Optional[str] = None,
+        stardog_auth_token_override: Optional[str] = None,
     ):
         """
         Ask Voicebox to generate a SPARQL query based on a natural language question.
@@ -221,6 +221,7 @@ class VoiceboxApp:
         :param conversation_id: the id of the Voicebox conversation on Stardog Cloud. If not provided, a new conversation will be created and the conversation id will be returned in the response.
         :param client_id: only required if ``client_id`` was not provided when creating
             a :class:`stardog.cloud.voicebox.VoiceboxApp` instance
+        :param stardog_auth_token_override: optional bearer token to override the default Stardog token associated with your Voicebox app token. This is especially useful when your Voicebox App connects to Stardog via an SSO provider (e.g., Microsoft Entra) and you need to supply your own SSO-issued token to authenticate requests to your Stardog server
 
 
         """
@@ -229,6 +230,7 @@ class VoiceboxApp:
         headers = self._create_headers(
             self.app_api_token,
             client_id or self.client_id,
+            stardog_auth_token_override,
         )
 
         response = await self._ensure_response(
@@ -252,6 +254,7 @@ class VoiceboxApp:
         question: str,
         conversation_id: Optional[str] = None,
         client_id: Optional[str] = None,
+        stardog_auth_token_override: Optional[str] = None,
     ):
         """
         Ask Voicebox to generate a SPARQL query based on a natural language question.
@@ -260,12 +263,14 @@ class VoiceboxApp:
         :param conversation_id: the id of the Voicebox conversation on Stardog Cloud. If not provided, a new conversation will be created and the conversation id will be returned in the response.
         :param client_id: only required if ``client_id`` was not provided when creating
             a :class:`stardog.cloud.voicebox.VoiceboxApp` instance
+        :param stardog_auth_token_override: optional bearer token to override the default Stardog token associated with your Voicebox app token. This is especially useful when your Voicebox App connects to Stardog via an SSO provider (e.g., Microsoft Entra) and you need to supply your own SSO-issued token to authenticate requests to your Stardog server
         """
         self._check_client_id(client_id)
 
         headers = self._create_headers(
             self.app_api_token,
             client_id or self.client_id,
+            stardog_auth_token_override,
         )
 
         response = cast(
@@ -290,6 +295,7 @@ class VoiceboxApp:
         question: str,
         conversation_id: Optional[str] = None,
         client_id: Optional[str] = None,
+        stardog_auth_token_override: Optional[str] = None,
     ):
         """
         Ask Voicebox to generate a SPARQL query based on a natural language question.
@@ -301,12 +307,14 @@ class VoiceboxApp:
         :param conversation_id: the id of the Voicebox conversation on Stardog Cloud. If not provided, a new conversation will be created and the conversation id will be returned in the response.
         :param client_id: only required if ``client_id`` was not provided when creating
             a :class:`stardog.cloud.voicebox.VoiceboxApp` instance
+        :param stardog_auth_token_override: optional bearer token to override the default Stardog token associated with your Voicebox app token. This is especially useful when your Voicebox App connects to Stardog via an SSO provider (e.g., Microsoft Entra) and you need to supply your own SSO-issued token to authenticate requests to your Stardog server
         """
         self._check_client_id(client_id)
 
         headers = self._create_headers(
             self.app_api_token,
             client_id or self.client_id,
+            stardog_auth_token_override,
         )
 
         response = await self._ensure_response(
