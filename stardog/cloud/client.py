@@ -90,11 +90,13 @@ class Client(BaseClient):
     def __init__(
         self,
         base_url: str = StardogCloudAPIEndpoints.US,
+        timeout: float = 30.0,
     ):
         """
         :param base_url: The base URL of the Stardog Cloud API.
+        :param timeout: Request timeout in seconds.
         """
-        self._client = httpx.Client(base_url=base_url)
+        self._client = httpx.Client(base_url=base_url, timeout=timeout)
 
     def __enter__(self):
         self._client.__enter__()
@@ -162,11 +164,13 @@ class AsyncClient(BaseClient):
     def __init__(
         self,
         base_url: str = StardogCloudAPIEndpoints.US,
+        timeout: float = 30.0,
     ):
         """
         :param base_url: The base URL of the Stardog Cloud API.
+        :param timeout: Request timeout in seconds.
         """
-        self._client = httpx.AsyncClient(base_url=base_url)
+        self._client = httpx.AsyncClient(base_url=base_url, timeout=timeout)
 
     async def __aenter__(self):
         await self._client.__aenter__()
