@@ -25,15 +25,15 @@ class VoiceboxAppSettings(BaseModel):
 
 
 class VoiceboxAction(BaseModel):
-    model_config = ConfigDict(extra='allow')
-    
+    model_config = ConfigDict(extra="allow")
+
     label: Optional[str] = None
     type: str
     value: str
 
 
 class VoiceboxAnswer(BaseModel):
-    model_config = ConfigDict(extra='allow')
+    model_config = ConfigDict(extra="allow")
 
     content: str
     """The main response to your question. This is intended to display to an end user."""
@@ -88,7 +88,12 @@ class VoiceboxApp:
         self.client = client
         self.client_id = client_id
 
-    def _create_headers(self, api_token: str, client_id: Optional[str] = None, stardog_auth_token_override: Optional[str] = None) -> dict:
+    def _create_headers(
+        self,
+        api_token: str,
+        client_id: Optional[str] = None,
+        stardog_auth_token_override: Optional[str] = None,
+    ) -> dict:
         """Create HTTP headers needed for Voicebox requests"""
         headers = {
             "Authorization": f"Bearer {api_token}",
