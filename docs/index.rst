@@ -6,10 +6,6 @@
 pystardog
 =========
 
-.. image:: https://sdcloud-assets-cdn.cloud.stardog.com/auth0/stardog_logo.png
-   :alt: Stardog Logo
-   :width: 200px
-
 .. toctree::
    :maxdepth: 2
    :caption: User Guide:

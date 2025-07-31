@@ -99,12 +99,15 @@ html_theme_options = {
     "sticky_navigation": True,
     "includehidden": True,
     "titles_only": False,
+    "style_nav_header_background": "#A8A8A8",
+    "version_selector": True,
 }
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
+html_logo = "stardog-logo.png"
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
