@@ -1,14 +1,12 @@
 Getting Started
 ===============
 
-pystardog is a Python wrapper for communicating with the Stardog HTTP server, providing access to a full set of functions for executing SPARQL queries and administrative tasks.
-
-**Requirements**: Python 3.9+
-
 What is it?
 ***********
 
 pystardog makes it easy to work with Stardog knowledge graphs from Python. Whether you're connecting to local or remote Stardog servers, or using Stardog Cloud's public API for features like AI-powered Voicebox, pystardog provides a simple, Pythonic interface to all of Stardog's capabilities.
+
+**Requirements**: Python 3.9+
 
 The implementation uses the HTTP protocol to communicate with Stardog servers. For more information about the underlying API, see `HTTP Programming <https://docs.stardog.com/developing/http-api>`_ in Stardog's documentation.
 
@@ -59,9 +57,9 @@ Connect to a Stardog server instance to manage databases and execute queries:
 Stardog Cloud (Voicebox)
 -------------------------
 
-Use Voicebox to ask questions to your Stardog knowledge graph in natural language. Voicebox translates your questions into SPARQL queries, allowing you to interact with your data without needing to write SPARQL directly. This requires a Voicebox API token, which you can obtain from the Stardog Cloud console. Your requests will be sent to Stardog Cloud's Voicebox service, which processes the natural language input and returns the corresponding SPARQL query and results.
+Use Voicebox to ask questions to your Stardog knowledge graph in natural language. Voicebox translates your questions into SPARQL queries, allowing you to interact with your data without needing to write SPARQL directly. 
 
-For more details, see the `Stardog Cloud API documentation <https://cloud.stardog.com/api/v1/docs>`_.
+This requires a Voicebox API token from the Stardog Cloud console. See the `Stardog Cloud API documentation <https://cloud.stardog.com/api/v1/docs>`_ for more details.
 
 .. code-block:: python
 
