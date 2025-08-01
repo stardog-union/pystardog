@@ -114,7 +114,9 @@ class VoiceboxApp:
             try:
                 uuid.UUID(conversation_id)
             except ValueError:
-                raise ValueError(f"conversation_id must be a valid UUID format, got: {conversation_id}")
+                raise ValueError(
+                    f"conversation_id must be a valid UUID format, got: {conversation_id}"
+                )
 
     async def _ensure_response(self, response: ResponseType) -> httpx.Response:
         """Helper method to handle both sync and async responses"""

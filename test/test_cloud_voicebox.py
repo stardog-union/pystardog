@@ -290,5 +290,8 @@ class TestVoiceboxApp:
 
     def test_ask_with_invalid_conversation_id(self):
         """Test that invalid conversation_id raises ValueError"""
-        with pytest.raises(ValueError, match="conversation_id must be a valid UUID format, got: invalid-uuid"):
+        with pytest.raises(
+            ValueError,
+            match="conversation_id must be a valid UUID format, got: invalid-uuid",
+        ):
             self.voicebox.ask("test question", conversation_id="invalid-uuid")
