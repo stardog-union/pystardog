@@ -1,4 +1,5 @@
 from unittest.mock import Mock, patch
+import uuid
 
 import httpx
 import pytest
@@ -286,3 +287,8 @@ class TestVoiceboxApp:
             assert len(settings.named_graphs) == 1
             assert "http://company.com/data" in settings.named_graphs
             assert not settings.reasoning
+
+    def test_ask_with_invalid_conversation_id(self):
+        """Test that invalid conversation_id raises ValueError"""
+        with pytest.raises(ValueError, match="conversation_id must be a valid UUID format, got: invalid-uuid"):
+            self.voicebox.ask("test question", conversation_id="invalid-uuid")
