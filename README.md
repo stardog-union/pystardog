@@ -31,3 +31,9 @@ pip install pystardog[cloud]
 
 There is a Jupyter notebook and instructions in the [`notebooks`](./notebooks) directory of this repository.
 
+## Voicebox Demo
+
+Interactive example showing natural language queries with Stardog Cloud's Voicebox ([`examples/voicebox_example.py`](examples/voicebox_example.py)):
+
+![Voicebox Demo](examples/voicebox_demo.gif)
+
