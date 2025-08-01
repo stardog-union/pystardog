@@ -74,3 +74,8 @@ This requires a Voicebox API token from the Stardog Cloud console. See the `Star
         print(answer.content)
         print(f"SPARQL: {answer.sparql_query}")
 
+For a complete interactive example, see `examples/voicebox_example.py <https://github.com/stardog-union/pystardog/blob/main/examples/voicebox_example.py>`_ in the repository:
+
+.. image:: ../examples/voicebox_demo.gif
+   :alt: Voicebox Interactive Demo
+
