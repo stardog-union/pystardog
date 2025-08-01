@@ -8,10 +8,23 @@ pystardog
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: User Guide:
 
-   README.md
+   getting-started
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Modules:
+
    source/stardog
+   source/stardog.cloud
+
+.. toctree::
+   :maxdepth: 2
+   :caption: Development:
+
+   contributing
+
 
 Indices and tables
 ==================
