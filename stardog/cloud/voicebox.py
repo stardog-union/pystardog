@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import uuid
 from typing import TYPE_CHECKING, Awaitable, List, Optional, cast
 
 if TYPE_CHECKING:
@@ -107,6 +108,14 @@ class VoiceboxApp:
         if not self.client_id and not client_id:
             raise ValueError("client_id required")
 
+    def _validate_conversation_id(self, conversation_id: Optional[str]):
+        """Validate that conversation_id is a valid UUID format if provided"""
+        if conversation_id is not None:
+            try:
+                uuid.UUID(conversation_id)
+            except ValueError:
+                raise ValueError(f"conversation_id must be a valid UUID format, got: {conversation_id}")
+
     async def _ensure_response(self, response: ResponseType) -> httpx.Response:
         """Helper method to handle both sync and async responses"""
         if isinstance(response, Awaitable):
@@ -184,6 +193,7 @@ class VoiceboxApp:
         :param stardog_auth_token_override: optional bearer token to override the default Stardog token associated with your Voicebox app token. This is especially useful when your Voicebox App connects to Stardog via an SSO provider (e.g., Microsoft Entra) and you need to supply your own SSO-issued token to authenticate requests to your Stardog server
         """
         self._check_client_id(client_id)
+        self._validate_conversation_id(conversation_id)
 
         headers = self._create_headers(
             self.app_api_token,
@@ -231,6 +241,7 @@ class VoiceboxApp:
 
         """
         self._check_client_id(client_id)
+        self._validate_conversation_id(conversation_id)
 
         headers = self._create_headers(
             self.app_api_token,
@@ -271,6 +282,7 @@ class VoiceboxApp:
         :param stardog_auth_token_override: optional bearer token to override the default Stardog token associated with your Voicebox app token. This is especially useful when your Voicebox App connects to Stardog via an SSO provider (e.g., Microsoft Entra) and you need to supply your own SSO-issued token to authenticate requests to your Stardog server
         """
         self._check_client_id(client_id)
+        self._validate_conversation_id(conversation_id)
 
         headers = self._create_headers(
             self.app_api_token,
@@ -315,6 +327,7 @@ class VoiceboxApp:
         :param stardog_auth_token_override: optional bearer token to override the default Stardog token associated with your Voicebox app token. This is especially useful when your Voicebox App connects to Stardog via an SSO provider (e.g., Microsoft Entra) and you need to supply your own SSO-issued token to authenticate requests to your Stardog server
         """
         self._check_client_id(client_id)
+        self._validate_conversation_id(conversation_id)
 
         headers = self._create_headers(
             self.app_api_token,
