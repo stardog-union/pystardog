@@ -3,7 +3,7 @@ from unittest.mock import Mock, patch
 import httpx
 import json
 
-from stardog.cloud.client import Client, AsyncClient
+from stardog.cloud.client import Client, AsyncClient, StardogCloudAPIEndpoints
 from stardog.cloud.exceptions import (
     BadRequestException,
     UnauthorizedException,
@@ -189,13 +189,13 @@ class TestClientBasicFunctionality:
     def test_client_initialization_default_endpoint(self):
         """Test client initializes with default US endpoint"""
         client = Client()
-        assert str(client._client.base_url) == "https://cloud.stardog.com/api/"
+        assert client.base_url == StardogCloudAPIEndpoints.US.value
         client.close()
 
     def test_client_initialization_custom_endpoint(self):
         """Test client initializes with custom endpoint"""
-        client = Client(base_url="https://eu-cloud.stardog.com/api")
-        assert str(client._client.base_url) == "https://eu-cloud.stardog.com/api/"
+        client = Client(base_url=StardogCloudAPIEndpoints.EU)
+        assert client.base_url == StardogCloudAPIEndpoints.EU.value
         client.close()
 
     def test_client_initialization_custom_timeout(self):
@@ -266,7 +266,7 @@ class TestAsyncClientBasicFunctionality:
     async def test_async_client_initialization_default_endpoint(self):
         """Test async client initializes with default US endpoint"""
         client = AsyncClient()
-        assert str(client._client.base_url) == "https://cloud.stardog.com/api/"
+        assert client.base_url == "https://cloud.stardog.com/api"
         await client.aclose()
 
     @pytest.mark.asyncio
