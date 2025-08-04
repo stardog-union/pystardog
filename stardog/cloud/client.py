@@ -21,6 +21,12 @@ ResponseType = Union[httpx.Response, Awaitable[httpx.Response]]
 
 
 class BaseClient(ABC):
+    @property
+    @abstractmethod
+    def base_url(self) -> str:
+        """The base URL of the Stardog Cloud API."""
+        pass
+
     @abstractmethod
     def _post(self, path: str, **kwargs) -> ResponseType:
         pass
@@ -89,14 +95,20 @@ class Client(BaseClient):
 
     def __init__(
         self,
-        base_url: str = StardogCloudAPIEndpoints.US,
+        base_url: str = StardogCloudAPIEndpoints.US.value,
         timeout: float = 30.0,
     ):
         """
         :param base_url: The base URL of the Stardog Cloud API.
         :param timeout: Request timeout in seconds.
         """
+        self._base_url = base_url
         self._client = httpx.Client(base_url=base_url, timeout=timeout)
+
+    @property
+    def base_url(self) -> str:
+        """The base URL of the Stardog Cloud API."""
+        return self._base_url
 
     def __enter__(self):
         self._client.__enter__()
@@ -163,14 +175,20 @@ class AsyncClient(BaseClient):
 
     def __init__(
         self,
-        base_url: str = StardogCloudAPIEndpoints.US,
+        base_url: str = StardogCloudAPIEndpoints.US.value,
         timeout: float = 30.0,
     ):
         """
         :param base_url: The base URL of the Stardog Cloud API.
         :param timeout: Request timeout in seconds.
         """
+        self._base_url = base_url
         self._client = httpx.AsyncClient(base_url=base_url, timeout=timeout)
+
+    @property
+    def base_url(self) -> str:
+        """The base URL of the Stardog Cloud API."""
+        return self._base_url
 
     async def __aenter__(self):
         await self._client.__aenter__()
