@@ -44,6 +44,7 @@ dev = [
     "pytest-cov==6.2.1",
     "black==22.3.0",
     "requests-mock==1.10.0",
+    "respx==0.22.0",
     "flake8==7.1.1",
     "tox==4.2.6",
 ]
