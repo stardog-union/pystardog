@@ -8,7 +8,7 @@ version = "0.18.1"
 authors = [
     {name = "Stardog Union", email = "support@stardog.com"}
 ]
-description = "Use Stardog with Python!"
+description = "Python client for Stardog Platform Endpoints and Stardog Cloud"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.9"
@@ -34,19 +34,27 @@ Homepage = "https://github.com/stardog-union/pystardog"
 Repository = "https://github.com/stardog-union/pystardog"
 
 [project.optional-dependencies]
+cloud = [
+    "httpx>=0.24.0",
+    "pydantic>=2.0.0",
+]
 dev = [
     "pytest==8.4.1",
+    "pytest-asyncio==1.1.0",
+    "pytest-cov==6.2.1",
     "black==22.3.0",
     "requests-mock==1.10.0",
+    "respx==0.22.0",
     "flake8==7.1.1",
     "tox==4.2.6",
 ]
 docs = [
     "Sphinx==6.2.1",
-    "sphinx-rtd-theme==1.2.2",
+    "sphinx-rtd-theme==3.0.2",
     "sphinx-autodoc-typehints==1.23.0",
     "sphinx-autobuild==2021.3.14",
     "recommonmark==0.5.0",
+    "autodoc_pydantic>=2.0.0",
 ]
 build = [
     "build>=1.0.0",
@@ -77,6 +85,18 @@ markers = [
 [tool.black]
 line-length = 88
 target-version = ['py39']
+
+[tool.coverage.run]
+source = ["stardog"]
+omit = ["*/tests/*", "*/test_*"]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
 
 
 

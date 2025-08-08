@@ -20,11 +20,11 @@ sys.path.insert(0, os.path.abspath(".."))
 # -- Project information -----------------------------------------------------
 
 project = "pystardog"
-copyright = "2019, Pedro Oliveira, John Bresnahan, Stephen Nowell"
-author = "Pedro Oliveira, John Bresnahan, Stephen Nowell"
+copyright = "2019-2025 Stardog Union"
+author = "Stardog Union"
 
 # The short X.Y version
-version = ""
+version = "0.18.1"
 # The full version, including alpha/beta/rc tags
 release = ""
 
@@ -40,12 +40,19 @@ release = ""
 # ones.
 extensions = [
     "sphinx.ext.autodoc",
+    "sphinxcontrib.autodoc_pydantic",
     "sphinx_autodoc_typehints",
     "sphinx.ext.doctest",
     "sphinx.ext.viewcode",
     "sphinx.ext.napoleon",
     "recommonmark",
 ]
+
+# https://autodoc-pydantic.readthedocs.io/en/stable/users/installation.html
+autodoc_pydantic_model_show_json = False
+autodoc_pydantic_settings_show_json = False
+autosummary_generate = True
+
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -86,12 +93,21 @@ html_theme = "sphinx_rtd_theme"
 # further.  For a list of options available for each theme, see the
 # documentation.
 #
-# html_theme_options = {}
+html_theme_options = {
+    "navigation_depth": 6,
+    "collapse_navigation": False,
+    "sticky_navigation": True,
+    "includehidden": True,
+    "titles_only": False,
+    "style_nav_header_background": "#A8A8A8",
+    "version_selector": True,
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
 # so a file named "default.css" will overwrite the builtin "default.css".
 html_static_path = []
+html_logo = "stardog-logo.png"
 
 # Custom sidebar templates, must be a dictionary that maps document names
 # to template names.
