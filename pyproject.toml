@@ -25,7 +25,6 @@ classifiers = [
 dependencies = [
     "requests>=2.31.0",
     "requests-toolbelt>=1.0.0",
-    "contextlib2>=0.5.5",
     "rdflib>=6.0.0",
 ]
 
