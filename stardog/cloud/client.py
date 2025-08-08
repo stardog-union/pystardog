@@ -154,7 +154,7 @@ class Client(BaseClient):
 
 class AsyncClient(BaseClient):
     """
-    An asynchronous client for interacting with the Starodg Cloud API.
+    An asynchronous client for interacting with the Stardog Cloud API.
 
     .. code-block:: python
         :caption: Use ``async with stardog.cloud.AsyncClient()`` if you want a context-managed client
