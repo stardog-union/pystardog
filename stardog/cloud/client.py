@@ -74,7 +74,7 @@ class BaseClient(ABC):
 
 class Client(BaseClient):
     """
-    A synchronous client for interacting with the Starodg Cloud API.
+    A synchronous client for interacting with the Stardog Cloud API.
 
     .. code-block:: python
         :caption: Use ``with stardog.cloud.Client()`` if you want a context-managed client
