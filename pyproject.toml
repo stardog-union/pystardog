@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "pystardog"
-version = "0.18.1"
+version = "0.19.0"
 authors = [
     {name = "Stardog Union", email = "support@stardog.com"}
 ]

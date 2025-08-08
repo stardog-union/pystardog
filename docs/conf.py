@@ -24,7 +24,7 @@ copyright = "2019-2025 Stardog Union"
 author = "Stardog Union"
 
 # The short X.Y version
-version = "0.18.1"
+version = "0.19.0"
 # The full version, including alpha/beta/rc tags
 release = ""
 
