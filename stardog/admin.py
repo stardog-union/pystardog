@@ -7,7 +7,7 @@ import urllib
 from time import sleep
 from typing import Dict, List, Optional, Tuple, Union
 
-import contextlib2
+import contextlib
 from requests.auth import AuthBase
 
 from stardog.content import Content, ImportFile, ImportRaw, MappingFile, MappingRaw
@@ -143,7 +143,7 @@ class Admin:
         fmetas = []
         params = []
         copy_to_server = kwargs.get("copy_to_server", False)
-        with contextlib2.ExitStack() as stack:
+        with contextlib.ExitStack() as stack:
             for c in contents:
                 content = c[0] if isinstance(c, tuple) else c
                 context = c[1] if isinstance(c, tuple) else None
