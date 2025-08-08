@@ -8,7 +8,7 @@ version = "0.18.1"
 authors = [
     {name = "Stardog Union", email = "support@stardog.com"}
 ]
-description = "Python client for Stardog servers and Stardog Cloud"
+description = "Python client for Stardog Platform Endpoints and Stardog Cloud"
 readme = "README.md"
 license = {text = "Apache-2.0"}
 requires-python = ">=3.9"
