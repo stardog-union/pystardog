@@ -1164,11 +1164,11 @@ class Database:
         """Drops the database."""
         self.client.delete(self.path)
 
-    def namespaces(self) -> Dict:
+    def namespaces(self) -> List:
         """
         Retrieve the namespaces stored in the database
 
-        :return: A dict listing the prefixes and IRIs of the stored namespaces
+        :return: A list of dictionaries, each containing a namespace prefix and its corresponding IRI
 
         See also:
             `HTTPI API - Get Namespaces <https://stardog-union.github.io/http-docs/#operation/getNamespaces>`_
