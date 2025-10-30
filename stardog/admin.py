@@ -1164,7 +1164,7 @@ class Database:
         """Drops the database."""
         self.client.delete(self.path)
 
-    def namespaces(self) -> List:
+    def namespaces(self) -> list[dict]:
         """
         Retrieve the namespaces stored in the database
 
