@@ -5,7 +5,7 @@
 import json
 import urllib
 from time import sleep
-from typing import Dict, List, Optional, Tuple, Union
+from typing import Optional, Tuple, Union
 
 import contextlib
 from requests.auth import AuthBase
