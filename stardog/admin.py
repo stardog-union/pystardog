@@ -9,6 +9,7 @@ from typing import Dict, List, Optional, Tuple, Union
 
 import contextlib
 from requests.auth import AuthBase
+from requests.sessions import Session
 
 from stardog.content import Content, ImportFile, ImportRaw, MappingFile, MappingRaw
 
@@ -32,6 +33,7 @@ class Admin:
         username: Optional[str] = client.Client.DEFAULT_USERNAME,
         password: Optional[str] = client.Client.DEFAULT_PASSWORD,
         auth: Optional[AuthBase] = None,
+        session: Optional[Session] = None,
         run_as: Optional[str] = None,
     ) -> None:
         """Initializes an admin connection to a Stardog server.
@@ -50,7 +52,7 @@ class Admin:
                             username='admin', password='admin')
         """
         self.client = client.Client(
-            endpoint, None, username, password, auth=auth, run_as=run_as
+            endpoint, None, username, password, session=session, auth=auth, run_as=run_as
         )
         # ensure the server is alive and at the specified location
         self.alive()
