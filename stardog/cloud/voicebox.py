@@ -12,6 +12,7 @@ from typing import (
     Literal,
     Optional,
     cast,
+    get_args,
 )
 
 if TYPE_CHECKING:
@@ -136,6 +137,16 @@ class VoiceboxApp:
                 raise ValueError(
                     f"conversation_id must be a valid UUID format, got: {conversation_id}"
                 )
+
+    def _validate_think_mode(self, think_mode: str) -> ThinkMode:
+        """Validate and normalize think_mode (case-insensitive)."""
+        if not think_mode:
+            raise ValueError("A valid think_mode value is required")
+        normalized = think_mode.lower()
+        valid = get_args(ThinkMode)
+        if normalized not in valid:
+            raise ValueError(f"think_mode must be one of {valid}, got: {think_mode!r}")
+        return normalized
 
     async def _ensure_response(self, response: ResponseType) -> httpx.Response:
         """Helper method to handle both sync and async responses"""
@@ -410,6 +421,7 @@ class VoiceboxApp:
         """
         self._check_client_id(client_id)
         self._validate_conversation_id(conversation_id)
+        think_mode = self._validate_think_mode(think_mode)
 
         headers = self._create_headers(
             self.app_api_token,
@@ -461,6 +473,7 @@ class VoiceboxApp:
         """
         self._check_client_id(client_id)
         self._validate_conversation_id(conversation_id)
+        think_mode = self._validate_think_mode(think_mode)
 
         headers = self._create_headers(
             self.app_api_token,

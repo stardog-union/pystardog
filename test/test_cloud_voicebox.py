@@ -336,6 +336,25 @@ class TestVoiceboxAppSync:
         call_kwargs = self.voicebox.client._stream_post.call_args
         assert call_kwargs.kwargs["json"]["think_mode"] == "standard"
 
+    def test_stream_ask_think_mode_case_insensitive(self):
+        """Test that think_mode is case-insensitive and normalized to lowercase"""
+        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
+
+        self.voicebox.client = MagicMock(wraps=self.client)
+        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
+
+        with self.voicebox.stream_ask("test?", think_mode="FAST") as stream:
+            list(stream)
+
+        call_kwargs = self.voicebox.client._stream_post.call_args
+        assert call_kwargs.kwargs["json"]["think_mode"] == "fast"
+
+    def test_stream_ask_invalid_think_mode(self):
+        """Test that invalid think_mode raises ValueError"""
+        with pytest.raises(ValueError, match="think_mode must be one of"):
+            with self.voicebox.stream_ask("test?", think_mode="turbo") as stream:
+                pass
+
     def test_stream_ask_with_conversation_id(self):
         """Test that conversation_id is passed in request body"""
         fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
