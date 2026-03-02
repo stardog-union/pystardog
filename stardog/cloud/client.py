@@ -1,3 +1,4 @@
+import contextlib
 import enum
 import json
 from abc import ABC, abstractmethod
@@ -20,7 +21,12 @@ class StardogCloudAPIEndpoints(str, enum.Enum):
 ResponseType = Union[httpx.Response, Awaitable[httpx.Response]]
 
 
+_DEFAULT_TIMEOUT = 30.0
+
+
 class BaseClient(ABC):
+    _DEFAULT_TIMEOUT = _DEFAULT_TIMEOUT
+
     @property
     @abstractmethod
     def base_url(self) -> str:
@@ -41,6 +47,11 @@ class BaseClient(ABC):
 
     @abstractmethod
     def _delete(self, path: str, **kwargs) -> ResponseType:
+        pass
+
+    @abstractmethod
+    def _stream_post(self, path: str, **kwargs):
+        """Return a context manager that yields a streaming httpx.Response."""
         pass
 
     @abstractmethod
@@ -96,13 +107,14 @@ class Client(BaseClient):
     def __init__(
         self,
         base_url: str = StardogCloudAPIEndpoints.US.value,
-        timeout: float = 30.0,
+        timeout: float = _DEFAULT_TIMEOUT,
     ):
         """
         :param base_url: The base URL of the Stardog Cloud API.
         :param timeout: Request timeout in seconds.
         """
         self._base_url = base_url
+        self._timeout = timeout
         self._client = httpx.Client(base_url=base_url, timeout=timeout)
 
     @property
@@ -143,6 +155,24 @@ class Client(BaseClient):
         response = self._client.delete(path, **kwargs)
         return self._handle_response(response)
 
+    @contextlib.contextmanager
+    def _stream_post(self, path: str, **kwargs):
+        """Context manager that yields a streaming httpx.Response for POST requests."""
+        with self._client.stream("POST", path, **kwargs) as response:
+            if response.is_error:
+                response.read()
+                try:
+                    error_data = response.json()
+                except json.JSONDecodeError:
+                    error_data = {"message": response.text}
+                status_code = response.status_code
+                msg = error_data.get("message", "") or error_data.get("detail")
+                exception_class = _API_STATUS_EXCEPTIONS.get(
+                    status_code, StardogCloudException
+                )
+                raise exception_class(msg, status_code)
+            yield response
+
     def voicebox_app(
         self, app_api_token: str, client_id: str | None = None
     ) -> VoiceboxApp:
@@ -176,13 +206,14 @@ class AsyncClient(BaseClient):
     def __init__(
         self,
         base_url: str = StardogCloudAPIEndpoints.US.value,
-        timeout: float = 30.0,
+        timeout: float = _DEFAULT_TIMEOUT,
     ):
         """
         :param base_url: The base URL of the Stardog Cloud API.
         :param timeout: Request timeout in seconds.
         """
         self._base_url = base_url
+        self._timeout = timeout
         self._client = httpx.AsyncClient(base_url=base_url, timeout=timeout)
 
     @property
@@ -223,6 +254,24 @@ class AsyncClient(BaseClient):
     async def _delete(self, path: str, **kwargs) -> httpx.Response:
         response = await self._client.delete(path, **kwargs)
         return self._handle_response(response)
+
+    @contextlib.asynccontextmanager
+    async def _stream_post(self, path: str, **kwargs):
+        """Async context manager that yields a streaming httpx.Response for POST requests."""
+        async with self._client.stream("POST", path, **kwargs) as response:
+            if response.is_error:
+                await response.aread()
+                try:
+                    error_data = response.json()
+                except json.JSONDecodeError:
+                    error_data = {"message": response.text}
+                status_code = response.status_code
+                msg = error_data.get("message", "") or error_data.get("detail")
+                exception_class = _API_STATUS_EXCEPTIONS.get(
+                    status_code, StardogCloudException
+                )
+                raise exception_class(msg, status_code)
+            yield response
 
     def voicebox_app(
         self, app_api_token: str, client_id: str | None = None

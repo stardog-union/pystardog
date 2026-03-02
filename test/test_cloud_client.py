@@ -2,6 +2,7 @@ import pytest
 from unittest.mock import Mock, patch
 import httpx
 import json
+import respx
 
 from stardog.cloud.client import Client, AsyncClient, StardogCloudAPIEndpoints
 from stardog.cloud.exceptions import (
@@ -293,3 +294,89 @@ class TestAsyncClientBasicFunctionality:
         assert voicebox.client is client
 
         await client.aclose()
+
+
+class TestClientStreamPost:
+    """Test Client._stream_post() method"""
+
+    def setup_method(self):
+        self.client = Client()
+
+    def teardown_method(self):
+        self.client.close()
+
+    @respx.mock
+    def test_stream_post_success(self):
+        """Test successful streaming POST returns a context-managed response"""
+        respx.post(f"{self.client.base_url}/v1/voicebox/stream/ask").mock(
+            return_value=httpx.Response(
+                200,
+                text='{"result":"hello","pending":false}\n',
+            )
+        )
+        with self.client._stream_post(
+            "/v1/voicebox/stream/ask", json={"query": "test"}
+        ) as response:
+            assert response.status_code == 200
+
+    @respx.mock
+    def test_stream_post_401_error(self):
+        """Test that HTTP 401 in streaming raises UnauthorizedException"""
+        respx.post(f"{self.client.base_url}/v1/voicebox/stream/ask").mock(
+            return_value=httpx.Response(401, json={"message": "Unauthorized"})
+        )
+        with pytest.raises(UnauthorizedException) as exc_info:
+            with self.client._stream_post(
+                "/v1/voicebox/stream/ask", json={"query": "test"}
+            ) as response:
+                pass
+        assert exc_info.value.status_code == 401
+
+    @respx.mock
+    def test_stream_post_500_error(self):
+        """Test that HTTP 500 in streaming raises InternalServerException"""
+        respx.post(f"{self.client.base_url}/v1/voicebox/stream/ask").mock(
+            return_value=httpx.Response(500, json={"message": "Internal server error"})
+        )
+        with pytest.raises(InternalServerException) as exc_info:
+            with self.client._stream_post(
+                "/v1/voicebox/stream/ask", json={"query": "test"}
+            ) as response:
+                pass
+        assert exc_info.value.status_code == 500
+
+
+class TestAsyncClientStreamPost:
+    """Test AsyncClient._stream_post() method"""
+
+    def setup_method(self):
+        self.client = AsyncClient()
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_stream_post_success(self):
+        """Test successful async streaming POST"""
+        respx.post(f"{self.client.base_url}/v1/voicebox/stream/ask").mock(
+            return_value=httpx.Response(
+                200,
+                text='{"result":"hello","pending":false}\n',
+            )
+        )
+        async with self.client._stream_post(
+            "/v1/voicebox/stream/ask", json={"query": "test"}
+        ) as response:
+            assert response.status_code == 200
+
+    @respx.mock
+    @pytest.mark.asyncio
+    async def test_stream_post_401_error(self):
+        """Test that HTTP 401 in async streaming raises UnauthorizedException"""
+        respx.post(f"{self.client.base_url}/v1/voicebox/stream/ask").mock(
+            return_value=httpx.Response(401, json={"message": "Unauthorized"})
+        )
+        with pytest.raises(UnauthorizedException) as exc_info:
+            async with self.client._stream_post(
+                "/v1/voicebox/stream/ask", json={"query": "test"}
+            ) as response:
+                pass
+        assert exc_info.value.status_code == 401
