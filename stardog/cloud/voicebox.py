@@ -386,9 +386,9 @@ class VoiceboxApp:
     def _resolve_stream_timeout(self) -> httpx.Timeout:
         """Resolve the effective timeout for streaming requests.
 
-        Priority: client-level timeout (if customized) > 300s default.
+        Priority: client-level timeout (if explicitly set) > 300s default.
         """
-        if self.client._timeout != self.client._DEFAULT_TIMEOUT:
+        if self.client._timeout is not None:
             effective = self.client._timeout
         else:
             effective = _STREAM_DEFAULT_TIMEOUT

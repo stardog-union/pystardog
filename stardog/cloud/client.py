@@ -21,11 +21,9 @@ class StardogCloudAPIEndpoints(str, enum.Enum):
 ResponseType = Union[httpx.Response, Awaitable[httpx.Response]]
 
 
-_DEFAULT_TIMEOUT = 30.0
-
-
 class BaseClient(ABC):
-    _DEFAULT_TIMEOUT = _DEFAULT_TIMEOUT
+    _DEFAULT_TIMEOUT = 30.0
+    _timeout: Optional[float]
 
     @property
     @abstractmethod
@@ -107,7 +105,7 @@ class Client(BaseClient):
     def __init__(
         self,
         base_url: str = StardogCloudAPIEndpoints.US.value,
-        timeout: float = _DEFAULT_TIMEOUT,
+        timeout: Optional[float] = None,
     ):
         """
         :param base_url: The base URL of the Stardog Cloud API.
@@ -115,7 +113,10 @@ class Client(BaseClient):
         """
         self._base_url = base_url
         self._timeout = timeout
-        self._client = httpx.Client(base_url=base_url, timeout=timeout)
+        self._client = httpx.Client(
+            base_url=base_url,
+            timeout=timeout if timeout is not None else self._DEFAULT_TIMEOUT,
+        )
 
     @property
     def base_url(self) -> str:
@@ -206,15 +207,18 @@ class AsyncClient(BaseClient):
     def __init__(
         self,
         base_url: str = StardogCloudAPIEndpoints.US.value,
-        timeout: float = _DEFAULT_TIMEOUT,
+        timeout: Optional[float] = None,
     ):
         """
         :param base_url: The base URL of the Stardog Cloud API.
-        :param timeout: Request timeout in seconds.
+        :param timeout: Request timeout in seconds. Defaults to 30s if not provided.
         """
         self._base_url = base_url
         self._timeout = timeout
-        self._client = httpx.AsyncClient(base_url=base_url, timeout=timeout)
+        self._client = httpx.AsyncClient(
+            base_url=base_url,
+            timeout=timeout if timeout is not None else self._DEFAULT_TIMEOUT,
+        )
 
     @property
     def base_url(self) -> str:
