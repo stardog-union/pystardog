@@ -101,7 +101,7 @@ pull_license: &pull_license
 jobs:
   static_analysis:
     docker:
-      - image: python:latest
+      - image: python:3.13
     steps:
       - checkout
       - run:

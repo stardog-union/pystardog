@@ -10,9 +10,6 @@ from stardog.cloud.client import AsyncClient, Client
 from stardog.cloud.voicebox import VoiceboxApp
 
 
-# -- Streaming test helpers --------------------------------------------------
-
-
 def _make_ndjson_lines(events):
     """Helper: convert list of dicts to NDJSON line strings."""
     return [json.dumps(e) for e in events]
