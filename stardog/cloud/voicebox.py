@@ -1,13 +1,29 @@
 from __future__ import annotations
 
+import contextlib
+import json as json_module
 import uuid
-from typing import TYPE_CHECKING, Awaitable, List, Optional, cast
+from typing import (
+    TYPE_CHECKING,
+    AsyncIterator,
+    Awaitable,
+    Iterator,
+    List,
+    Literal,
+    Optional,
+    cast,
+    get_args,
+)
 
 if TYPE_CHECKING:
     from .client import BaseClient, ResponseType
 
 import httpx
 from pydantic import BaseModel, Field, computed_field, ConfigDict
+
+ThinkMode = Literal["standard", "lite", "fast"]
+
+_STREAM_DEFAULT_TIMEOUT = 300.0
 
 
 class VoiceboxAppSettings(BaseModel):
@@ -47,6 +63,10 @@ class VoiceboxAnswer(BaseModel):
     actions: List[VoiceboxAction] = Field(default_factory=list)
     """The raw "actions" returned by Voicebox. Generally, you can just use the properties like :obj:`stardog.cloud.voicebox.VoiceboxAnswer.interpreted_question`
     or :obj:`stardog.cloud.voicebox.VoiceboxAnswer.sparql_query` instead of filtering the actions for these specific ones."""
+    pending: Optional[bool] = None
+    """Streaming indicator. ``None`` for non-streaming responses (from :obj:`ask`),
+    ``True`` for intermediate streaming events (more data coming),
+    ``False`` for the final streaming event (stream complete)."""
 
     @computed_field  # type: ignore[misc]
     @property
@@ -117,6 +137,16 @@ class VoiceboxApp:
                 raise ValueError(
                     f"conversation_id must be a valid UUID format, got: {conversation_id}"
                 )
+
+    def _validate_think_mode(self, think_mode: str) -> ThinkMode:
+        """Validate and normalize think_mode (case-insensitive)."""
+        if not think_mode:
+            raise ValueError("A valid think_mode value is required")
+        normalized = think_mode.lower()
+        valid = get_args(ThinkMode)
+        if normalized not in valid:
+            raise ValueError(f"think_mode must be one of {valid}, got: {think_mode!r}")
+        return normalized
 
     async def _ensure_response(self, response: ResponseType) -> httpx.Response:
         """Helper method to handle both sync and async responses"""
@@ -352,3 +382,145 @@ class VoiceboxApp:
             conversation_id=data.get("conversation_id"),
             actions=data.get("actions", []),
         )
+
+    def _resolve_stream_timeout(self) -> httpx.Timeout:
+        """Resolve the effective timeout for streaming requests.
+
+        Priority: client-level timeout (if explicitly set) > 300s default.
+        """
+        if self.client._timeout is not None:
+            effective = self.client._timeout
+        else:
+            effective = _STREAM_DEFAULT_TIMEOUT
+        return httpx.Timeout(effective, connect=self.client._DEFAULT_TIMEOUT)
+
+    @contextlib.contextmanager
+    def stream_ask(
+        self,
+        question: str,
+        conversation_id: Optional[str] = None,
+        client_id: Optional[str] = None,
+        stardog_auth_token_override: Optional[str] = None,
+        think_mode: ThinkMode = "standard",
+    ) -> Iterator[Iterator[VoiceboxAnswer]]:
+        """
+        Ask a question to Voicebox with a streaming response.
+
+        Returns a context manager that yields an iterator of :class:`VoiceboxAnswer`.
+        Each yielded answer has a ``pending`` field: ``True`` for intermediate events
+        and ``False`` for the final event containing the complete answer.
+
+        Must be used with a ``with`` statement to ensure proper resource cleanup.
+
+        :param question: the question to ask Voicebox, e.g. ``"How many products were sold in 2024?"``
+        :param conversation_id: the id of the Voicebox conversation on Stardog Cloud. If not provided, a new conversation will be created and the conversation id will be returned in the response.
+        :param client_id: only required if ``client_id`` was not provided when creating
+            a :class:`stardog.cloud.voicebox.VoiceboxApp` instance
+        :param stardog_auth_token_override: optional bearer token to override the default Stardog token associated with your Voicebox app token. This is especially useful when your Voicebox App connects to Stardog via an SSO provider (e.g., Microsoft Entra) and you need to supply your own SSO-issued token to authenticate requests to your Stardog server
+        :param think_mode: the thinking mode: ``"standard"`` (default), ``"lite"``, or ``"fast"``
+        """
+        self._check_client_id(client_id)
+        self._validate_conversation_id(conversation_id)
+        think_mode = self._validate_think_mode(think_mode)
+
+        headers = self._create_headers(
+            self.app_api_token,
+            client_id or self.client_id,
+            stardog_auth_token_override,
+        )
+
+        request_body = {
+            "query": question,
+            "conversation_id": conversation_id,
+            "think_mode": think_mode,
+        }
+
+        with self.client._stream_post(
+            path="/v1/voicebox/stream/ask",
+            json=request_body,
+            headers=headers,
+            timeout=self._resolve_stream_timeout(),
+        ) as response:
+            yield self._iter_ndjson(response)
+
+    @contextlib.asynccontextmanager
+    async def async_stream_ask(
+        self,
+        question: str,
+        conversation_id: Optional[str] = None,
+        client_id: Optional[str] = None,
+        stardog_auth_token_override: Optional[str] = None,
+        think_mode: ThinkMode = "standard",
+    ) -> AsyncIterator[AsyncIterator[VoiceboxAnswer]]:
+        """
+        Ask a question to Voicebox with a streaming response.
+
+        .. note::
+            Async version of :obj:`stardog.cloud.voicebox.VoiceboxApp.stream_ask`
+
+        Returns an async context manager that yields an async iterator of :class:`VoiceboxAnswer`.
+        Each yielded answer has a ``pending`` field: ``True`` for intermediate events
+        and ``False`` for the final event containing the complete answer.
+
+        Must be used with an ``async with`` statement to ensure proper resource cleanup.
+
+        :param question: the question to ask Voicebox, e.g. ``"How many products were sold in 2024?"``
+        :param conversation_id: the id of the Voicebox conversation on Stardog Cloud. If not provided, a new conversation will be created and the conversation id will be returned in the response.
+        :param client_id: only required if ``client_id`` was not provided when creating
+            a :class:`stardog.cloud.voicebox.VoiceboxApp` instance
+        :param stardog_auth_token_override: optional bearer token to override the default Stardog token associated with your Voicebox app token. This is especially useful when your Voicebox App connects to Stardog via an SSO provider (e.g., Microsoft Entra) and you need to supply your own SSO-issued token to authenticate requests to your Stardog server
+        :param think_mode: the thinking mode: ``"standard"`` (default), ``"lite"``, or ``"fast"``
+        """
+        self._check_client_id(client_id)
+        self._validate_conversation_id(conversation_id)
+        think_mode = self._validate_think_mode(think_mode)
+
+        headers = self._create_headers(
+            self.app_api_token,
+            client_id or self.client_id,
+            stardog_auth_token_override,
+        )
+
+        request_body = {
+            "query": question,
+            "conversation_id": conversation_id,
+            "think_mode": think_mode,
+        }
+
+        async with self.client._stream_post(
+            path="/v1/voicebox/stream/ask",
+            json=request_body,
+            headers=headers,
+            timeout=self._resolve_stream_timeout(),
+        ) as response:
+            yield self._aiter_ndjson(response)
+
+    def _parse_ndjson_line(self, data: dict) -> VoiceboxAnswer:
+        """Parse an NDJSON line into a VoiceboxAnswer, using the same mapping as ask()."""
+        return VoiceboxAnswer(
+            content=data.get("result", ""),
+            message_id=data.get("message_id"),
+            conversation_id=data.get("conversation_id"),
+            actions=data.get("actions", []),
+            pending=data.get("pending"),
+        )
+
+    def _iter_ndjson(self, response: httpx.Response) -> Iterator[VoiceboxAnswer]:
+        """Parse NDJSON lines from an httpx streaming response."""
+        for line in response.iter_lines():
+            line = line.strip()
+            if not line:
+                continue
+            data = json_module.loads(line)
+            yield self._parse_ndjson_line(data)
+
+    async def _aiter_ndjson(
+        self, response: httpx.Response
+    ) -> AsyncIterator[VoiceboxAnswer]:
+        """Parse NDJSON lines from an async httpx streaming response."""
+        async for line in response.aiter_lines():
+            line = line.strip()
+            if not line:
+                continue
+            data = json_module.loads(line)
+            yield self._parse_ndjson_line(data)

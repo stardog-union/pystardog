@@ -57,6 +57,43 @@ Asynchronous usage
         response = await app.async_ask(question="Your question here")
 
 
+Streaming
+========================
+
+For long-running questions, use the streaming API to receive incremental updates.
+Each streamed answer is a :class:`~stardog.cloud.voicebox.VoiceboxAnswer` — the same model
+returned by :obj:`~stardog.cloud.voicebox.VoiceboxApp.ask`. The ``pending`` field indicates
+whether more answers are coming (``True``) or the stream is complete (``False``).
+
+Synchronous streaming:
+
+.. code-block:: python
+
+    from stardog.cloud.client import Client
+
+    with Client() as client:
+        app = client.voicebox_app(app_api_token="your-token", client_id="your-client-id")
+
+        with app.stream_ask(question="Your question here", think_mode="standard") as stream:
+            for answer in stream:
+                if not answer.pending:
+                    print(answer.content)
+
+Asynchronous streaming:
+
+.. code-block:: python
+
+    from stardog.cloud.client import AsyncClient
+
+    async with AsyncClient() as client:
+        app = client.voicebox_app(app_api_token="your-token", client_id="your-client-id")
+
+        async with app.async_stream_ask(question="Your question here") as stream:
+            async for answer in stream:
+                if not answer.pending:
+                    print(answer.content)
+
+
 Error Handling
 ========================
 

@@ -1,9 +1,115 @@
+import json
+from contextlib import asynccontextmanager, contextmanager
+from unittest.mock import MagicMock
+
 import httpx
 import pytest
 import respx
 
 from stardog.cloud.client import AsyncClient, Client
 from stardog.cloud.voicebox import VoiceboxApp
+
+
+def _make_ndjson_lines(events):
+    """Helper: convert list of dicts to NDJSON line strings."""
+    return [json.dumps(e) for e in events]
+
+
+def _make_mock_stream_response(ndjson_dicts):
+    """Create a mock response whose iter_lines() yields NDJSON strings."""
+    lines = _make_ndjson_lines(ndjson_dicts)
+    mock_response = MagicMock()
+    mock_response.iter_lines.return_value = iter(lines)
+    mock_response.is_error = False
+    mock_response.status_code = 200
+    return mock_response
+
+
+async def _async_iter(items):
+    """Helper async generator."""
+    for item in items:
+        yield item
+
+
+def _make_async_mock_stream_response(ndjson_dicts):
+    """Create a mock response whose aiter_lines() yields NDJSON strings asynchronously."""
+    lines = _make_ndjson_lines(ndjson_dicts)
+    mock_response = MagicMock()
+    mock_response.aiter_lines.return_value = _async_iter(lines)
+    mock_response.is_error = False
+    mock_response.status_code = 200
+    return mock_response
+
+
+# Standard mode NDJSON events (multiple lines)
+STANDARD_MODE_EVENTS = [
+    {
+        "result": "",
+        "conversation_id": "550e8400-e29b-41d4-a716-446655440000",
+        "message_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+        "pending": True,
+        "actions": [
+            {
+                "type": "rewritten_query",
+                "label": "Interpreted Question",
+                "value": "How many products are in the database?",
+            }
+        ],
+    },
+    {
+        "result": "",
+        "conversation_id": "550e8400-e29b-41d4-a716-446655440000",
+        "message_id": "7ca8c921-aebc-22e2-91c5-11d15fe541d9",
+        "pending": True,
+        "actions": [
+            {
+                "type": "rewritten_query",
+                "label": "Interpreted Question",
+                "value": "How many products are in the database?",
+            },
+            {
+                "type": "sparql",
+                "label": "SPARQL Query",
+                "value": "PREFIX : <http://example.org/>\nSELECT (COUNT(?product) AS ?count)\nWHERE {\n  ?product a :Product .\n}",
+            },
+        ],
+    },
+    {
+        "result": "Based on the data in your knowledge graph, there are 157 products currently in the database.",
+        "conversation_id": "550e8400-e29b-41d4-a716-446655440000",
+        "message_id": "8db9da32-bfcd-33f3-a2d6-22e26af652ea",
+        "pending": False,
+        "actions": [
+            {
+                "type": "rewritten_query",
+                "label": "Interpreted Question",
+                "value": "How many products are in the database?",
+            },
+            {
+                "type": "sparql",
+                "label": "SPARQL Query",
+                "value": "PREFIX : <http://example.org/>\nSELECT (COUNT(?product) AS ?count)\nWHERE {\n  ?product a :Product .\n}",
+            },
+        ],
+    },
+]
+
+# Fast mode NDJSON events (single line)
+FAST_MODE_EVENTS = [
+    {
+        "result": "There are 157 products.",
+        "conversation_id": "550e8400-e29b-41d4-a716-446655440000",
+        "message_id": "6ba7b810-9dad-11d1-80b4-00c04fd430c8",
+        "pending": False,
+        "actions": [
+            {
+                "type": "sparql",
+                "label": "SPARQL Query",
+                "value": "SELECT (COUNT(?product) AS ?count) WHERE { ?product a :Product . }",
+            },
+        ],
+    },
+]
 
 
 class TestVoiceboxAppSync:
@@ -17,6 +123,16 @@ class TestVoiceboxAppSync:
             app_api_token="test-app-token",
             client_id="test-client-id",
         )
+
+    def _mock_stream_post(self, ndjson_dicts):
+        """Return a contextmanager-patched _stream_post."""
+        mock_response = _make_mock_stream_response(ndjson_dicts)
+
+        @contextmanager
+        def fake_stream_post(path, **kwargs):
+            yield mock_response
+
+        return fake_stream_post, mock_response
 
     @respx.mock
     def test_ask(self):
@@ -160,6 +276,175 @@ class TestVoiceboxAppSync:
         ):
             self.voicebox.ask("test question", conversation_id="invalid-uuid")
 
+    def test_stream_ask_standard_mode(self):
+        """Test streaming with standard mode (multiple chunks)"""
+        fake_stream_post, _ = self._mock_stream_post(STANDARD_MODE_EVENTS)
+
+        with MagicMock(wraps=self.client) as mock_client:
+            self.voicebox.client = mock_client
+            mock_client._stream_post = MagicMock(side_effect=fake_stream_post)
+
+            with self.voicebox.stream_ask("How many products?") as stream:
+                results = list(stream)
+
+        assert len(results) == 3
+        # Intermediate events
+        assert results[0].pending is True
+        assert results[0].content == ""
+        assert results[1].pending is True
+        # Final event
+        assert results[2].pending is False
+        assert (
+            results[2].content
+            == "Based on the data in your knowledge graph, there are 157 products currently in the database."
+        )
+        assert results[2].conversation_id == "550e8400-e29b-41d4-a716-446655440000"
+        assert (
+            results[2].interpreted_question == "How many products are in the database?"
+        )
+        assert (
+            results[2].sparql_query
+            == "PREFIX : <http://example.org/>\nSELECT (COUNT(?product) AS ?count)\nWHERE {\n  ?product a :Product .\n}"
+        )
+
+    def test_stream_ask_fast_mode(self):
+        """Test streaming with fast mode (single chunk)"""
+        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
+
+        self.voicebox.client = MagicMock(wraps=self.client)
+        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
+
+        with self.voicebox.stream_ask(
+            "How many products?", think_mode="fast"
+        ) as stream:
+            results = list(stream)
+
+        assert len(results) == 1
+        assert results[0].pending is False
+        assert results[0].content == "There are 157 products."
+
+    def test_stream_ask_default_think_mode(self):
+        """Test that default think_mode is 'standard'"""
+        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
+
+        self.voicebox.client = MagicMock(wraps=self.client)
+        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
+
+        with self.voicebox.stream_ask("test?") as stream:
+            list(stream)
+
+        call_kwargs = self.voicebox.client._stream_post.call_args
+        assert call_kwargs.kwargs["json"]["think_mode"] == "standard"
+
+    def test_stream_ask_think_mode_case_insensitive(self):
+        """Test that think_mode is case-insensitive and normalized to lowercase"""
+        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
+
+        self.voicebox.client = MagicMock(wraps=self.client)
+        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
+
+        with self.voicebox.stream_ask("test?", think_mode="FAST") as stream:
+            list(stream)
+
+        call_kwargs = self.voicebox.client._stream_post.call_args
+        assert call_kwargs.kwargs["json"]["think_mode"] == "fast"
+
+    def test_stream_ask_invalid_think_mode(self):
+        """Test that invalid think_mode raises ValueError"""
+        with pytest.raises(ValueError, match="think_mode must be one of"):
+            with self.voicebox.stream_ask("test?", think_mode="turbo") as stream:
+                pass
+
+    def test_stream_ask_with_conversation_id(self):
+        """Test that conversation_id is passed in request body"""
+        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
+
+        self.voicebox.client = MagicMock(wraps=self.client)
+        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
+
+        conv_id = "550e8400-e29b-41d4-a716-446655440000"
+        with self.voicebox.stream_ask("test?", conversation_id=conv_id) as stream:
+            list(stream)
+
+        call_kwargs = self.voicebox.client._stream_post.call_args
+        assert call_kwargs.kwargs["json"]["conversation_id"] == conv_id
+
+    def test_stream_ask_with_auth_override(self):
+        """Test that auth override header is sent"""
+        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
+
+        self.voicebox.client = MagicMock(wraps=self.client)
+        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
+
+        with self.voicebox.stream_ask(
+            "test?", stardog_auth_token_override="sso-token-12345"
+        ) as stream:
+            list(stream)
+
+        call_kwargs = self.voicebox.client._stream_post.call_args
+        assert call_kwargs.kwargs["headers"]["X-SD-Auth-Token"] == "sso-token-12345"
+
+    def test_stream_ask_invalid_conversation_id(self):
+        """Test that invalid conversation_id raises ValueError"""
+        with pytest.raises(ValueError, match="conversation_id must be a valid UUID"):
+            with self.voicebox.stream_ask(
+                "test?", conversation_id="invalid-uuid"
+            ) as stream:
+                pass
+
+    def test_stream_ask_no_client_id(self):
+        """Test that missing client_id raises ValueError"""
+        voicebox = VoiceboxApp(
+            client=self.client,
+            app_api_token="test-token",
+            client_id=None,
+        )
+        with pytest.raises(ValueError, match="client_id required"):
+            with voicebox.stream_ask("test?") as stream:
+                pass
+
+    def test_stream_ask_empty_lines_skipped(self):
+        """Test that blank NDJSON lines are skipped"""
+        mock_response = MagicMock()
+        lines = ["", json.dumps(FAST_MODE_EVENTS[0]), "", "  "]
+        mock_response.iter_lines.return_value = iter(lines)
+
+        @contextmanager
+        def fake_stream_post(path, **kwargs):
+            yield mock_response
+
+        self.voicebox.client = MagicMock(wraps=self.client)
+        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
+
+        with self.voicebox.stream_ask("test?") as stream:
+            results = list(stream)
+
+        assert len(results) == 1
+
+    def test_stream_ask_field_mapping(self):
+        """Test that 'result' from NDJSON is mapped to 'content' on VoiceboxAnswer"""
+        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
+
+        self.voicebox.client = MagicMock(wraps=self.client)
+        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
+
+        with self.voicebox.stream_ask("test?") as stream:
+            results = list(stream)
+
+        # The NDJSON has "result" but VoiceboxAnswer exposes it as "content"
+        assert results[0].content == FAST_MODE_EVENTS[0]["result"]
+
+    def test_pending_none_for_non_streaming(self):
+        """Test that non-streaming VoiceboxAnswer has pending=None (backward compat)"""
+        from stardog.cloud.voicebox import VoiceboxAnswer
+
+        answer = VoiceboxAnswer(
+            content="test",
+            conversation_id="abc",
+            message_id="def",
+        )
+        assert answer.pending is None
+
 
 class TestVoiceboxAppAsync:
     """Test VoiceboxApp with async client and Stardog Cloud API responses"""
@@ -172,6 +457,16 @@ class TestVoiceboxAppAsync:
             app_api_token="test-app-token",
             client_id="test-client-id",
         )
+
+    def _mock_async_stream_post(self, ndjson_dicts):
+        """Return an asynccontextmanager-patched _stream_post."""
+        mock_response = _make_async_mock_stream_response(ndjson_dicts)
+
+        @asynccontextmanager
+        async def fake_stream_post(path, **kwargs):
+            yield mock_response
+
+        return fake_stream_post, mock_response
 
     @respx.mock
     @pytest.mark.asyncio
@@ -288,3 +583,32 @@ class TestVoiceboxAppAsync:
         assert len(settings.named_graphs) == 1
         assert "http://company.com/data" in settings.named_graphs
         assert not settings.reasoning
+
+    @pytest.mark.asyncio
+    async def test_async_stream_ask_standard_mode(self):
+        """Test async streaming with standard mode (multiple chunks)"""
+        fake_stream_post, _ = self._mock_async_stream_post(STANDARD_MODE_EVENTS)
+
+        self.voicebox.client = MagicMock(wraps=self.client)
+        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
+
+        results = []
+        async with self.voicebox.async_stream_ask("How many products?") as stream:
+            async for answer in stream:
+                results.append(answer)
+
+        assert len(results) == 3
+        assert results[0].pending is True
+        assert results[0].content == ""
+        assert results[2].pending is False
+        assert (
+            results[2].content
+            == "Based on the data in your knowledge graph, there are 157 products currently in the database."
+        )
+        assert (
+            results[2].interpreted_question == "How many products are in the database?"
+        )
+        assert (
+            results[2].sparql_query
+            == "PREFIX : <http://example.org/>\nSELECT (COUNT(?product) AS ?count)\nWHERE {\n  ?product a :Product .\n}"
+        )
