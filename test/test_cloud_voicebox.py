@@ -94,8 +94,8 @@ STANDARD_MODE_EVENTS = [
     },
 ]
 
-# Fast mode NDJSON events (single line)
-FAST_MODE_EVENTS = [
+# Single NDJSON event (used for simple stream tests)
+SINGLE_NDJSON_EVENT = [
     {
         "result": "There are 157 products.",
         "conversation_id": "550e8400-e29b-41d4-a716-446655440000",
@@ -307,57 +307,9 @@ class TestVoiceboxAppSync:
             == "PREFIX : <http://example.org/>\nSELECT (COUNT(?product) AS ?count)\nWHERE {\n  ?product a :Product .\n}"
         )
 
-    def test_stream_ask_fast_mode(self):
-        """Test streaming with fast mode (single chunk)"""
-        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
-
-        self.voicebox.client = MagicMock(wraps=self.client)
-        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
-
-        with self.voicebox.stream_ask(
-            "How many products?", think_mode="fast"
-        ) as stream:
-            results = list(stream)
-
-        assert len(results) == 1
-        assert results[0].pending is False
-        assert results[0].content == "There are 157 products."
-
-    def test_stream_ask_default_think_mode(self):
-        """Test that default think_mode is 'standard'"""
-        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
-
-        self.voicebox.client = MagicMock(wraps=self.client)
-        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
-
-        with self.voicebox.stream_ask("test?") as stream:
-            list(stream)
-
-        call_kwargs = self.voicebox.client._stream_post.call_args
-        assert call_kwargs.kwargs["json"]["think_mode"] == "standard"
-
-    def test_stream_ask_think_mode_case_insensitive(self):
-        """Test that think_mode is case-insensitive and normalized to lowercase"""
-        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
-
-        self.voicebox.client = MagicMock(wraps=self.client)
-        self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
-
-        with self.voicebox.stream_ask("test?", think_mode="FAST") as stream:
-            list(stream)
-
-        call_kwargs = self.voicebox.client._stream_post.call_args
-        assert call_kwargs.kwargs["json"]["think_mode"] == "fast"
-
-    def test_stream_ask_invalid_think_mode(self):
-        """Test that invalid think_mode raises ValueError"""
-        with pytest.raises(ValueError, match="think_mode must be one of"):
-            with self.voicebox.stream_ask("test?", think_mode="turbo") as stream:
-                pass
-
     def test_stream_ask_with_conversation_id(self):
         """Test that conversation_id is passed in request body"""
-        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
+        fake_stream_post, _ = self._mock_stream_post(SINGLE_NDJSON_EVENT)
 
         self.voicebox.client = MagicMock(wraps=self.client)
         self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
@@ -371,7 +323,7 @@ class TestVoiceboxAppSync:
 
     def test_stream_ask_with_auth_override(self):
         """Test that auth override header is sent"""
-        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
+        fake_stream_post, _ = self._mock_stream_post(SINGLE_NDJSON_EVENT)
 
         self.voicebox.client = MagicMock(wraps=self.client)
         self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
@@ -406,7 +358,7 @@ class TestVoiceboxAppSync:
     def test_stream_ask_empty_lines_skipped(self):
         """Test that blank NDJSON lines are skipped"""
         mock_response = MagicMock()
-        lines = ["", json.dumps(FAST_MODE_EVENTS[0]), "", "  "]
+        lines = ["", json.dumps(SINGLE_NDJSON_EVENT[0]), "", "  "]
         mock_response.iter_lines.return_value = iter(lines)
 
         @contextmanager
@@ -423,7 +375,7 @@ class TestVoiceboxAppSync:
 
     def test_stream_ask_field_mapping(self):
         """Test that 'result' from NDJSON is mapped to 'content' on VoiceboxAnswer"""
-        fake_stream_post, _ = self._mock_stream_post(FAST_MODE_EVENTS)
+        fake_stream_post, _ = self._mock_stream_post(SINGLE_NDJSON_EVENT)
 
         self.voicebox.client = MagicMock(wraps=self.client)
         self.voicebox.client._stream_post = MagicMock(side_effect=fake_stream_post)
@@ -432,7 +384,7 @@ class TestVoiceboxAppSync:
             results = list(stream)
 
         # The NDJSON has "result" but VoiceboxAnswer exposes it as "content"
-        assert results[0].content == FAST_MODE_EVENTS[0]["result"]
+        assert results[0].content == SINGLE_NDJSON_EVENT[0]["result"]
 
     def test_pending_none_for_non_streaming(self):
         """Test that non-streaming VoiceboxAnswer has pending=None (backward compat)"""
