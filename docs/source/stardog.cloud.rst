@@ -74,7 +74,7 @@ Synchronous streaming:
     with Client() as client:
         app = client.voicebox_app(app_api_token="your-token", client_id="your-client-id")
 
-        with app.stream_ask(question="Your question here", think_mode="standard") as stream:
+        with app.stream_ask(question="Your question here") as stream:
             for answer in stream:
                 if not answer.pending:
                     print(answer.content)

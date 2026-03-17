@@ -9,10 +9,8 @@ from typing import (
     Awaitable,
     Iterator,
     List,
-    Literal,
     Optional,
     cast,
-    get_args,
 )
 
 if TYPE_CHECKING:
@@ -20,8 +18,6 @@ if TYPE_CHECKING:
 
 import httpx
 from pydantic import BaseModel, Field, computed_field, ConfigDict
-
-ThinkMode = Literal["standard", "lite", "fast"]
 
 _STREAM_DEFAULT_TIMEOUT = 300.0
 
@@ -137,16 +133,6 @@ class VoiceboxApp:
                 raise ValueError(
                     f"conversation_id must be a valid UUID format, got: {conversation_id}"
                 )
-
-    def _validate_think_mode(self, think_mode: str) -> ThinkMode:
-        """Validate and normalize think_mode (case-insensitive)."""
-        if not think_mode:
-            raise ValueError("A valid think_mode value is required")
-        normalized = think_mode.lower()
-        valid = get_args(ThinkMode)
-        if normalized not in valid:
-            raise ValueError(f"think_mode must be one of {valid}, got: {think_mode!r}")
-        return normalized
 
     async def _ensure_response(self, response: ResponseType) -> httpx.Response:
         """Helper method to handle both sync and async responses"""
@@ -401,7 +387,6 @@ class VoiceboxApp:
         conversation_id: Optional[str] = None,
         client_id: Optional[str] = None,
         stardog_auth_token_override: Optional[str] = None,
-        think_mode: ThinkMode = "standard",
     ) -> Iterator[Iterator[VoiceboxAnswer]]:
         """
         Ask a question to Voicebox with a streaming response.
@@ -417,11 +402,9 @@ class VoiceboxApp:
         :param client_id: only required if ``client_id`` was not provided when creating
             a :class:`stardog.cloud.voicebox.VoiceboxApp` instance
         :param stardog_auth_token_override: optional bearer token to override the default Stardog token associated with your Voicebox app token. This is especially useful when your Voicebox App connects to Stardog via an SSO provider (e.g., Microsoft Entra) and you need to supply your own SSO-issued token to authenticate requests to your Stardog server
-        :param think_mode: the thinking mode: ``"standard"`` (default), ``"lite"``, or ``"fast"``
         """
         self._check_client_id(client_id)
         self._validate_conversation_id(conversation_id)
-        think_mode = self._validate_think_mode(think_mode)
 
         headers = self._create_headers(
             self.app_api_token,
@@ -432,7 +415,6 @@ class VoiceboxApp:
         request_body = {
             "query": question,
             "conversation_id": conversation_id,
-            "think_mode": think_mode,
         }
 
         with self.client._stream_post(
@@ -450,7 +432,6 @@ class VoiceboxApp:
         conversation_id: Optional[str] = None,
         client_id: Optional[str] = None,
         stardog_auth_token_override: Optional[str] = None,
-        think_mode: ThinkMode = "standard",
     ) -> AsyncIterator[AsyncIterator[VoiceboxAnswer]]:
         """
         Ask a question to Voicebox with a streaming response.
@@ -469,11 +450,9 @@ class VoiceboxApp:
         :param client_id: only required if ``client_id`` was not provided when creating
             a :class:`stardog.cloud.voicebox.VoiceboxApp` instance
         :param stardog_auth_token_override: optional bearer token to override the default Stardog token associated with your Voicebox app token. This is especially useful when your Voicebox App connects to Stardog via an SSO provider (e.g., Microsoft Entra) and you need to supply your own SSO-issued token to authenticate requests to your Stardog server
-        :param think_mode: the thinking mode: ``"standard"`` (default), ``"lite"``, or ``"fast"``
         """
         self._check_client_id(client_id)
         self._validate_conversation_id(conversation_id)
-        think_mode = self._validate_think_mode(think_mode)
 
         headers = self._create_headers(
             self.app_api_token,
@@ -484,7 +463,6 @@ class VoiceboxApp:
         request_body = {
             "query": question,
             "conversation_id": conversation_id,
-            "think_mode": think_mode,
         }
 
         async with self.client._stream_post(
