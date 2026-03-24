@@ -103,18 +103,20 @@ def test_transactions(db, conn):
 @pytest.mark.dbname("pystardog-test-database")
 @pytest.mark.conn_dbname("pystardog-test-database")
 def test_export(db, conn):
+    named_graph = "urn:named_graph"
+
     conn.begin()
     # add to default graph
     conn.add(content.Raw("<urn:default_subj> <urn:default_pred> <urn:default_obj> ."))
     # add to a named graph
     conn.add(
         content.Raw("<urn:named_subj> <urn:named_pred> <urn:named_obj> ."),
-        "<urn:named_graph>",
+        named_graph,
     )
     conn.commit()
 
     default_export = conn.export()
-    named_export = conn.export(graph_uri="<urn:named_graph>")
+    named_export = conn.export(graph_uri=named_graph)
 
     assert b"default_obj" in default_export
     assert b"named_obj" not in default_export
@@ -596,7 +598,12 @@ def test_docs(db, conn):
 
     # docstore
     docs = conn.docs()
-    assert docs.size() == 0
+    try:
+        assert docs.size() == 0
+    except exceptions.StardogException as e:
+        if e.http_code == 404:
+            pytest.skip("Document store is not available on this Stardog server")
+        raise
 
     # add
     docs.add("doc", content.File("test/data/example.txt"))
