@@ -32,6 +32,16 @@ def test_queries(admin):
         admin.kill_query(1)
 
 
+def test_processes(admin):
+    assert len(admin.processes()) == 0
+
+    with pytest.raises(exceptions.StardogException, match="Process not found: 1"):
+        admin.process(1)
+
+    with pytest.raises(exceptions.StardogException, match="Process not found: 1"):
+        admin.kill_process(1)
+
+
 ## This might or might not be better to move it to a separate file.
 ## Since we move to machine executor, we don't really need to ssh, since we can modify the files on the host
 @pytest.mark.skip(

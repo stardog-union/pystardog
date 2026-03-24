@@ -278,6 +278,31 @@ class Admin:
         """
         self.client.delete("/admin/queries/{}".format(id))
 
+    def process(self, id: str) -> Dict:
+        """Gets information about a running process.
+
+        :param id: Process ID
+
+        :return: Process information
+        """
+        r = self.client.get("/admin/processes/{}".format(id))
+        return r.json()
+
+    def processes(self) -> List[Dict]:
+        """Gets information about all running processes.
+
+        :return: information about all running processes
+        """
+        r = self.client.get("/admin/processes")
+        return r.json()
+
+    def kill_process(self, id: str) -> None:
+        """Kills a running process.
+
+        :param id: ID of the process to kill
+        """
+        self.client.delete("/admin/processes/{}".format(id))
+
     def stored_query(self, name: str) -> "StoredQuery":
         """Retrieves a Stored Query.
 
