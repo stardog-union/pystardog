@@ -2,7 +2,7 @@
 version: "3.3"
 services:
   zoo1:
-    image: bitnami/zookeeper:${ZOO_TAG}
+    image: ${ZOO_REPO}:${ZOO_TAG}
     container_name: zkn1
     environment:
         ZOO_MY_ID: 1

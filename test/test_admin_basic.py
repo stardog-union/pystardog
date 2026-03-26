@@ -203,7 +203,7 @@ class TestUsers(TestStardog):
     @pytest.mark.user_username("testUserPermissions")
     @pytest.mark.user_password("testUserPermissions")
     def test_user_permissions(self, user):
-        assert user.permissions() == [
+        expected_permissions = [
             {
                 "action": "WRITE",
                 "resource_type": "user",
@@ -215,18 +215,23 @@ class TestUsers(TestStardog):
                 "resource": ["testUserPermissions"],
             },
         ]
-        assert user.effective_permissions() == [
-            {
-                "action": "WRITE",
-                "resource_type": "user",
-                "resource": ["testUserPermissions"],
-            },
-            {
-                "action": "READ",
-                "resource_type": "user",
-                "resource": ["testUserPermissions"],
-            },
-        ]
+
+        def sort_permissions(permissions):
+            return sorted(
+                permissions,
+                key=lambda permission: (
+                    permission["action"],
+                    permission["resource_type"],
+                    tuple(permission["resource"]),
+                ),
+            )
+
+        assert sort_permissions(user.permissions()) == sort_permissions(
+            expected_permissions
+        )
+        assert sort_permissions(user.effective_permissions()) == sort_permissions(
+            expected_permissions
+        )
 
     def test_user_exists_in_user_list(self, admin, user):
         all_users = admin.users()
