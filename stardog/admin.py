@@ -82,7 +82,7 @@ class Admin:
         r = self.client.get("/admin/status/prometheus")
         return r.text
 
-    def get_server_metrics(self) -> Dict:
+    def get_server_metrics(self) -> dict:
         """
         Returns metric information from the registry in JSON format
 
@@ -103,7 +103,7 @@ class Admin:
         """
         return Database(name, self.client)
 
-    def databases(self) -> List["Database"]:
+    def databases(self) -> list["Database"]:
         """Retrieves all databases."""
         r = self.client.get("/admin/databases")
         databases = r.json()["databases"]
@@ -112,14 +112,14 @@ class Admin:
     def new_database(
         self,
         name: str,
-        options: Optional[Dict] = None,
+        options: Optional[dict] = None,
         *contents: Union[Content, Tuple[Content, str], None],
         **kwargs,
     ) -> "Database":
         """Creates a new database.
 
         :param name: the database name
-        :param options: Dictionary with database options
+        :param options: dictionary with database options
         :param contents: Datasets
             to perform bulk-load with. Named graphs are made with tuples of
             Content and the name.
@@ -241,7 +241,7 @@ class Admin:
             url = f"{url}?{params}"
         self.client.put(url)
 
-    def get_all_metadata_properties(self) -> Dict:
+    def get_all_metadata_properties(self) -> dict:
         """
         Get information on all database metadata properties, including description and example values
 
@@ -253,7 +253,7 @@ class Admin:
         r = self.client.get("/admin/config_properties")
         return r.json()
 
-    def query(self, id: str) -> Dict:
+    def query(self, id: str) -> dict:
         """Gets information about a running query.
 
         :param id: Query ID
@@ -263,7 +263,7 @@ class Admin:
         r = self.client.get("/admin/queries/{}".format(id))
         return r.json()
 
-    def queries(self) -> Dict:
+    def queries(self) -> dict:
         """Gets information about all running queries.
 
         :return: information about all running queries
@@ -285,7 +285,7 @@ class Admin:
         """
         return StoredQuery(name, self.client)
 
-    def stored_queries(self) -> List["StoredQuery"]:
+    def stored_queries(self) -> list["StoredQuery"]:
         """Retrieves all stored queries."""
         r = self.client.get(
             "/admin/queries/stored", headers={"Accept": "application/json"}
@@ -296,7 +296,7 @@ class Admin:
         )
 
     def new_stored_query(
-        self, name: str, query: str, options: Optional[Dict] = None
+        self, name: str, query: str, options: Optional[dict] = None
     ) -> "StoredQuery":
         """Creates a new Stored Query.
 
@@ -380,7 +380,7 @@ class Admin:
         """
         return User(name, self.client)
 
-    def users(self) -> List["User"]:
+    def users(self) -> list["User"]:
         """Retrieves all users."""
         r = self.client.get("/admin/users")
         users = r.json()["users"]
@@ -411,7 +411,7 @@ class Admin:
         """
         return Role(name, self.client)
 
-    def roles(self) -> List["Role"]:
+    def roles(self) -> list["Role"]:
         """Retrieves all roles."""
         r = self.client.get("/admin/roles")
         roles = r.json()["roles"]
@@ -434,7 +434,7 @@ class Admin:
         """
         return VirtualGraph(name, self.client)
 
-    def virtual_graphs(self) -> List["VirtualGraph"]:
+    def virtual_graphs(self) -> list["VirtualGraph"]:
         """Retrieves all virtual graphs."""
         r = self.client.get("/admin/virtual_graphs")
         virtual_graphs = r.json()["virtual_graphs"]
@@ -448,7 +448,7 @@ class Admin:
     # TODO
     # def virtual_graphs_info(self):
     #     """
-    #     List Virtual Graphs Info
+    #     list Virtual Graphs Info
     #     https://stardog-union.github.io/http-docs/#operation/virtualGraphInfos
     #
     #     :return:
@@ -460,7 +460,7 @@ class Admin:
         mappings: Union[MappingRaw, MappingFile, str],
         named_graph: str,
         remove_all: Optional[bool],
-        options: Dict,
+        options: dict,
     ) -> None:
         """Import (materialize) a virtual graph directly into the Stardog database.
 
@@ -504,7 +504,7 @@ class Admin:
         db: str,
         mappings: Union[MappingFile, MappingRaw, str],
         data_source: Optional[str] = None,
-        options: Optional[Dict] = None,
+        options: Optional[dict] = None,
         named_graph: Optional[str] = "tag:stardog:api:context:default",
         remove_all: bool = False,
     ):
@@ -565,7 +565,7 @@ class Admin:
         self,
         name: str,
         mappings: Union[MappingFile, MappingRaw, None] = None,
-        options: Optional[Dict] = None,
+        options: Optional[dict] = None,
         datasource: Optional[str] = None,
         db: Optional[str] = None,
     ) -> "VirtualGraph":
@@ -632,7 +632,7 @@ class Admin:
         db: str,
         mappings: Union[MappingRaw, MappingFile],
         input_file: Union[ImportFile, ImportRaw],
-        options: Optional[Dict] = None,
+        options: Optional[dict] = None,
         named_graph: Optional[str] = None,
     ) -> bool:
         """Import a JSON or CSV file.
@@ -705,14 +705,14 @@ class Admin:
         """
         return DataSource(name, self.client)
 
-    def datasources(self) -> List["DataSource"]:
+    def datasources(self) -> list["DataSource"]:
         """Retrieves all data sources."""
         r = self.client.get("/admin/data_sources")
         data_sources = r.json()["data_sources"]
         return list(map(lambda name: DataSource(name, self.client), data_sources))
 
-    def datasources_info(self) -> List[Dict]:
-        """List all data sources with their details
+    def datasources_info(self) -> list[dict]:
+        """list all data sources with their details
 
         :return: a list of data sources with their details
         """
@@ -720,7 +720,7 @@ class Admin:
         r = self.client.get("/admin/data_sources/list")
         return r.json()["data_sources"]
 
-    def new_datasource(self, name: str, options: Dict) -> "DataSource":
+    def new_datasource(self, name: str, options: dict) -> "DataSource":
         """Creates a new DataSource.
 
         :param name: The name of the data source
@@ -737,7 +737,7 @@ class Admin:
         self.client.post("/admin/data_sources", json=meta)
         return DataSource(name, self.client)
 
-    def get_server_properties(self) -> Dict:
+    def get_server_properties(self) -> dict:
         """Get the value of any set server-level properties
 
         :return: server properties
@@ -762,9 +762,9 @@ class Admin:
         r = self.client.get("/admin/users/valid")
         return r.status_code == 200
 
-    def cluster_list_standby_nodes(self) -> Dict:
+    def cluster_list_standby_nodes(self) -> dict:
         """
-        List standby nodes
+        list standby nodes
 
         :return: all standby nodes in the cluster
         """
@@ -777,7 +777,7 @@ class Admin:
         """
         self.client.put("/admin/cluster/standby/join")
 
-    def standby_node_pause_status(self) -> Dict:
+    def standby_node_pause_status(self) -> dict:
         """
         Get the pause status of a standby node
 
@@ -842,7 +842,7 @@ class Admin:
     #     r = self.client.post('/admin/cluster/diagnostics')
     #     return r
 
-    def cluster_status(self) -> Dict:
+    def cluster_status(self) -> dict:
         """Prints status information for each node
         in the cluster
 
@@ -851,7 +851,7 @@ class Admin:
         r = self.client.get("/admin/cluster/status")
         return r.json()
 
-    def cluster_info(self) -> Dict:
+    def cluster_info(self) -> dict:
         """Prints info about the nodes in the Stardog
         cluster.
 
@@ -876,7 +876,7 @@ class Admin:
         """
         return Cache(name, self.client)
 
-    def cache_status(self, *names: str) -> List[Dict]:
+    def cache_status(self, *names: str) -> list[dict]:
         """Retrieves the status of one or more cached graphs.
 
         :param names: Names of the cached graphs to retrieve status for
@@ -885,13 +885,13 @@ class Admin:
         """
         return self.client.post("/admin/cache/status", json=names).json()
 
-    def cached_status(self) -> List["Cache"]:
+    def cached_status(self) -> list["Cache"]:
         """Retrieves all cached graphs."""
         r = self.client.get("/admin/cache/status")
         cache_names = [cache_name["name"] for cache_name in r.json()]
         return list(map(lambda name: Cache(name, self.client), cache_names))
 
-    def cached_queries(self) -> List["Cache"]:
+    def cached_queries(self) -> list["Cache"]:
         """
         Retrieves all cached queries.
 
@@ -905,7 +905,7 @@ class Admin:
         cache_names = [cache_name["name"] for cache_name in r.json()]
         return list(map(lambda name: Cache(name, self.client), cache_names))
 
-    def cached_graphs(self) -> List["Cache"]:
+    def cached_graphs(self) -> list["Cache"]:
         """Retrieves all cached graphs."""
         r = self.client.get("/admin/cache/graphs")
         cache_names = [cache_name["name"] for cache_name in r.json()]
@@ -994,7 +994,7 @@ class Admin:
         self.client.post("/admin/cache", json=params)
         return Cache(name, self.client)
 
-    def cache_targets(self) -> List["CacheTarget"]:
+    def cache_targets(self) -> list["CacheTarget"]:
         """Retrieves all cache targets."""
         r = self.client.get("/admin/cache/target")
         return list(
@@ -1065,7 +1065,7 @@ class Database:
         """The name of the database."""
         return self.database_name
 
-    def get_options(self, *options: str) -> Dict:
+    def get_options(self, *options: str) -> dict:
         """Get the value of specific metadata options for a database
 
         :param options: Database option names
@@ -1081,7 +1081,7 @@ class Database:
         r = self.client.put(self.path + "/options", json=meta)
         return r.json()
 
-    def get_all_options(self) -> Dict:
+    def get_all_options(self) -> dict:
         """Get the value of every metadata option for a database
 
         :return: All database metadata
@@ -1089,7 +1089,7 @@ class Database:
         r = self.client.get(self.path + "/options")
         return r.json()
 
-    def set_options(self, options: Dict) -> None:
+    def set_options(self, options: dict) -> None:
         """Sets database options.
 
         :param options: Database options
@@ -1176,7 +1176,7 @@ class Database:
         r = self.client.get(f"/{self.database_name}/namespaces")
         return r.json()["namespaces"]
 
-    def import_namespaces(self, content: Content) -> Dict:
+    def import_namespaces(self, content: Content) -> dict:
         """
         Imports namespace prefixes from an RDF file
         that contains prefix declarations into the database, overriding any
@@ -1185,7 +1185,7 @@ class Database:
 
         :param content: RDF File containing prefix declarations
 
-        :return: Dictionary with all namespaces after import
+        :return: dictionary with all namespaces after import
         """
 
         with content.data() as data:
@@ -1260,7 +1260,7 @@ class StoredQuery:
     """
 
     def __init__(
-        self, name: str, client: client.Client, details: Optional[Dict] = None
+        self, name: str, client: client.Client, details: Optional[dict] = None
     ):
         """Initializes a stored query.
 
@@ -1417,7 +1417,7 @@ class User:
         r = self.client.get(self.path + "/superuser")
         return bool(r.json()["superuser"])
 
-    def roles(self) -> List["Role"]:
+    def roles(self) -> list["Role"]:
         """Gets all the User's roles."""
         r = self.client.get(self.path + "/roles")
         roles = r.json()["roles"]
@@ -1460,7 +1460,7 @@ class User:
         """Deletes the user."""
         self.client.delete(self.path)
 
-    def permissions(self) -> Dict:
+    def permissions(self) -> dict:
         """Gets the user permissions.
 
         See Also:
@@ -1519,7 +1519,7 @@ class User:
             "/admin/permissions/user/{}/delete".format(self.name), json=meta
         )
 
-    def effective_permissions(self) -> Dict:
+    def effective_permissions(self) -> dict:
         """Gets the user's effective permissions.
 
         :return: User's effective permissions
@@ -1561,7 +1561,7 @@ class Role:
         return self.role_name
 
     def users(self):
-        """Lists the users for this role.
+        """lists the users for this role.
 
         Returns:
           list[User]
@@ -1679,7 +1679,7 @@ class VirtualGraph:
         self,
         name: str,
         mappings: Content,
-        options: Dict = {},
+        options: dict = {},
         datasource: Optional[str] = None,
         db: Optional[str] = None,
     ) -> None:
@@ -1728,12 +1728,12 @@ class VirtualGraph:
         """Deletes the virtual graph."""
         self.client.delete(self.path)
 
-    def options(self) -> Dict:
+    def options(self) -> dict:
         """Gets virtual graph options."""
         r = self.client.get(self.path + "/options")
         return r.json()["options"]
 
-    def info(self) -> Dict:
+    def info(self) -> dict:
         """Gets virtual graph info."""
 
         r = self.client.get(self.path + "/info")
@@ -1841,7 +1841,7 @@ class DataSource:
         r = self.client.get(self.path + "/available")
         return bool(r.json())
 
-    def refresh_count(self, meta: Optional[Dict] = None) -> None:
+    def refresh_count(self, meta: Optional[dict] = None) -> None:
         """Refresh table row-count estimates
 
         :param meta: dict containing the table to refresh. Examples: ``{"name": "catalog.schema.table"}``,
@@ -1856,10 +1856,10 @@ class DataSource:
 
         self.client.post(self.path + "/refresh_counts", json=meta)
 
-    def update(self, options: Optional[Dict] = None, force: bool = False) -> None:
+    def update(self, options: Optional[dict] = None, force: bool = False) -> None:
         """Update data source
 
-        :param options: Dict with data source options
+        :param options: dict with data source options
         :param force: a data source will not be updated while in use unless ``force=True``
 
         Examples:
@@ -1886,7 +1886,7 @@ class DataSource:
 
         self.client.post(self.path + "/online")
 
-    def info(self) -> Dict:
+    def info(self) -> dict:
         """Get data source info
 
         :return: data source information
@@ -1895,7 +1895,7 @@ class DataSource:
         r = self.client.get(self.path + "/info")
         return r.json()["info"]
 
-    def refresh_metadata(self, meta: Optional[Dict] = None) -> None:
+    def refresh_metadata(self, meta: Optional[dict] = None) -> None:
         """Refresh metadata for one or all tables that are accessible to a data source. Will clear the saved metadata for a data source
         and reload all of its dependent virtual graphs with fresh metadata.
 
@@ -1923,7 +1923,7 @@ class DataSource:
 
         self.client.post(self.path + "/share")
 
-    def get_options(self) -> List[Dict]:
+    def get_options(self) -> list[dict]:
         """Get data source options"""
 
         r = self.client.get(self.path + "/options")
@@ -1984,7 +1984,7 @@ class Cache:
         url_encoded_name = urllib.parse.quote_plus(self.name)
         self.client.post("/admin/cache/refresh/{}".format(url_encoded_name))
 
-    def status(self) -> Dict:
+    def status(self) -> dict:
         """Retrieves the status of the cache."""
         r = self.client.post("/admin/cache/status", json=[self.name])
         return r.json()
