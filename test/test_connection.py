@@ -2,7 +2,13 @@ import pytest
 import threading
 import uuid
 
-from stardog import admin as admin_module, connection, content, content_types, exceptions
+from stardog import (
+    admin as admin_module,
+    connection,
+    content,
+    content_types,
+    exceptions,
+)
 
 
 def starwars_contents() -> list:
@@ -856,7 +862,9 @@ def test_update_with_query_id(admin, db, conn: connection.Connection):
 
 @pytest.mark.dbname("pystardog-test-database")
 @pytest.mark.conn_dbname("pystardog-test-database")
-def test_query_id_visible_in_running_queries(admin, db, conn: connection.Connection, conn_string):
+def test_query_id_visible_in_running_queries(
+    admin, db, conn: connection.Connection, conn_string
+):
     """Verify that a custom query_id is visible via the admin running queries API."""
     query_id = f"pystardog-test-{uuid.uuid4()}"
 
@@ -880,7 +888,9 @@ def test_query_id_visible_in_running_queries(admin, db, conn: connection.Connect
     def slow_query():
         try:
             # Use a separate connection so we don't interfere with the main one
-            with connection.Connection("pystardog-test-database", **conn_string) as bg_conn:
+            with connection.Connection(
+                "pystardog-test-database", **conn_string
+            ) as bg_conn:
                 bg_conn.select(
                     "SELECT * WHERE { ?a ?b ?c . ?d ?e ?f . ?g ?h ?i . ?j ?k ?l }",
                     query_id=query_id,
