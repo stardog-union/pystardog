@@ -5,7 +5,7 @@
 import json
 import urllib
 from time import sleep
-from typing import Optional, Tuple, Union
+from typing import Optional, Tuple, TypedDict, Union
 
 import contextlib
 from requests.auth import AuthBase
@@ -16,6 +16,16 @@ from . import content_types as content_types
 from .http import client
 
 DEFAULT_MAPPINGS_SYNTAX = "SMS"
+
+
+class ProcessInfo(TypedDict):
+    type: str
+    db: str
+    endTime: int
+    startTime: int
+    id: str
+    user: str
+    status: str
 
 
 class Admin:
@@ -278,30 +288,30 @@ class Admin:
         """
         self.client.delete("/admin/queries/{}".format(id))
 
-    def process(self, id: str) -> Dict:
-        """Gets information about a running process.
+    def process(self, id: str) -> ProcessInfo:
+        """Gets information about a process.
 
         :param id: Process ID
 
         :return: Process information
         """
-        r = self.client.get("/admin/processes/{}".format(id))
+        r = self.client.get(f"/admin/processes/{id}")
         return r.json()
 
-    def processes(self) -> List[Dict]:
-        """Gets information about all running processes.
+    def processes(self) -> List[ProcessInfo]:
+        """Gets information about all processes.
 
-        :return: information about all running processes
+        :return: information about all processes
         """
         r = self.client.get("/admin/processes")
         return r.json()
 
     def kill_process(self, id: str) -> None:
-        """Kills a running process.
+        """Kills a process.
 
         :param id: ID of the process to kill
         """
-        self.client.delete("/admin/processes/{}".format(id))
+        self.client.delete(f"/admin/processes/{id}")
 
     def stored_query(self, name: str) -> "StoredQuery":
         """Retrieves a Stored Query.
