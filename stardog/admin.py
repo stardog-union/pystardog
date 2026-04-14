@@ -298,7 +298,7 @@ class Admin:
         r = self.client.get(f"/admin/processes/{id}")
         return r.json()
 
-    def processes(self) -> List[ProcessInfo]:
+    def processes(self) -> list[ProcessInfo]:
         """Gets information about all processes.
 
         :return: information about all processes
