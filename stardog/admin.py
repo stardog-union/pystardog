@@ -119,7 +119,7 @@ class Admin:
         """Creates a new database.
 
         :param name: the database name
-        :param options: dictionary with database options
+        :param options: Dictionary with database options
         :param contents: Datasets
             to perform bulk-load with. Named graphs are made with tuples of
             Content and the name.
@@ -448,7 +448,7 @@ class Admin:
     # TODO
     # def virtual_graphs_info(self):
     #     """
-    #     list Virtual Graphs Info
+    #     List Virtual Graphs Info
     #     https://stardog-union.github.io/http-docs/#operation/virtualGraphInfos
     #
     #     :return:
@@ -712,7 +712,7 @@ class Admin:
         return list(map(lambda name: DataSource(name, self.client), data_sources))
 
     def datasources_info(self) -> list[dict]:
-        """list all data sources with their details
+        """List all data sources with their details
 
         :return: a list of data sources with their details
         """
@@ -764,7 +764,7 @@ class Admin:
 
     def cluster_list_standby_nodes(self) -> dict:
         """
-        list standby nodes
+        List standby nodes
 
         :return: all standby nodes in the cluster
         """
@@ -1185,7 +1185,7 @@ class Database:
 
         :param content: RDF File containing prefix declarations
 
-        :return: dictionary with all namespaces after import
+        :return: Dictionary with all namespaces after import
         """
 
         with content.data() as data:
@@ -1561,7 +1561,7 @@ class Role:
         return self.role_name
 
     def users(self):
-        """lists the users for this role.
+        """Lists the users for this role.
 
         Returns:
           list[User]
@@ -1859,7 +1859,7 @@ class DataSource:
     def update(self, options: Optional[dict] = None, force: bool = False) -> None:
         """Update data source
 
-        :param options: dict with data source options
+        :param options: Dict with data source options
         :param force: a data source will not be updated while in use unless ``force=True``
 
         Examples:
