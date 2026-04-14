@@ -1,6 +1,8 @@
 import pytest
+import threading
+import uuid
 
-from stardog import connection, content, content_types, exceptions
+from stardog import admin as admin_module, connection, content, content_types, exceptions
 
 
 def starwars_contents() -> list:
@@ -820,3 +822,94 @@ def test_icv_reasoning_enabled(db, conn):
     icv = conn.icv()
     res = icv.report(**{"reasoning": True})
     assert res == open("test/data/icv_report.ttl").read()
+
+
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_select_with_query_id(admin, db, conn: connection.Connection):
+    """Verify that passing a query_id does not break query execution."""
+    query_id = f"pystardog-test-{uuid.uuid4()}"
+
+    result = conn.select(
+        "select * where { ?s ?p ?o }",
+        limit=1,
+        query_id=query_id,
+    )
+
+    assert "results" in result
+    assert "bindings" in result["results"]
+
+
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_update_with_query_id(admin, db, conn: connection.Connection):
+    """Verify that passing a query_id does not break update execution."""
+    query_id = f"pystardog-test-{uuid.uuid4()}"
+
+    conn.begin()
+    conn.update(
+        "INSERT DATA { <urn:qid-test-s> <urn:qid-test-p> <urn:qid-test-o> }",
+        query_id=query_id,
+    )
+    conn.commit()
+
+
+@pytest.mark.dbname("pystardog-test-database")
+@pytest.mark.conn_dbname("pystardog-test-database")
+def test_query_id_visible_in_running_queries(admin, db, conn: connection.Connection, conn_string):
+    """Verify that a custom query_id is visible via the admin running queries API."""
+    query_id = f"pystardog-test-{uuid.uuid4()}"
+
+    # Add enough data so a cross-product query runs long enough to observe
+    data = content.Raw(
+        "\n".join(
+            f"<urn:s{i}> <urn:p{j}> <urn:o{k}> ."
+            for i in range(30)
+            for j in range(30)
+            for k in range(1)
+        ),
+        content_types.TURTLE,
+    )
+    conn.begin()
+    conn.add(data)
+    conn.commit()
+
+    # Run a slow cross-product query in a background thread
+    query_error = []
+
+    def slow_query():
+        try:
+            # Use a separate connection so we don't interfere with the main one
+            with connection.Connection("pystardog-test-database", **conn_string) as bg_conn:
+                bg_conn.select(
+                    "SELECT * WHERE { ?a ?b ?c . ?d ?e ?f . ?g ?h ?i . ?j ?k ?l }",
+                    query_id=query_id,
+                )
+        except Exception as e:
+            query_error.append(e)
+
+    t = threading.Thread(target=slow_query)
+    t.start()
+
+    try:
+        # Poll for the query to appear in the running queries list
+        import time
+
+        found = False
+        for _ in range(20):
+            time.sleep(0.5)
+            try:
+                query_info = admin.query(query_id)
+                found = True
+                break
+            except Exception:
+                continue
+
+        assert found, f"Query {query_id} was never visible in admin running queries"
+    finally:
+        # Kill the query so the test doesn't hang
+        try:
+            admin.kill_query(query_id)
+        except Exception:
+            pass
+        t.join(timeout=10)

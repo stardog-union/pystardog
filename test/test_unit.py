@@ -358,42 +358,6 @@ class TestContent:
             m = content.MappingRaw(f.read())
             assert m.syntax is None
 
-
-class TestConnectionQueryId:
-    def test_select_query_id_is_sent_as_request_id_param(self):
-        def text_callback(request, context):
-            assert request.path == "/test/query"
-            assert request.qs["id"] == ["query-123"]
-            context.headers["Content-Type"] = content_types.SPARQL_JSON
-            return '{"head":{"vars":[]},"results":{"bindings":[]}}'
-
-        with requests_mock.Mocker() as m:
-            m.post(
-                "http://localhost:5820/test/query",
-                text=text_callback,
-            )
-
-            conn = connection.Connection("test")
-            result = conn.select("select * where { ?s ?p ?o }", query_id="query-123")
-
-        assert result["results"]["bindings"] == []
-
-    def test_update_query_id_is_sent_as_request_id_param(self):
-        def text_callback(request, context):
-            assert request.path == "/test/update"
-            assert request.qs["id"] == ["update-123"]
-            context.status_code = 200
-            return ""
-
-        with requests_mock.Mocker() as m:
-            m.post(
-                "http://localhost:5820/test/update",
-                text=text_callback,
-            )
-
-            conn = connection.Connection("test")
-            conn.update("delete where { ?s ?p ?o }", query_id="update-123")
-
         m = content.MappingRaw("does not matter", name="mapping.sms2")
         assert m.syntax == "SMS2"
         assert m.name == "mapping.sms2"
@@ -494,6 +458,57 @@ class TestConnectionQueryId:
         assert m.input_type is None
         assert m.name == "test.what"
         assert m.separator is None
+
+
+class TestConnectionQueryId:
+    def test_select_query_id_is_sent_as_url_param(self):
+        def text_callback(request, context):
+            assert request.path == "/test/query"
+            assert request.qs["id"] == ["query-123"]
+            context.headers["Content-Type"] = content_types.SPARQL_JSON
+            return '{"head":{"vars":[]},"results":{"bindings":[]}}'
+
+        with requests_mock.Mocker() as m:
+            m.post(
+                "http://localhost:5820/test/query",
+                text=text_callback,
+            )
+
+            conn = connection.Connection("test")
+            result = conn.select("select * where { ?s ?p ?o }", query_id="query-123")
+
+        assert result["results"]["bindings"] == []
+
+    def test_update_query_id_is_sent_as_url_param(self):
+        def text_callback(request, context):
+            assert request.path == "/test/update"
+            assert request.qs["id"] == ["update-123"]
+            context.status_code = 200
+            return ""
+
+        with requests_mock.Mocker() as m:
+            m.post(
+                "http://localhost:5820/test/update",
+                text=text_callback,
+            )
+
+            conn = connection.Connection("test")
+            conn.update("delete where { ?s ?p ?o }", query_id="update-123")
+
+    def test_query_id_not_sent_when_not_provided(self):
+        def text_callback(request, context):
+            assert "id" not in request.qs
+            context.headers["Content-Type"] = content_types.SPARQL_JSON
+            return '{"head":{"vars":[]},"results":{"bindings":[]}}'
+
+        with requests_mock.Mocker() as m:
+            m.post(
+                "http://localhost:5820/test/query",
+                text=text_callback,
+            )
+
+            conn = connection.Connection("test")
+            conn.select("select * where { ?s ?p ?o }")
 
 
 class TestStardogException:

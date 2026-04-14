@@ -336,7 +336,10 @@ class Connection:
             "insert-graph-uri": kwargs.get("insert_graph_uri"),
             "schema": kwargs.get("schema"),
         }
-        request_params = {"id": kwargs.get("query_id")}
+        request_params = {}
+        query_id = kwargs.get("query_id")
+        if query_id is not None:
+            request_params["id"] = query_id
 
         # query bindings
         bindings = kwargs.get("bindings", {})
@@ -387,7 +390,7 @@ class Connection:
         :param content_type: Content type for results.
         :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
         :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
-        :param query_id: Optional query identifier to send as the request URL ``id`` parameter
+        :param query_id: User-defined identifier for the query. Useful for tracking queries in the Stardog query log or cancelling a running query via the admin API.
 
         :return: If ``content_type='application/sparql-results+json'``, results will be returned as a Dict, else results will be returned as bytes.
 
@@ -452,7 +455,7 @@ class Connection:
         :param content_type: Content type for results.
         :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
         :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
-        :param query_id: Optional query identifier to send as the request URL ``id`` parameter
+        :param query_id: User-defined identifier for the query. Useful for tracking queries in the Stardog query log or cancelling a running query via the admin API.
 
         :return: the query results
 
@@ -517,7 +520,7 @@ class Connection:
         :param content_type: Content type for results.
         :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
         :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
-        :param query_id: Optional query identifier to send as the request URL ``id`` parameter
+        :param query_id: User-defined identifier for the query. Useful for tracking queries in the Stardog query log or cancelling a running query via the admin API.
 
         :return: If ``content_type='application/sparql-results+json'``, results will be returned as a Dict
             , else results will be returned as bytes.
@@ -576,7 +579,7 @@ class Connection:
         :param bindings: Map between query variables and their values
         :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
         :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
-        :param query_id: Optional query identifier to send as the request URL ``id`` parameter
+        :param query_id: User-defined identifier for the query. Useful for tracking queries in the Stardog query log or cancelling a running query via the admin API.
 
         :return: whether the query pattern has a solution or not
 
@@ -639,7 +642,7 @@ class Connection:
         :param using_named_graph_uri: URI(s) to be used as named graphs (equivalent to ``USING NAMED``)
         :param remove_graph_uri: URI of the graph to be removed from
         :param insert_graph_uri: URI of the graph to be inserted into
-        :param query_id: Optional query identifier to send as the request URL ``id`` parameter
+        :param query_id: User-defined identifier for the query. Useful for tracking queries in the Stardog query log or cancelling a running query via the admin API.
 
         Examples:
           >>> conn.update('delete where {?s ?p ?o}')
