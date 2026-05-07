@@ -336,6 +336,10 @@ class Connection:
             "insert-graph-uri": kwargs.get("insert_graph_uri"),
             "schema": kwargs.get("schema"),
         }
+        request_params = {}
+        query_id = kwargs.get("query_id")
+        if query_id is not None:
+            request_params["id"] = query_id
 
         # query bindings
         bindings = kwargs.get("bindings", {})
@@ -351,6 +355,7 @@ class Connection:
 
         r = self.client.post(
             url,
+            params=request_params,
             data=params,
             headers={"Accept": content_type},
         )
@@ -369,6 +374,7 @@ class Connection:
         content_type: str = content_types.SPARQL_JSON,
         default_graph_uri: Optional[List[str]] = None,
         named_graph_uri: Optional[List[str]] = None,
+        query_id: Optional[str] = None,
         **kwargs,
     ) -> Union[bytes, Dict]:
         """Executes a SPARQL select query.
@@ -384,6 +390,7 @@ class Connection:
         :param content_type: Content type for results.
         :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
         :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
+        :param query_id: User-defined identifier for the query. Useful for tracking queries in the Stardog query log or cancelling a running query via the admin API.
 
         :return: If ``content_type='application/sparql-results+json'``, results will be returned as a Dict, else results will be returned as bytes.
 
@@ -416,6 +423,7 @@ class Connection:
             bindings=bindings,
             default_graph_uri=default_graph_uri,
             named_graph_uri=named_graph_uri,
+            query_id=query_id,
             **kwargs,
         )
 
@@ -431,6 +439,7 @@ class Connection:
         content_type=content_types.TURTLE,
         default_graph_uri: Optional[List[str]] = None,
         named_graph_uri: Optional[List[str]] = None,
+        query_id: Optional[str] = None,
         **kwargs,
     ) -> bytes:
         """Executes a SPARQL graph (``CONSTRUCT``) query.
@@ -446,6 +455,7 @@ class Connection:
         :param content_type: Content type for results.
         :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
         :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
+        :param query_id: User-defined identifier for the query. Useful for tracking queries in the Stardog query log or cancelling a running query via the admin API.
 
         :return: the query results
 
@@ -478,6 +488,7 @@ class Connection:
             bindings=bindings,
             default_graph_uri=default_graph_uri,
             named_graph_uri=named_graph_uri,
+            query_id=query_id,
             **kwargs,
         )
 
@@ -493,6 +504,7 @@ class Connection:
         content_type=content_types.SPARQL_JSON,
         default_graph_uri: Optional[List[str]] = None,
         named_graph_uri: Optional[List[str]] = None,
+        query_id: Optional[str] = None,
         **kwargs,
     ) -> Union[Dict, bytes]:
         """Executes a SPARQL paths query.
@@ -508,6 +520,7 @@ class Connection:
         :param content_type: Content type for results.
         :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
         :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
+        :param query_id: User-defined identifier for the query. Useful for tracking queries in the Stardog query log or cancelling a running query via the admin API.
 
         :return: If ``content_type='application/sparql-results+json'``, results will be returned as a Dict
             , else results will be returned as bytes.
@@ -536,6 +549,7 @@ class Connection:
             bindings=bindings,
             default_graph_uri=default_graph_uri,
             named_graph_uri=named_graph_uri,
+            query_id=query_id,
             **kwargs,
         )
 
@@ -550,6 +564,7 @@ class Connection:
         bindings: Optional[Dict[str, str]] = None,
         default_graph_uri: Optional[List[str]] = None,
         named_graph_uri: Optional[List[str]] = None,
+        query_id: Optional[str] = None,
         **kwargs,
     ) -> bool:
         """Executes a SPARQL ``ASK`` query.
@@ -564,6 +579,7 @@ class Connection:
         :param bindings: Map between query variables and their values
         :param default_graph_uri: URI(s) to be used as the default graph (equivalent to ``FROM``)
         :param named_graph_uri: URI(s) to be used as named graphs (equivalent to ``FROM NAMED``)
+        :param query_id: User-defined identifier for the query. Useful for tracking queries in the Stardog query log or cancelling a running query via the admin API.
 
         :return: whether the query pattern has a solution or not
 
@@ -591,6 +607,7 @@ class Connection:
             bindings=bindings,
             default_graph_uri=default_graph_uri,
             named_graph_uri=named_graph_uri,
+            query_id=query_id,
             **kwargs,
         )
         return strtobool(r.decode())
@@ -608,6 +625,7 @@ class Connection:
         using_named_graph_uri: Optional[List[str]] = None,
         remove_graph_uri: Optional[str] = None,
         insert_graph_uri: Optional[str] = None,
+        query_id: Optional[str] = None,
         **kwargs,
     ) -> None:
         """Executes a SPARQL update query.
@@ -624,6 +642,7 @@ class Connection:
         :param using_named_graph_uri: URI(s) to be used as named graphs (equivalent to ``USING NAMED``)
         :param remove_graph_uri: URI of the graph to be removed from
         :param insert_graph_uri: URI of the graph to be inserted into
+        :param query_id: User-defined identifier for the query. Useful for tracking queries in the Stardog query log or cancelling a running query via the admin API.
 
         Examples:
           >>> conn.update('delete where {?s ?p ?o}')
@@ -643,6 +662,7 @@ class Connection:
             using_named_graph_uri=using_named_graph_uri,
             remove_graph_uri=remove_graph_uri,
             insert_graph_uri=insert_graph_uri,
+            query_id=query_id,
             **kwargs,
         )
 
