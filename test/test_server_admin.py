@@ -1,5 +1,8 @@
+import threading
+import time
+
 import pytest
-from stardog import exceptions
+from stardog import connection, content, content_types, exceptions
 
 
 def test_get_server_metrics(admin):
@@ -30,6 +33,86 @@ def test_queries(admin):
 
     with pytest.raises(exceptions.StardogException, match="Query not found: 1"):
         admin.kill_query(1)
+
+
+def test_processes(admin):
+    assert len(admin.processes()) == 0
+
+    with pytest.raises(exceptions.StardogException, match="Process not found: 1"):
+        admin.process(1)
+
+    with pytest.raises(exceptions.StardogException, match="Process not found: 1"):
+        admin.kill_process(1)
+
+
+@pytest.mark.dbname("pystardog-test-database")
+def test_processes_while_running(admin, conn_string, db):
+    seed = "@prefix ex: <http://example.com/> .\n" + "\n".join(
+        f"ex:s{i} ex:p ex:o{i} ." for i in range(1, 80)
+    )
+    update = """
+    prefix ex: <http://example.com/>
+
+    insert {
+      ?s1 ex:derived ?o3 .
+    }
+    where {
+      ?s1 ?p1 ?o1 .
+      ?s2 ?p2 ?o2 .
+      ?s3 ?p3 ?o3 .
+    }
+    """
+
+    with connection.Connection(db.name, **conn_string) as conn:
+        conn.begin()
+        conn.clear()
+        conn.add(content.Raw(seed, content_types.TURTLE))
+        conn.commit()
+
+    update_done = threading.Event()
+    update_errors = []
+
+    def run_update():
+        try:
+            with connection.Connection(db.name, **conn_string) as conn:
+                conn.update(update)
+        except exceptions.StardogException as exc:
+            update_errors.append(exc)
+        finally:
+            update_done.set()
+
+    worker = threading.Thread(target=run_update)
+    worker.start()
+
+    process = None
+    deadline = time.time() + 10
+    while time.time() < deadline and process is None:
+        processes = admin.processes()
+        for candidate in processes:
+            if candidate.get("db") != db.name:
+                continue
+            if candidate.get("type") == "Transaction":
+                process = candidate
+                break
+            if process is None:
+                process = candidate
+        if process is None:
+            time.sleep(0.2)
+
+    assert process is not None
+    assert process["status"] == "RUNNING"
+
+    details = admin.process(process["id"])
+    assert details["id"] == process["id"]
+    assert details["db"] == db.name
+    assert details["status"] == "RUNNING"
+
+    admin.kill_process(process["id"])
+
+    worker.join(timeout=10)
+    assert update_done.is_set()
+    assert update_errors
+    assert "cancel" in str(update_errors[0]).lower()
 
 
 ## This might or might not be better to move it to a separate file.
