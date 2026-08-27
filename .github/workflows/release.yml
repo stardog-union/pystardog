@@ -1,0 +1,86 @@
+# Builds the distribution on every PR, and publishes it to PyPI when a GitHub
+# Release is published.
+#
+# Publishing uses PyPI Trusted Publishing (OIDC) -- there is no API token stored
+# anywhere in this repository or in CI. PyPI's trusted publisher config for this
+# project references BOTH the filename of this workflow and the `pypi`
+# environment below. Renaming either will break publishing until the config on
+# PyPI is updated to match.
+#
+# CircleCI continues to run the test suite and static analysis; this workflow
+# only builds and publishes.
+
+name: release
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  release:
+    types: [published]
+
+jobs:
+  build:
+    name: build distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install build tooling
+        run: python -m pip install --upgrade pip build twine
+
+      - name: Build sdist and wheel
+        run: python -m build
+
+      - name: Check distribution metadata
+        run: twine check --strict dist/*
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+          if-no-files-found: error
+
+  publish:
+    name: publish to PyPI
+    if: github.event_name == 'release'
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/p/pystardog
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      # PyPI uploads are immutable and a version can never be reused, so this
+      # runs before the upload rather than as a post-hoc check.
+      - name: Verify release tag matches the package version
+        run: |
+          set -euo pipefail
+          tag="${GITHUB_REF_NAME}"
+          pkg="$(python -c "import tomllib, pathlib; print(tomllib.loads(pathlib.Path('pyproject.toml').read_text())['project']['version'])")"
+          echo "release tag: ${tag}"
+          echo "pyproject:   ${pkg}"
+          if [ "${tag}" != "${pkg}" ]; then
+            echo "::error::release tag ${tag} does not match pyproject.toml version ${pkg}"
+            exit 1
+          fi
+
+      # Publish the exact artifact that `build` produced and twine checked,
+      # rather than a second build that merely ought to be identical.
+      - uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+      - uses: pypa/gh-action-pypi-publish@release/v1
