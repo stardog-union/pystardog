@@ -23,8 +23,19 @@ project = "pystardog"
 copyright = "2019-2025 Stardog Union"
 author = "Stardog Union"
 
-# The short X.Y version
-version = "0.19.0"
+# The short X.Y version. Read from package metadata so that pyproject.toml stays
+# the single source of truth; falls back to reading pyproject.toml directly when
+# the docs are built from a source tree without pystardog installed.
+try:
+    from importlib.metadata import PackageNotFoundError, version as _package_version
+
+    version = _package_version("pystardog")
+except PackageNotFoundError:
+    import pathlib
+    import tomllib
+
+    _pyproject = pathlib.Path(__file__).resolve().parent.parent / "pyproject.toml"
+    version = tomllib.loads(_pyproject.read_text())["project"]["version"]
 # The full version, including alpha/beta/rc tags
 release = ""
 
