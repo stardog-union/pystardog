@@ -36,7 +36,11 @@ def test_queries(admin):
 
 
 def test_processes(admin):
-    assert len(admin.processes()) == 0
+    # Do not assert this list is empty. The server runs its own managed
+    # processes (for example on the catalog database), so the count is not
+    # ours to control. test_processes_while_running covers the case where a
+    # specific process is expected, and filters by database to find it.
+    assert isinstance(admin.processes(), list)
 
     with pytest.raises(exceptions.StardogException, match="Process not found: 1"):
         admin.process(1)
