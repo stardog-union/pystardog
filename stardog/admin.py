@@ -1714,7 +1714,7 @@ class VirtualGraph:
         self,
         name: str,
         mappings: Content,
-        options: dict = {},
+        options: Optional[dict] = None,
         datasource: Optional[str] = None,
         db: Optional[str] = None,
     ) -> None:
@@ -1722,7 +1722,10 @@ class VirtualGraph:
 
         :param name: The new name
         :param mappings: New mapping contents
-        :param options: New virtual graph options
+        :param options: New virtual graph options. If the ``mappings`` carry a
+            syntax (e.g. :class:`stardog.content.MappingFile` or
+            :class:`stardog.content.MappingRaw`), ``mappings.syntax`` is added
+            automatically unless explicitly provided here.
         :param datasource: new data source for the virtual graph
         :param db: the database to associate with the virtual graph
 
@@ -1736,6 +1739,15 @@ class VirtualGraph:
                     options={'jdbc.driver': 'com.mysql.jdbc.Driver'}
             )
         """
+        # copy so we never mutate the caller's dict
+        options = dict(options) if options else {}
+
+        # Without an explicit syntax the server falls back to auto-detection and
+        # stores a re-parsed form of the mapping, which does not round-trip (see
+        # PLAT-9239). new_virtual_graph() already sends this; update() must too.
+        if mappings and getattr(mappings, "syntax", None):
+            options.setdefault("mappings.syntax", mappings.syntax)
+
         if mappings:
             with mappings.data() as data:
                 mappings = data.read().decode() if hasattr(data, "read") else data
@@ -1743,8 +1755,7 @@ class VirtualGraph:
         meta = {}
         meta["name"] = name
         meta["mappings"] = mappings
-        if options is not None:
-            meta["options"] = options
+        meta["options"] = options
 
         if datasource is not None:
             meta["data_source"] = datasource

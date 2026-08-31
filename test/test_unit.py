@@ -522,3 +522,163 @@ class TestStardogException:
         assert str(exception) == "Mymessage"
         assert exception.http_code == 400
         assert exception.stardog_code == "SD90A"
+
+
+class TestVirtualGraphUpdate:
+    """Regression tests for PLAT-9239.
+
+    ``VirtualGraph.update()`` used to drop the mapping's syntax, sending
+    ``options: {}``. Without an explicit ``mappings.syntax`` the server
+    auto-detects, re-parses and stores a rewritten form of the mapping (mapping
+    IDs renumbered, blocks split, variables renamed, comments stripped), so the
+    mapping no longer round-trips. ``new_virtual_graph()`` has always sent it.
+    """
+
+    VG_PATH = "http://localhost:5820/admin/virtual_graphs/machineKG"
+    FIXTURE = "test/data/plat9239_blanknodes.sms2"
+
+    def _admin_and_vg(self, m):
+        m.get("http://localhost:5820/admin/alive", status_code=200)
+        m.get(self.VG_PATH, status_code=200, json={})
+        m.get(f"{self.VG_PATH}/info", status_code=200, json={"info": {}})
+        m.put(self.VG_PATH, status_code=200, json={})
+        sd_admin = admin.Admin("http://localhost:5820", "admin", "admin")
+        return admin.VirtualGraph("machineKG", sd_admin.client)
+
+    @staticmethod
+    def _last_put(m):
+        for request in reversed(m.request_history):
+            if request.method == "PUT":
+                return request.json()
+        raise AssertionError("no PUT request was captured")
+
+    def test_update_sends_mapping_syntax_from_file(self):
+        with requests_mock.Mocker() as m:
+            vg = self._admin_and_vg(m)
+            vg.update(
+                name="machineKG",
+                mappings=content.MappingFile(self.FIXTURE),
+                datasource="ds_test",
+                db="db_test",
+            )
+            body = self._last_put(m)
+
+        assert body["options"] == {"mappings.syntax": "SMS2"}
+
+    def test_update_sends_mapping_syntax_from_raw(self):
+        with open(self.FIXTURE, "rb") as f:
+            raw = f.read().decode()
+
+        with requests_mock.Mocker() as m:
+            vg = self._admin_and_vg(m)
+            vg.update(
+                name="machineKG",
+                mappings=content.MappingRaw(raw, "SMS2"),
+                datasource="ds_test",
+                db="db_test",
+            )
+            body = self._last_put(m)
+
+        assert body["options"] == {"mappings.syntax": "SMS2"}
+
+    def test_update_transmits_mapping_verbatim(self):
+        """CRLF line endings and comments must survive untouched."""
+        with open(self.FIXTURE, "rb") as f:
+            original = f.read().decode()
+
+        with requests_mock.Mocker() as m:
+            vg = self._admin_and_vg(m)
+            vg.update(
+                name="machineKG",
+                mappings=content.MappingFile(self.FIXTURE),
+                datasource="ds_test",
+                db="db_test",
+            )
+            body = self._last_put(m)
+
+        assert body["mappings"] == original
+        assert "\r\n" in body["mappings"]
+        assert (
+            "# the album subject is templated from the primary key" in body["mappings"]
+        )
+
+    def test_update_does_not_override_caller_supplied_syntax(self):
+        with requests_mock.Mocker() as m:
+            vg = self._admin_and_vg(m)
+            vg.update(
+                name="machineKG",
+                mappings=content.MappingFile(self.FIXTURE),
+                options={"mappings.syntax": "STARDOG"},
+                datasource="ds_test",
+                db="db_test",
+            )
+            body = self._last_put(m)
+
+        assert body["options"]["mappings.syntax"] == "STARDOG"
+
+    def test_update_preserves_other_caller_options(self):
+        with requests_mock.Mocker() as m:
+            vg = self._admin_and_vg(m)
+            vg.update(
+                name="machineKG",
+                mappings=content.MappingFile(self.FIXTURE),
+                options={"percent.encode": "false"},
+                datasource="ds_test",
+                db="db_test",
+            )
+            body = self._last_put(m)
+
+        assert body["options"] == {
+            "percent.encode": "false",
+            "mappings.syntax": "SMS2",
+        }
+
+    def test_update_does_not_mutate_caller_options(self):
+        caller_options = {"percent.encode": "false"}
+
+        with requests_mock.Mocker() as m:
+            vg = self._admin_and_vg(m)
+            vg.update(
+                name="machineKG",
+                mappings=content.MappingFile(self.FIXTURE),
+                options=caller_options,
+                datasource="ds_test",
+                db="db_test",
+            )
+
+        assert caller_options == {"percent.encode": "false"}
+
+    def test_update_does_not_leak_options_between_calls(self):
+        """The old mutable default (``options: dict = {}``) would leak."""
+        with requests_mock.Mocker() as m:
+            vg = self._admin_and_vg(m)
+            vg.update(
+                name="machineKG",
+                mappings=content.MappingFile(self.FIXTURE),
+                options={"percent.encode": "false"},
+                datasource="ds_test",
+                db="db_test",
+            )
+            vg.update(
+                name="machineKG",
+                mappings=content.MappingRaw("MAPPING\nFROM SQL {}", "STARDOG"),
+                datasource="ds_test",
+                db="db_test",
+            )
+            body = self._last_put(m)
+
+        assert body["options"] == {"mappings.syntax": "STARDOG"}
+
+    def test_update_omits_syntax_when_mapping_has_none(self):
+        """Plain ``File`` content carries no syntax; don't invent one."""
+        with requests_mock.Mocker() as m:
+            vg = self._admin_and_vg(m)
+            vg.update(
+                name="machineKG",
+                mappings=content.Raw("@prefix : <http://example.org/> .", name="m.ttl"),
+                datasource="ds_test",
+                db="db_test",
+            )
+            body = self._last_put(m)
+
+        assert "mappings.syntax" not in body["options"]

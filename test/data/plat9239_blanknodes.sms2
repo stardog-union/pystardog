@@ -1,0 +1,25 @@
+PREFIX : <http://api.stardog.com/>
+PREFIX rdf: <http://www.w3.org/1999/02/22-rdf-syntax-ns#>
+
+MAPPING <urn:albumProvenance>
+FROM SQL {
+  SELECT `al`.`id`, `al`.`name`, `al`.`release_date`, `ar`.`name` AS `artist_name`
+  FROM `music`.`Album` `al`
+  JOIN `music`.`Artist` `ar` ON `al`.`artist` = `ar`.`id`
+}
+TO {
+  ?album rdf:type :Album ;
+         :title ?name ;
+         :hasProvenance ?prov .
+  ?prov rdf:type :ProvenanceRecord ;
+        :releaseDate ?release_date ;
+        :attributedTo ?agent .
+  ?agent rdf:type :Agent ;
+         :agentName ?artist_name .
+}
+WHERE {
+  # the album subject is templated from the primary key
+  BIND(TEMPLATE("http://api.stardog.com/album/{id}") AS ?album)
+  BIND(TEMPLATE("_:prov{id}") AS ?prov)
+  BIND(TEMPLATE("_:agent{id}") AS ?agent)
+}
