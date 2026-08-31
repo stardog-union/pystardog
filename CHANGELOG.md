@@ -7,9 +7,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-## [0.21.0] - UNRELEASED
+## [0.21.0] - 2026-08-31
 
 ### Added
+
+- **Published via PyPI trusted publishing.** This release is built and uploaded
+  by GitHub Actions using OIDC, so no long-lived PyPI API token is stored
+  anywhere in the project. Releases now ship both a wheel and a source
+  distribution, and the uploaded artifacts carry
+  [PEP 740](https://peps.python.org/pep-0740/) provenance attestations
+  ([#207](https://github.com/stardog-union/pystardog/pull/207)).
 
 - **Process management on `Admin`.** Three new methods for inspecting and
   cancelling server-side processes, backed by the `/admin/processes` endpoints
@@ -60,16 +67,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `list` generics. This is an annotation-only change with no runtime effect, and
   the minimum supported Python version remains 3.9
   ([#200](https://github.com/stardog-union/pystardog/pull/200)).
-
-### Internal
-
-These changes do not affect the published package.
-
-- Ported `dockerfiles/dockerfile-stardog` to the Chainguard/Wolfi base image,
-  pinned to Stardog 12.1.2
-  ([#204](https://github.com/stardog-union/pystardog/pull/204)).
-- Repaired failing CI tests around named graphs and `docs.size`
-  ([#199](https://github.com/stardog-union/pystardog/pull/199)).
 
 ## [0.20.0] - 2026-03-18
 
