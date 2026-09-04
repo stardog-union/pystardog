@@ -1,4 +1,20 @@
+import pytest
+
 from stardog import content, content_types
+from stardog.utils import validate_iri
+
+
+@pytest.mark.parametrize(
+    "iri", ["<urn:graph>", "urn:graph>", "urn: graph", "urn:gra\nph", "graph", ""]
+)
+def test_graph_uri_validation_rejects(iri):
+    with pytest.raises(ValueError):
+        validate_iri(iri)
+
+
+@pytest.mark.parametrize("iri", ["urn:graph", "http://example.com/g", None])
+def test_graph_uri_validation_accepts(iri):
+    validate_iri(iri)
 
 
 def test_content():

@@ -12,7 +12,7 @@ from stardog.content import Content
 from . import content_types as content_types
 from . import exceptions as exceptions
 from .http import client
-from .utils import strtobool
+from .utils import strtobool, validate_iri
 import urllib
 
 
@@ -154,6 +154,8 @@ class Connection:
         Raises:
           stardog.exceptions.TransactionException
             If currently not in a transaction
+          ValueError
+            If ``graph_uri`` is not a valid IRI
 
         Examples:
 
@@ -168,6 +170,7 @@ class Connection:
 
         """
         self._assert_in_transaction()
+        validate_iri(graph_uri)
 
         args = {"params": {"graph-uri": graph_uri}}
 
@@ -198,12 +201,15 @@ class Connection:
         Raises:
           stardog.exceptions.TransactionException
             If currently not in a transaction
+          ValueError
+            If ``graph_uri`` is not a valid IRI
 
         Examples:
           >>> conn.remove(File('example.ttl'), graph_uri='urn:graph')
         """
 
         self._assert_in_transaction()
+        validate_iri(graph_uri)
 
         with content.data() as data:
             self.client.post(
@@ -238,6 +244,7 @@ class Connection:
           >>> conn.clear()
         """
         self._assert_in_transaction()
+        validate_iri(graph_uri)
         self.client.post(
             "/{}/clear".format(self.transaction), params={"graph-uri": graph_uri}
         )
@@ -286,6 +293,7 @@ class Connection:
           >>> with conn.export(stream=True) as stream:
                 contents = ''.join(stream)
         """
+        validate_iri(graph_uri)
 
         def _export():
             with self.client.get(
@@ -336,6 +344,18 @@ class Connection:
             "insert-graph-uri": kwargs.get("insert_graph_uri"),
             "schema": kwargs.get("schema"),
         }
+        for key in (
+            "default_graph_uri",
+            "named_graph_uri",
+            "using_graph_uri",
+            "using_named_graph_uri",
+        ):
+            uris = kwargs.get(key) or []
+            for uri in [uris] if isinstance(uris, str) else uris:
+                validate_iri(uri)
+        validate_iri(kwargs.get("remove_graph_uri"))
+        validate_iri(kwargs.get("insert_graph_uri"))
+
         request_params = {}
         query_id = kwargs.get("query_id")
         if query_id is not None:
@@ -672,6 +692,7 @@ class Connection:
         :param graph_uri: the URI of the graph to check
         :return: database consistency state
         """
+        validate_iri(graph_uri)
         r = self.client.get(
             "/reasoning/consistency",
             params={"graph-uri": graph_uri},
@@ -710,6 +731,7 @@ class Connection:
         :param graph_uri: the URI of the named graph for which to explain inconsistency
         :return: explanation results
         """
+        validate_iri(graph_uri)
         txId = self.transaction
         url = (
             "/reasoning/{}/explain/inconsistency".format(txId)
@@ -908,6 +930,7 @@ class ICV:
         Examples:
           >>> icv.is_valid(File('constraints.ttl'), graph_uri='urn:graph')
         """
+        validate_iri(graph_uri)
         transaction = self.conn.transaction
         url = "icv/{}/validate".format(transaction) if transaction else "/icv/validate"
         with content.data() as data:
@@ -940,6 +963,7 @@ class ICV:
           >>> icv.explain_violations(File('constraints.ttl'),
                                      graph_uri='urn:graph')
         """
+        validate_iri(graph_uri)
         transaction = self.conn.transaction
         url = (
             "/icv/{}/violations".format(transaction)
@@ -975,6 +999,7 @@ class ICV:
         Examples:
           >>> icv.convert(File('constraints.ttl'), graph_uri='urn:graph')
         """
+        validate_iri(graph_uri)
         with content.data() as data:
             r = self.client.post(
                 "/icv/convert",
@@ -1020,6 +1045,7 @@ class ICV:
         for arg in kwargs:
             if arg not in accepted_args:
                 raise Exception("Parameter not recognized")
+        validate_iri(kwargs.get("graph-uri"))
 
         kwargs["prettify"] = True
         params = urllib.parse.urlencode(kwargs)
