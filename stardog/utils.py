@@ -13,6 +13,15 @@ def validate_iri(iri: Optional[str]) -> None:
     """
     if iri is None:
         return
+    if not isinstance(iri, str):
+        # A sequence used to reach the server untouched. These parameters are
+        # typed Optional[str]; where this API accepts several graphs it says
+        # so, as using_graph_uri does. Rejecting here keeps the failure a
+        # ValueError like every other bad graph URI, rather than a TypeError
+        # out of re.fullmatch.
+        raise ValueError(
+            f"graph URI must be a string, got {type(iri).__name__}: {iri!r}"
+        )
     if not _IRI.fullmatch(iri):
         raise ValueError(f"not a valid IRI: {iri!r}")
 
