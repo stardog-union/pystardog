@@ -682,3 +682,37 @@ class TestVirtualGraphUpdate:
             body = self._last_put(m)
 
         assert "mappings.syntax" not in body["options"]
+
+
+class TestGraphUriValidationReachesTheAPI:
+    """test_utils.py covers validate_iri directly. These assert that the
+    methods actually call it, one per family, so a call site removed by a
+    later refactor is caught rather than silently unvalidated."""
+
+    def _conn(self):
+        conn = connection.Connection("test")
+        conn.transaction = "tx-1"
+        return conn
+
+    def test_clear_rejects_a_bad_graph_uri(self):
+        with pytest.raises(ValueError):
+            self._conn().clear("not an iri")
+
+    def test_is_consistent_rejects_a_bad_graph_uri(self):
+        with pytest.raises(ValueError):
+            self._conn().is_consistent("not an iri")
+
+    def test_update_rejects_a_bad_insert_graph_uri(self):
+        with pytest.raises(ValueError):
+            self._conn().update("INSERT DATA {}", insert_graph_uri="not an iri")
+
+    def test_icv_report_rejects_a_bad_graph_uri(self):
+        icv = connection.ICV(self._conn())
+        with pytest.raises(ValueError):
+            icv.report(**{"graph-uri": "not an iri"})
+
+    def test_icv_report_rejects_bad_shacl_parameters(self):
+        icv = connection.ICV(self._conn())
+        for name in ("shapes", "shacl.shape.graphs", "nodes"):
+            with pytest.raises(ValueError):
+                icv.report(**{name: "not an iri"})

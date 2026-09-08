@@ -1,9 +1,12 @@
 import re
 from typing import Optional
 
-# An absolute IRI: a scheme (no delimiters, no '/'), then ':', then anything
-# except the RFC 3987 delimiters and control characters (U+0000-U+0020).
-_IRI = re.compile(r"""[^\x00-\x20<>"{}|^`\\/:]+:[^\x00-\x20<>"{}|^`\\]*""")
+# An absolute IRI: an RFC 3986 scheme -- ALPHA *( ALPHA / DIGIT / "+" / "-" /
+# "." ) -- then ':', then a non-empty remainder free of the RFC 3987
+# delimiters and control characters (U+0000-U+0020). The scheme was
+# previously "anything without a delimiter", which accepted '?:x', '1abc:x',
+# 'a?b:c' and 'graph#a:b'; the remainder was optional, which accepted 'urn:'.
+_IRI = re.compile(r"""[A-Za-z][A-Za-z0-9+.\-]*:[^\x00-\x20<>"{}|^`\\]+""")
 
 
 def validate_iri(iri: Optional[str]) -> None:

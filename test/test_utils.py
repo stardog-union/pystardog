@@ -5,14 +5,33 @@ from stardog.utils import validate_iri
 
 
 @pytest.mark.parametrize(
-    "iri", ["<urn:graph>", "urn:graph>", "urn: graph", "urn:gra\nph", "graph", ""]
+    "iri",
+    [
+        "<urn:graph>",
+        "urn:graph>",
+        "urn: graph",
+        "urn:gra\nph",
+        "graph",
+        "",
+        # RFC 3986 scheme is ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ).
+        # The first regex allowed anything without a delimiter, so all of
+        # these were accepted.
+        "?:x",
+        "1abc:x",
+        "a?b:c",
+        "graph#a:b",
+        "urn:",
+    ],
 )
 def test_graph_uri_validation_rejects(iri):
     with pytest.raises(ValueError):
         validate_iri(iri)
 
 
-@pytest.mark.parametrize("iri", ["urn:graph", "http://example.com/g", None])
+@pytest.mark.parametrize(
+    "iri",
+    ["urn:graph", "http://example.com/g", "a+b-c.d:x", "S3://bucket/k", None],
+)
 def test_graph_uri_validation_accepts(iri):
     validate_iri(iri)
 

@@ -242,6 +242,8 @@ class Connection:
           clear the whole database
 
           >>> conn.clear()
+
+    :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         self._assert_in_transaction()
         validate_iri(graph_uri)
@@ -292,6 +294,8 @@ class Connection:
 
           >>> with conn.export(stream=True) as stream:
                 contents = ''.join(stream)
+
+    :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
 
@@ -430,6 +434,8 @@ class Connection:
             :caption: Query utilizing ``bindings`` to bind the query variable ``o`` to a value of ``<urn:a>``.
 
             results = conn.select('select * {?s ?p ?o}', bindings={'o': '<urn:a>'})
+
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         return self.__query(
             query=query,
@@ -495,6 +501,8 @@ class Connection:
             :caption: ``CONSTRUCT`` (graph) query utilizing ``bindings`` to bind the query variable ``o`` to a value of ``<urn:a>``.
 
             results = conn.graph('select * {?s ?p ?o}', bindings={'o': '<urn:a>'})
+
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         return self.__query(
             query=query,
@@ -556,6 +564,7 @@ class Connection:
         See Also:
             `Stardog Docs - PATH Queries <https://docs.stardog.com/query-stardog/path-queries>`_
 
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         return self.__query(
             query=query,
@@ -613,6 +622,7 @@ class Connection:
         See Also:
             `SPARQL Spec - ASK Queries <https://www.w3.org/TR/sparql11-query/#ask>`_
 
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
 
         r = self.__query(
@@ -666,6 +676,8 @@ class Connection:
 
         Examples:
           >>> conn.update('delete where {?s ?p ?o}')
+
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
 
         self.__query(
@@ -691,6 +703,8 @@ class Connection:
 
         :param graph_uri: the URI of the graph to check
         :return: database consistency state
+
+    :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
         r = self.client.get(
@@ -730,6 +744,8 @@ class Connection:
 
         :param graph_uri: the URI of the named graph for which to explain inconsistency
         :return: explanation results
+
+    :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
         txId = self.transaction
@@ -929,6 +945,8 @@ class ICV:
 
         Examples:
           >>> icv.is_valid(File('constraints.ttl'), graph_uri='urn:graph')
+
+    :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
         transaction = self.conn.transaction
@@ -962,6 +980,8 @@ class ICV:
         Examples:
           >>> icv.explain_violations(File('constraints.ttl'),
                                      graph_uri='urn:graph')
+
+    :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
         transaction = self.conn.transaction
@@ -998,6 +1018,8 @@ class ICV:
 
         Examples:
           >>> icv.convert(File('constraints.ttl'), graph_uri='urn:graph')
+
+    :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
         with content.data() as data:
@@ -1030,6 +1052,8 @@ class ICV:
 
         Examples:
           >>> icv.report()
+
+    :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
 
         accepted_args = [
@@ -1045,7 +1069,8 @@ class ICV:
         for arg in kwargs:
             if arg not in accepted_args:
                 raise Exception("Parameter not recognized")
-        validate_iri(kwargs.get("graph-uri"))
+        for name in ("graph-uri", "shapes", "shacl.shape.graphs", "nodes"):
+            validate_iri(kwargs.get(name))
 
         kwargs["prettify"] = True
         params = urllib.parse.urlencode(kwargs)
