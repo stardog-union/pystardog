@@ -1,4 +1,51 @@
+import pytest
+
 from stardog import content, content_types
+from stardog.utils import validate_iri
+
+
+@pytest.mark.parametrize(
+    "iri",
+    [
+        "<urn:graph>",
+        "urn:graph>",
+        "urn: graph",
+        "urn:gra\nph",
+        "graph",
+        "",
+        # RFC 3986 scheme is ALPHA *( ALPHA / DIGIT / "+" / "-" / "." ).
+        # The first regex allowed anything without a delimiter, so all of
+        # these were accepted.
+        "?:x",
+        "1abc:x",
+        "a?b:c",
+        "graph#a:b",
+        "urn:",
+    ],
+)
+def test_graph_uri_validation_rejects(iri):
+    with pytest.raises(ValueError):
+        validate_iri(iri)
+
+
+@pytest.mark.parametrize(
+    "iri",
+    ["urn:graph", "http://example.com/g", "a+b-c.d:x", "S3://bucket/k", None],
+)
+def test_graph_uri_validation_accepts(iri):
+    validate_iri(iri)
+
+
+@pytest.mark.parametrize("value", [["urn:a", "urn:b"], 7, ("urn:a",), object()])
+def test_graph_uri_validation_rejects_non_strings(value):
+    """A list used to reach the server untouched, because __query forwarded
+    kwargs to requests without inspecting them. insert_graph_uri and
+    remove_graph_uri are typed Optional[str] -- where this API does take a
+    list it says so, as using_graph_uri does -- so a list was never
+    supported. It should still fail as a ValueError like every other bad
+    graph URI, not as a TypeError from re.fullmatch."""
+    with pytest.raises(ValueError):
+        validate_iri(value)
 
 
 def test_content():

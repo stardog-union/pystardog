@@ -13,6 +13,7 @@ from requests.auth import AuthBase
 from stardog.content import Content, ImportFile, ImportRaw, MappingFile, MappingRaw
 
 from . import content_types as content_types
+from .utils import validate_iri
 from .http import client
 
 DEFAULT_MAPPINGS_SYNTAX = "SMS"
@@ -583,6 +584,7 @@ class Admin:
                 else:
                     mappings = data
 
+        validate_iri(named_graph)
         meta = {
             "db": db,
             "mappings": mappings,
@@ -711,6 +713,7 @@ class Admin:
         else:
             payload["options"] = ""
 
+        validate_iri(named_graph)
         if named_graph is not None:
             payload["named_graph"] = named_graph
 

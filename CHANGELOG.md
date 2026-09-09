@@ -7,6 +7,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Graph URIs are now validated before a request is sent.** Every `Connection`,
+  `ICV` and `Admin` method that takes a graph URI now rejects values that are not
+  valid IRIs, raising `ValueError` instead of forwarding them to the server. The
+  reported case was `graph_uri='<urn:graph>'`, which previously created a graph
+  whose name contained the angle brackets (PLAT-8477,
+  [#212](https://github.com/stardog-union/pystardog/pull/212)).
+
+  This is a behaviour change in a public API. Values that used to reach the
+  server and now raise:
+
+  - anything containing a character the IRIREF grammar forbids — `<`, `>`, `"`,
+    `{`, `}`, `|`, `^`, `` ` ``, `\`, whitespace, or a control character
+  - relative names with no scheme, such as `'my-graph'`
+  - the empty string
+  - a list passed to the scalar `insert_graph_uri` or `remove_graph_uri`
+    parameters. Both are typed `Optional[str]`, so a list was never part of the
+    contract; it worked only because the value was forwarded to `requests`
+    unchecked. Use `using_graph_uri` or `using_named_graph_uri`, which are typed
+    `Optional[List[str]]`, where several graphs are genuinely intended.
+
+  Graphs already created with an invalid name are unaffected — the guard only
+  prevents new ones, and cleaning up existing names is out of scope. Note also
+  that this validates the pystardog client only: the same payload is still
+  accepted from any other HTTP client, so it does not close the underlying
+  server-side gap.
+
 ## [0.21.0] - 2026-08-31
 
 ### Added
