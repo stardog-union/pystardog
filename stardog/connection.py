@@ -243,7 +243,7 @@ class Connection:
 
           >>> conn.clear()
 
-    :raises ValueError: If a supplied graph URI is not a valid IRI.
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         self._assert_in_transaction()
         validate_iri(graph_uri)
@@ -295,7 +295,7 @@ class Connection:
           >>> with conn.export(stream=True) as stream:
                 contents = ''.join(stream)
 
-    :raises ValueError: If a supplied graph URI is not a valid IRI.
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
 
@@ -704,7 +704,7 @@ class Connection:
         :param graph_uri: the URI of the graph to check
         :return: database consistency state
 
-    :raises ValueError: If a supplied graph URI is not a valid IRI.
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
         r = self.client.get(
@@ -745,7 +745,7 @@ class Connection:
         :param graph_uri: the URI of the named graph for which to explain inconsistency
         :return: explanation results
 
-    :raises ValueError: If a supplied graph URI is not a valid IRI.
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
         txId = self.transaction
@@ -946,7 +946,7 @@ class ICV:
         Examples:
           >>> icv.is_valid(File('constraints.ttl'), graph_uri='urn:graph')
 
-    :raises ValueError: If a supplied graph URI is not a valid IRI.
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
         transaction = self.conn.transaction
@@ -981,7 +981,7 @@ class ICV:
           >>> icv.explain_violations(File('constraints.ttl'),
                                      graph_uri='urn:graph')
 
-    :raises ValueError: If a supplied graph URI is not a valid IRI.
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
         transaction = self.conn.transaction
@@ -1019,7 +1019,7 @@ class ICV:
         Examples:
           >>> icv.convert(File('constraints.ttl'), graph_uri='urn:graph')
 
-    :raises ValueError: If a supplied graph URI is not a valid IRI.
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         validate_iri(graph_uri)
         with content.data() as data:
@@ -1053,7 +1053,7 @@ class ICV:
         Examples:
           >>> icv.report()
 
-    :raises ValueError: If a supplied graph URI is not a valid IRI.
+        :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
 
         accepted_args = [
