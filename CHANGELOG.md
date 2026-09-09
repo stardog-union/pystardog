@@ -16,11 +16,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   whose name contained the angle brackets (PLAT-8477,
   [#212](https://github.com/stardog-union/pystardog/pull/212)).
 
+  The same check is applied to the `ICV.report` parameters that carry IRIs —
+  `graph-uri`, `shapes`, `shacl.shape.graphs` and `nodes`. All four are
+  multi-valued on that endpoint, so each accepts either a single string or a
+  list of strings, and every element is validated.
+
   This is a behaviour change in a public API. Values that used to reach the
   server and now raise:
 
   - anything containing a character the IRIREF grammar forbids — `<`, `>`, `"`,
-    `{`, `}`, `|`, `^`, `` ` ``, `\`, whitespace, or a control character
+    `{`, `}`, `|`, `^`, `` ` ``, `\`, or a character in the range
+    U+0000-U+0020, which covers ASCII whitespace. Consistent with that grammar,
+    DEL and the C1 range are permitted and are not rejected.
   - relative names with no scheme, such as `'my-graph'`
   - the empty string
   - a list passed to the scalar `insert_graph_uri` or `remove_graph_uri`
@@ -28,6 +35,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     contract; it worked only because the value was forwarded to `requests`
     unchecked. Use `using_graph_uri` or `using_named_graph_uri`, which are typed
     `Optional[List[str]]`, where several graphs are genuinely intended.
+
+  The literal `"default"` is still accepted, in any case. The server maps a
+  graph parameter of `default` to the default graph rather than parsing it as an
+  IRI, so `conn.add(data, graph_uri="default")` continues to work.
 
   Graphs already created with an invalid name are unaffected — the guard only
   prevents new ones, and cleaning up existing names is out of scope. Note also

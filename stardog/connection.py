@@ -356,9 +356,9 @@ class Connection:
         ):
             uris = kwargs.get(key) or []
             for uri in [uris] if isinstance(uris, str) else uris:
-                validate_iri(uri)
-        validate_iri(kwargs.get("remove_graph_uri"))
-        validate_iri(kwargs.get("insert_graph_uri"))
+                validate_iri(uri, key)
+        validate_iri(kwargs.get("remove_graph_uri"), "remove_graph_uri")
+        validate_iri(kwargs.get("insert_graph_uri"), "insert_graph_uri")
 
         request_params = {}
         query_id = kwargs.get("query_id")
@@ -866,6 +866,12 @@ class Docs:
         self.client.delete("/docs/{}".format(name))
 
 
+# Parameters of /icv/report that carry IRIs. The server reads each of these
+# with parameters(), not parameter(), so all four are multi-valued on this
+# endpoint -- graph-uri included (ICVHttpService.ValidationContext).
+_ICV_IRI_PARAMS = ("graph-uri", "shapes", "shacl.shape.graphs", "nodes")
+
+
 class ICV:
     """Integrity Constraint Validation.
 
@@ -1039,13 +1045,13 @@ class ICV:
         """
         Produces a SHACL validation report.
 
-        :keyword str, optional shapes: SHACL shapes to validate
-        :keyword str, optional shacl.shape.graphs: SHACL shape graphs to validate
-        :keyword str, optional nodes: SHACL focus node(s) to validate
+        :keyword str or list of str, optional shapes: SHACL shapes to validate
+        :keyword str or list of str, optional shacl.shape.graphs: SHACL shape graphs to validate
+        :keyword str or list of str, optional nodes: SHACL focus node(s) to validate
         :keyword str, optional countLimit: Maximum number of violations to report
         :keyword bool, optional shacl.targetClass.simple: If ``True``, ``sh:targetClass`` will be evaluated based on ``rdf:type`` triples only, without following ``rdfs:subClassOf`` relations
         :keyword str, optional shacl.violation.limit.shape: number of violation limits per SHACL shapes
-        :keyword str, optional graph-uri: Named Graph
+        :keyword str or list of str, optional graph-uri: Named Graph
         :keyword bool, optional reasoning: If ``True``, enable reasoning.
 
         :return: SHACL validation report
@@ -1069,11 +1075,15 @@ class ICV:
         for arg in kwargs:
             if arg not in accepted_args:
                 raise Exception("Parameter not recognized")
-        for name in ("graph-uri", "shapes", "shacl.shape.graphs", "nodes"):
-            validate_iri(kwargs.get(name))
+        for name in _ICV_IRI_PARAMS:
+            value = kwargs.get(name)
+            if value is None:
+                continue
+            for item in [value] if isinstance(value, str) else value:
+                validate_iri(item, name)
 
         kwargs["prettify"] = True
-        params = urllib.parse.urlencode(kwargs)
+        params = urllib.parse.urlencode(kwargs, doseq=True)
         url = f"/icv/report?{params}"
 
         r = self.client.post(url)

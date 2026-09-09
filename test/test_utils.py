@@ -30,10 +30,33 @@ def test_graph_uri_validation_rejects(iri):
 
 @pytest.mark.parametrize(
     "iri",
-    ["urn:graph", "http://example.com/g", "a+b-c.d:x", "S3://bucket/k", None],
+    [
+        "urn:graph",
+        "http://example.com/g",
+        "a+b-c.d:x",
+        "S3://bucket/k",
+        None,
+        # The server maps a graph parameter of "default" to the default graph
+        # instead of parsing it as an IRI (ProtocolUtils.parameterAsGraph), so
+        # it is a legal value in any case, not a relative IRI.
+        "default",
+        "DEFAULT",
+        "Default",
+    ],
 )
 def test_graph_uri_validation_accepts(iri):
     validate_iri(iri)
+
+
+def test_error_message_names_the_offending_parameter():
+    """validate_iri is called for many different parameters, so the message
+    has to say which one was wrong."""
+    with pytest.raises(ValueError, match="named_graph is not a valid IRI"):
+        validate_iri("graph", "named_graph")
+    with pytest.raises(ValueError, match="shapes must be a string"):
+        validate_iri(["urn:a"], "shapes")
+    with pytest.raises(ValueError, match="graph URI is not a valid IRI"):
+        validate_iri("graph")
 
 
 @pytest.mark.parametrize("value", [["urn:a", "urn:b"], 7, ("urn:a",), object()])

@@ -9,24 +9,34 @@ from typing import Optional
 _IRI = re.compile(r"""[A-Za-z][A-Za-z0-9+.\-]*:[^\x00-\x20<>"{}|^`\\]+""")
 
 
-def validate_iri(iri: Optional[str]) -> None:
+# The server maps a graph parameter of "default", case-insensitively, to the
+# default graph rather than parsing it as an IRI: see
+# HTTPProtocol.PARAM_VALUE_DEFAULT and ProtocolUtils.parameterAsGraph, used by
+# the transaction add/remove endpoints. It is a legal value, not a relative IRI.
+_DEFAULT_GRAPH = "default"
+
+
+def validate_iri(iri: Optional[str], param: str = "graph URI") -> None:
     """Raises ``ValueError`` unless ``iri`` is a valid absolute IRI.
 
-    ``None`` is accepted: it means no graph URI was given, i.e. the default graph.
+    ``None`` is accepted: it means the argument was not supplied.
+
+    The literal ``"default"`` is accepted in any case, because the server
+    treats it as a reference to the default graph rather than as an IRI.
+
+    :param param: name of the argument being checked, used in the error message.
     """
     if iri is None:
         return
     if not isinstance(iri, str):
-        # A sequence used to reach the server untouched. These parameters are
-        # typed Optional[str]; where this API accepts several graphs it says
-        # so, as using_graph_uri does. Rejecting here keeps the failure a
-        # ValueError like every other bad graph URI, rather than a TypeError
-        # out of re.fullmatch.
-        raise ValueError(
-            f"graph URI must be a string, got {type(iri).__name__}: {iri!r}"
-        )
+        # A sequence used to reach the server untouched. Rejecting here keeps
+        # the failure a ValueError like every other bad graph URI, rather than
+        # a TypeError out of re.fullmatch.
+        raise ValueError(f"{param} must be a string, got {type(iri).__name__}: {iri!r}")
+    if iri.lower() == _DEFAULT_GRAPH:
+        return
     if not _IRI.fullmatch(iri):
-        raise ValueError(f"not a valid IRI: {iri!r}")
+        raise ValueError(f"{param} is not a valid IRI: {iri!r}")
 
 
 def strtobool(s):

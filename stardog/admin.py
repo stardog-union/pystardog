@@ -509,16 +509,18 @@ class Admin:
         :param remove_all: Should the target named graph be cleared before importing?
         :param options: Options for the new virtual graph. See `Stardog Docs - Virtual Graph Properties <https://docs.stardog.com/virtual-graphs/virtual-graph-configuration#virtual-graph-properties>`_ for all available options.
 
+        :raises ValueError: If ``named_graph`` is not a valid IRI.
+
         Examples:
 
         .. code-block:: python
             :caption: Import a MySQL virtual graph into the ``db-name`` database using the mappings specified in ``mappings.ttl``.
-                The virtual graph will be imported into the named graph ``my-graph`` and prior to the import will have its contents cleared.
+                The virtual graph will be imported into the named graph ``urn:my-graph`` and prior to the import will have its contents cleared.
 
             admin.import_virtual_graph(
                   'db-name',
                   mappings=File('mappings.ttl'),
-                  named_graph='my-graph',
+                  named_graph='urn:my-graph',
                   remove_all=True,
                   options={'jdbc.driver': 'com.mysql.jdbc.Driver'}
             )
@@ -553,9 +555,13 @@ class Admin:
         :param named_graph: Name of the graph into which import the virtual graph.
         :param remove_all: Should the target named graph be cleared before importing?
 
+        :raises ValueError: If ``named_graph`` is not a valid IRI.
+
         .. note::
             ``data_source`` or ``options`` must be provided.
         """
+
+        validate_iri(named_graph, "named_graph")
 
         assert (
             data_source is not None or options is not None
@@ -584,7 +590,6 @@ class Admin:
                 else:
                     mappings = data
 
-        validate_iri(named_graph)
         meta = {
             "db": db,
             "mappings": mappings,
@@ -681,7 +686,11 @@ class Admin:
         :param named_graph: The named graph to import the mapped CSV/JSON into.
 
         :return: was the import successful?
+
+        :raises ValueError: If ``named_graph`` is not a valid IRI.
         """
+
+        validate_iri(named_graph, "named_graph")
 
         if mappings is not None:
             if mappings.syntax:
@@ -713,7 +722,6 @@ class Admin:
         else:
             payload["options"] = ""
 
-        validate_iri(named_graph)
         if named_graph is not None:
             payload["named_graph"] = named_graph
 

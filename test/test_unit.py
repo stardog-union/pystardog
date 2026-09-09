@@ -716,3 +716,46 @@ class TestGraphUriValidationReachesTheAPI:
         for name in ("shapes", "shacl.shape.graphs", "nodes"):
             with pytest.raises(ValueError):
                 icv.report(**{name: "not an iri"})
+
+    def test_icv_report_accepts_lists_for_the_plural_parameters(self):
+        """graph-uri, shapes, shacl.shape.graphs and nodes are all read with
+        parameters() server-side, so each is multi-valued on /icv/report.
+        doseq=True is what turns a list into repeated query parameters rather
+        than the repr of the list."""
+        with requests_mock.Mocker() as m:
+            m.post("http://localhost:5820/test/icv/report", text="report")
+            icv = connection.ICV(self._conn())
+            icv.report(
+                **{
+                    "graph-uri": ["urn:g1", "urn:g2"],
+                    "shapes": ["urn:s1", "urn:s2"],
+                    "nodes": "urn:n1",
+                }
+            )
+            query = m.last_request.qs
+
+        assert query["graph-uri"] == ["urn:g1", "urn:g2"]
+        assert query["shapes"] == ["urn:s1", "urn:s2"]
+        assert query["nodes"] == ["urn:n1"]
+
+    def test_icv_report_rejects_a_bad_entry_inside_a_list(self):
+        icv = connection.ICV(self._conn())
+        with pytest.raises(ValueError, match="shapes"):
+            icv.report(**{"shapes": ["urn:ok", "not an iri"]})
+
+    def test_default_is_accepted_as_a_graph_uri(self):
+        """The server maps graph-uri=default (any case) to the default graph
+        rather than parsing it as an IRI, so conn.add(..., graph_uri="default")
+        worked before this validation existed and has to keep working."""
+        with requests_mock.Mocker() as m:
+            m.post("http://localhost:5820/test/transaction/begin", text="tx-1")
+            m.post("http://localhost:5820/test/tx-1/add", text="")
+            conn = connection.Connection("test")
+            conn.begin()
+            conn.add(content.Raw("<urn:s> <urn:p> <urn:o> ."), graph_uri="default")
+
+        assert m.last_request.qs["graph-uri"] == ["default"]
+
+    def test_validation_error_names_the_parameter(self):
+        with pytest.raises(ValueError, match="insert_graph_uri"):
+            self._conn().update("INSERT DATA {}", insert_graph_uri="not an iri")
