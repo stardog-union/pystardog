@@ -355,7 +355,10 @@ class Connection:
             "using_named_graph_uri",
         ):
             uris = kwargs.get(key) or []
-            for uri in [uris] if isinstance(uris, str) else uris:
+            # Anything that is not a list/tuple goes to validate_iri whole, so a
+            # scalar non-string fails as a ValueError rather than a TypeError
+            # out of the loop.
+            for uri in uris if isinstance(uris, (list, tuple)) else [uris]:
                 validate_iri(uri, key)
         validate_iri(kwargs.get("remove_graph_uri"), "remove_graph_uri")
         validate_iri(kwargs.get("insert_graph_uri"), "insert_graph_uri")
@@ -1079,7 +1082,7 @@ class ICV:
             value = kwargs.get(name)
             if value is None:
                 continue
-            for item in [value] if isinstance(value, str) else value:
+            for item in value if isinstance(value, (list, tuple)) else [value]:
                 validate_iri(item, name)
 
         kwargs["prettify"] = True

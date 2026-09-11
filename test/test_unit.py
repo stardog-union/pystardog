@@ -743,6 +743,16 @@ class TestGraphUriValidationReachesTheAPI:
         with pytest.raises(ValueError, match="shapes"):
             icv.report(**{"shapes": ["urn:ok", "not an iri"]})
 
+    def test_multi_valued_parameters_reject_a_scalar_non_string(self):
+        """The multi-valued parameters iterate their value, so a scalar
+        non-string used to fail as a TypeError from the loop rather than as
+        the ValueError every other bad graph URI raises."""
+        icv = connection.ICV(self._conn())
+        with pytest.raises(ValueError, match="shapes"):
+            icv.report(**{"shapes": 7})
+        with pytest.raises(ValueError, match="using_graph_uri"):
+            self._conn().select("select * {?s ?p ?o}", using_graph_uri=7)
+
     def test_default_is_accepted_as_a_graph_uri(self):
         """The server maps graph-uri=default (any case) to the default graph
         rather than parsing it as an IRI, so conn.add(..., graph_uri="default")
