@@ -36,16 +36,20 @@ def test_graph_uri_validation_rejects(iri):
         "a+b-c.d:x",
         "S3://bucket/k",
         None,
-        # The server maps a graph parameter of "default" to the default graph
-        # instead of parsing it as an IRI (ProtocolUtils.parameterAsGraph), so
-        # it is a legal value in any case, not a relative IRI.
-        "default",
-        "DEFAULT",
-        "Default",
     ],
 )
 def test_graph_uri_validation_accepts(iri):
     validate_iri(iri)
+
+
+@pytest.mark.parametrize("iri", ["default", "DEFAULT", "Default"])
+def test_default_needs_the_opt_in(iri):
+    """Only the parameters the server reads with ProtocolUtils.parameterAsGraph
+    map "default" to the default graph instead of parsing it as an IRI.
+    Everywhere else it is a relative IRI naming a graph called "default"."""
+    validate_iri(iri, allow_default=True)
+    with pytest.raises(ValueError):
+        validate_iri(iri)
 
 
 def test_error_message_names_the_offending_parameter():

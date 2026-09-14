@@ -170,7 +170,7 @@ class Connection:
 
         """
         self._assert_in_transaction()
-        validate_iri(graph_uri)
+        validate_iri(graph_uri, allow_default=True)
 
         args = {"params": {"graph-uri": graph_uri}}
 
@@ -209,7 +209,7 @@ class Connection:
         """
 
         self._assert_in_transaction()
-        validate_iri(graph_uri)
+        validate_iri(graph_uri, allow_default=True)
 
         with content.data() as data:
             self.client.post(
@@ -246,7 +246,7 @@ class Connection:
         :raises ValueError: If a supplied graph URI is not a valid IRI.
         """
         self._assert_in_transaction()
-        validate_iri(graph_uri)
+        validate_iri(graph_uri, allow_default=True)
         self.client.post(
             "/{}/clear".format(self.transaction), params={"graph-uri": graph_uri}
         )

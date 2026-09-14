@@ -36,9 +36,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     unchecked. Use `using_graph_uri` or `using_named_graph_uri`, which are typed
     `Optional[List[str]]`, where several graphs are genuinely intended.
 
-  The literal `"default"` is still accepted, in any case. The server maps a
-  graph parameter of `default` to the default graph rather than parsing it as an
-  IRI, so `conn.add(data, graph_uri="default")` continues to work.
+  The literal `"default"` is still accepted, in any case, by `Connection.add`,
+  `Connection.remove` and `Connection.clear`. Those are the methods whose
+  `graph-uri` the server maps to the default graph rather than parsing as an
+  IRI, so `conn.add(data, graph_uri="default")` continues to work. Elsewhere —
+  `insert_graph_uri`, a virtual graph's `named_graph` — it is a relative name
+  for a graph called `default` and is rejected with everything else.
 
   Graphs already created with an invalid name are unaffected — the guard only
   prevents new ones, and cleaning up existing names is out of scope. Note also

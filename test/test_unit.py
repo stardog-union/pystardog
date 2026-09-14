@@ -766,6 +766,19 @@ class TestGraphUriValidationReachesTheAPI:
 
         assert m.last_request.qs["graph-uri"] == ["default"]
 
+    def test_default_is_rejected_where_the_server_does_not_map_it(self):
+        """Only add, remove and clear reach parameterAsGraph. update's
+        insert_graph_uri and a virtual graph's named_graph would write into a
+        graph literally called "default"."""
+        with pytest.raises(ValueError):
+            self._conn().update("INSERT DATA {}", insert_graph_uri="default")
+        with requests_mock.Mocker() as m:
+            m.get("http://localhost:5820/admin/alive", text="")
+            with pytest.raises(ValueError):
+                admin.Admin().materialize_virtual_graph(
+                    "db", content.Raw(""), named_graph="default"
+                )
+
     def test_validation_error_names_the_parameter(self):
         with pytest.raises(ValueError, match="insert_graph_uri"):
             self._conn().update("INSERT DATA {}", insert_graph_uri="not an iri")
