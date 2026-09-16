@@ -738,6 +738,19 @@ class TestGraphUriValidationReachesTheAPI:
         assert query["shapes"] == ["urn:s1", "urn:s2"]
         assert query["nodes"] == ["urn:n1"]
 
+    def test_icv_report_accepts_other_collections(self):
+        """A set or dict_keys reached the server before these parameters were
+        validated, so they are still accepted. Only an iterator is excluded,
+        because validating one would consume it."""
+        with requests_mock.Mocker() as m:
+            m.post("http://localhost:5820/test/icv/report", text="report")
+            icv = connection.ICV(self._conn())
+            icv.report(**{"shapes": {"urn:s1"}, "graph-uri": {"urn:g1": 1}.keys()})
+            query = m.last_request.qs
+
+        assert query["shapes"] == ["urn:s1"]
+        assert query["graph-uri"] == ["urn:g1"]
+
     def test_icv_report_rejects_a_bad_entry_inside_a_list(self):
         icv = connection.ICV(self._conn())
         with pytest.raises(ValueError, match="shapes"):

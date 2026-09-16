@@ -1,4 +1,5 @@
 import re
+from collections.abc import Collection
 from typing import Optional
 
 # An absolute IRI: an RFC 3986 scheme -- ALPHA *( ALPHA / DIGIT / "+" / "-" /
@@ -41,6 +42,22 @@ def validate_iri(
         return
     if not _IRI.fullmatch(iri):
         raise ValueError(f"{param} is not a valid IRI: {iri!r}")
+
+
+def as_iris(value):
+    """Returns the multi-valued ``value`` as something safe to iterate twice.
+
+    A set, frozenset or ``dict_keys`` reached the server untouched before these
+    parameters were validated, so they are still treated as several IRIs
+    alongside a list or tuple. A string -- or anything else that is not a
+    collection -- is wrapped, so a scalar non-string reaches
+    :func:`validate_iri` whole and raises ``ValueError`` rather than a
+    ``TypeError`` from the loop. Iterators are deliberately not collections:
+    validating one would consume it and send an empty parameter.
+    """
+    if isinstance(value, Collection) and not isinstance(value, (str, bytes)):
+        return value
+    return [value]
 
 
 def strtobool(s):

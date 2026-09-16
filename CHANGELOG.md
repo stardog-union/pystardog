@@ -29,7 +29,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
     U+0000-U+0020, which covers ASCII whitespace. Consistent with that grammar,
     DEL and the C1 range are permitted and are not rejected.
   - relative names with no scheme, such as `'my-graph'`
-  - the empty string
+  - the empty string, and a bare scheme with nothing after the colon, such as
+    `'urn:'`
+  - an iterator, such as a generator, passed to one of the multi-valued
+    parameters. Validating one would consume it and send an empty parameter, so
+    it is rejected rather than silently dropped; a `list`, `tuple`, `set`,
+    `frozenset` or `dict_keys` is still accepted
   - a list passed to the scalar `insert_graph_uri` or `remove_graph_uri`
     parameters. Both are typed `Optional[str]`, so a list was never part of the
     contract; it worked only because the value was forwarded to `requests`

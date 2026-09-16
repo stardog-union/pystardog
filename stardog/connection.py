@@ -12,7 +12,7 @@ from stardog.content import Content
 from . import content_types as content_types
 from . import exceptions as exceptions
 from .http import client
-from .utils import strtobool, validate_iri
+from .utils import as_iris, strtobool, validate_iri
 import urllib
 
 
@@ -354,11 +354,7 @@ class Connection:
             "using_graph_uri",
             "using_named_graph_uri",
         ):
-            uris = kwargs.get(key) or []
-            # Anything that is not a list/tuple goes to validate_iri whole, so a
-            # scalar non-string fails as a ValueError rather than a TypeError
-            # out of the loop.
-            for uri in uris if isinstance(uris, (list, tuple)) else [uris]:
+            for uri in as_iris(kwargs.get(key) or []):
                 validate_iri(uri, key)
         validate_iri(kwargs.get("remove_graph_uri"), "remove_graph_uri")
         validate_iri(kwargs.get("insert_graph_uri"), "insert_graph_uri")
@@ -1082,7 +1078,7 @@ class ICV:
             value = kwargs.get(name)
             if value is None:
                 continue
-            for item in value if isinstance(value, (list, tuple)) else [value]:
+            for item in as_iris(value):
                 validate_iri(item, name)
 
         kwargs["prettify"] = True
