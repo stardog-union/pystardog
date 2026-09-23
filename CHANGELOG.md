@@ -7,6 +7,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+
+- **List-valued parameters in `ICV.report()`.** `shapes`, `shacl.shape.graphs`
+  and `nodes` can each take several IRIs, but a list was urlencoded as its
+  Python repr in a single parameter, so the server saw one malformed IRI.
+  Lists are now sent as one query parameter per item (PLAT-7104).
+
 ## [0.21.0] - 2026-08-31
 
 ### Added
