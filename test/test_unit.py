@@ -1,3 +1,5 @@
+import urllib.parse
+
 import pytest
 import requests
 import requests_mock
@@ -509,6 +511,44 @@ class TestConnectionQueryId:
 
             conn = connection.Connection("test")
             conn.select("select * where { ?s ?p ?o }")
+
+
+class TestICVReportParamEncoding:
+    """Regression tests for PLAT-7104.
+
+    ``ICV.report()`` urlencoded its kwargs without ``doseq``, so a list value
+    was sent as its Python repr in a single parameter.
+    """
+
+    NODES = [
+        "http://api.stardog.com/bigtable/id=5",
+        "http://api.stardog.com/bigtable/id=93",
+    ]
+
+    def test_icv_report_param_encoding_list(self):
+        def text_callback(request, context):
+            # requests_mock lowercases the query it parses, hence the lower().
+            assert urllib.parse.parse_qs(request.query)["nodes"] == [
+                node.lower() for node in self.NODES
+            ]
+            return ""
+
+        with requests_mock.Mocker() as m:
+            m.post("http://localhost:5820/test/icv/report", text=text_callback)
+            connection.Connection("test").icv().report(nodes=self.NODES)
+
+    def test_icv_report_param_encoding_scalar(self):
+        def text_callback(request, context):
+            assert request.qs["shapes"] == ["valid:uri"]
+            assert request.qs["reasoning"] == ["true"]
+            assert request.qs["prettify"] == ["true"]
+            return ""
+
+        with requests_mock.Mocker() as m:
+            m.post("http://localhost:5820/test/icv/report", text=text_callback)
+            connection.Connection("test").icv().report(
+                shapes="valid:uri", reasoning=True
+            )
 
 
 class TestStardogException:

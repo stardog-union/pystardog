@@ -992,9 +992,10 @@ class ICV:
         """
         Produces a SHACL validation report.
 
-        :keyword str, optional shapes: SHACL shapes to validate
-        :keyword str, optional shacl.shape.graphs: SHACL shape graphs to validate
-        :keyword str, optional nodes: SHACL focus node(s) to validate
+        :keyword str or list of str, optional shapes: SHACL shapes to validate
+        :keyword str or list of str, optional shacl.shape.graphs: SHACL shape graphs to validate
+        :keyword str or list of str, optional nodes: SHACL focus node(s) to validate. A string is
+            sent as a single IRI — even a space-separated one — so pass a list to validate several nodes.
         :keyword str, optional countLimit: Maximum number of violations to report
         :keyword bool, optional shacl.targetClass.simple: If ``True``, ``sh:targetClass`` will be evaluated based on ``rdf:type`` triples only, without following ``rdfs:subClassOf`` relations
         :keyword str, optional shacl.violation.limit.shape: number of violation limits per SHACL shapes
@@ -1022,7 +1023,9 @@ class ICV:
                 raise Exception("Parameter not recognized")
 
         kwargs["prettify"] = True
-        params = urllib.parse.urlencode(kwargs)
+        # PLAT-7104: doseq sends a list value as one parameter per item. Without
+        # it a list is encoded as its Python repr in a single parameter.
+        params = urllib.parse.urlencode(kwargs, doseq=True)
         url = f"/icv/report?{params}"
 
         r = self.client.post(url)
