@@ -7,6 +7,53 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+
+- **Graph URIs are now validated before a request is sent.** Every `Connection`,
+  `ICV` and `Admin` method that takes a graph URI now rejects values that are not
+  valid IRIs, raising `ValueError` instead of forwarding them to the server. The
+  reported case was `graph_uri='<urn:graph>'`, which previously created a graph
+  whose name contained the angle brackets (PLAT-8477,
+  [#212](https://github.com/stardog-union/pystardog/pull/212)).
+
+  The same check is applied to the `ICV.report` parameters that carry IRIs —
+  `graph-uri`, `shapes`, `shacl.shape.graphs` and `nodes`. All four are
+  multi-valued on that endpoint, so each accepts either a single string or a
+  list of strings, and every element is validated.
+
+  This is a behaviour change in a public API. Values that used to reach the
+  server and now raise:
+
+  - anything containing a character the IRIREF grammar forbids — `<`, `>`, `"`,
+    `{`, `}`, `|`, `^`, `` ` ``, `\`, or a character in the range
+    U+0000-U+0020, which covers ASCII whitespace. Consistent with that grammar,
+    DEL and the C1 range are permitted and are not rejected.
+  - relative names with no scheme, such as `'my-graph'`
+  - the empty string, and a bare scheme with nothing after the colon, such as
+    `'urn:'`
+  - an iterator, such as a generator, passed to one of the multi-valued
+    parameters. Validating one would consume it and send an empty parameter, so
+    it is rejected rather than silently dropped; a `list`, `tuple`, `set`,
+    `frozenset` or `dict_keys` is still accepted
+  - a list passed to the scalar `insert_graph_uri` or `remove_graph_uri`
+    parameters. Both are typed `Optional[str]`, so a list was never part of the
+    contract; it worked only because the value was forwarded to `requests`
+    unchecked. Use `using_graph_uri` or `using_named_graph_uri`, which are typed
+    `Optional[List[str]]`, where several graphs are genuinely intended.
+
+  The literal `"default"` is still accepted, in any case, by `Connection.add`,
+  `Connection.remove` and `Connection.clear`. Those are the methods whose
+  `graph-uri` the server maps to the default graph rather than parsing as an
+  IRI, so `conn.add(data, graph_uri="default")` continues to work. Elsewhere —
+  `insert_graph_uri`, a virtual graph's `named_graph` — it is a relative name
+  for a graph called `default` and is rejected with everything else.
+
+  Graphs already created with an invalid name are unaffected — the guard only
+  prevents new ones, and cleaning up existing names is out of scope. Note also
+  that this validates the pystardog client only: the same payload is still
+  accepted from any other HTTP client, so it does not close the underlying
+  server-side gap.
+
 ## [0.21.0] - 2026-08-31
 
 ### Added

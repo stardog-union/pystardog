@@ -682,3 +682,116 @@ class TestVirtualGraphUpdate:
             body = self._last_put(m)
 
         assert "mappings.syntax" not in body["options"]
+
+
+class TestGraphUriValidationReachesTheAPI:
+    """test_utils.py covers validate_iri directly. These assert that the
+    methods actually call it, one per family, so a call site removed by a
+    later refactor is caught rather than silently unvalidated."""
+
+    def _conn(self):
+        conn = connection.Connection("test")
+        conn.transaction = "tx-1"
+        return conn
+
+    def test_clear_rejects_a_bad_graph_uri(self):
+        with pytest.raises(ValueError):
+            self._conn().clear("not an iri")
+
+    def test_is_consistent_rejects_a_bad_graph_uri(self):
+        with pytest.raises(ValueError):
+            self._conn().is_consistent("not an iri")
+
+    def test_update_rejects_a_bad_insert_graph_uri(self):
+        with pytest.raises(ValueError):
+            self._conn().update("INSERT DATA {}", insert_graph_uri="not an iri")
+
+    def test_icv_report_rejects_a_bad_graph_uri(self):
+        icv = connection.ICV(self._conn())
+        with pytest.raises(ValueError):
+            icv.report(**{"graph-uri": "not an iri"})
+
+    def test_icv_report_rejects_bad_shacl_parameters(self):
+        icv = connection.ICV(self._conn())
+        for name in ("shapes", "shacl.shape.graphs", "nodes"):
+            with pytest.raises(ValueError):
+                icv.report(**{name: "not an iri"})
+
+    def test_icv_report_accepts_lists_for_the_plural_parameters(self):
+        """graph-uri, shapes, shacl.shape.graphs and nodes are all read with
+        parameters() server-side, so each is multi-valued on /icv/report.
+        doseq=True is what turns a list into repeated query parameters rather
+        than the repr of the list."""
+        with requests_mock.Mocker() as m:
+            m.post("http://localhost:5820/test/icv/report", text="report")
+            icv = connection.ICV(self._conn())
+            icv.report(
+                **{
+                    "graph-uri": ["urn:g1", "urn:g2"],
+                    "shapes": ["urn:s1", "urn:s2"],
+                    "nodes": "urn:n1",
+                }
+            )
+            query = m.last_request.qs
+
+        assert query["graph-uri"] == ["urn:g1", "urn:g2"]
+        assert query["shapes"] == ["urn:s1", "urn:s2"]
+        assert query["nodes"] == ["urn:n1"]
+
+    def test_icv_report_accepts_other_collections(self):
+        """A set or dict_keys reached the server before these parameters were
+        validated, so they are still accepted. Only an iterator is excluded,
+        because validating one would consume it."""
+        with requests_mock.Mocker() as m:
+            m.post("http://localhost:5820/test/icv/report", text="report")
+            icv = connection.ICV(self._conn())
+            icv.report(**{"shapes": {"urn:s1"}, "graph-uri": {"urn:g1": 1}.keys()})
+            query = m.last_request.qs
+
+        assert query["shapes"] == ["urn:s1"]
+        assert query["graph-uri"] == ["urn:g1"]
+
+    def test_icv_report_rejects_a_bad_entry_inside_a_list(self):
+        icv = connection.ICV(self._conn())
+        with pytest.raises(ValueError, match="shapes"):
+            icv.report(**{"shapes": ["urn:ok", "not an iri"]})
+
+    def test_multi_valued_parameters_reject_a_scalar_non_string(self):
+        """The multi-valued parameters iterate their value, so a scalar
+        non-string used to fail as a TypeError from the loop rather than as
+        the ValueError every other bad graph URI raises."""
+        icv = connection.ICV(self._conn())
+        with pytest.raises(ValueError, match="shapes"):
+            icv.report(**{"shapes": 7})
+        with pytest.raises(ValueError, match="using_graph_uri"):
+            self._conn().select("select * {?s ?p ?o}", using_graph_uri=7)
+
+    def test_default_is_accepted_as_a_graph_uri(self):
+        """The server maps graph-uri=default (any case) to the default graph
+        rather than parsing it as an IRI, so conn.add(..., graph_uri="default")
+        worked before this validation existed and has to keep working."""
+        with requests_mock.Mocker() as m:
+            m.post("http://localhost:5820/test/transaction/begin", text="tx-1")
+            m.post("http://localhost:5820/test/tx-1/add", text="")
+            conn = connection.Connection("test")
+            conn.begin()
+            conn.add(content.Raw("<urn:s> <urn:p> <urn:o> ."), graph_uri="default")
+
+        assert m.last_request.qs["graph-uri"] == ["default"]
+
+    def test_default_is_rejected_where_the_server_does_not_map_it(self):
+        """Only add, remove and clear reach parameterAsGraph. update's
+        insert_graph_uri and a virtual graph's named_graph would write into a
+        graph literally called "default"."""
+        with pytest.raises(ValueError):
+            self._conn().update("INSERT DATA {}", insert_graph_uri="default")
+        with requests_mock.Mocker() as m:
+            m.get("http://localhost:5820/admin/alive", text="")
+            with pytest.raises(ValueError):
+                admin.Admin().materialize_virtual_graph(
+                    "db", content.Raw(""), named_graph="default"
+                )
+
+    def test_validation_error_names_the_parameter(self):
+        with pytest.raises(ValueError, match="insert_graph_uri"):
+            self._conn().update("INSERT DATA {}", insert_graph_uri="not an iri")

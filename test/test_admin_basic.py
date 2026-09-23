@@ -869,7 +869,7 @@ class TestVirtualGraph(TestStardog):
     # music options is passed as a fixture, need to make sure whether this is going to be a fixture or not.
     @pytest.mark.dbname("test-import-db")
     def test_import_vg(self, admin, db, music_options):
-        graph_name = "test-graph"
+        graph_name = "urn:test-graph"
 
         # tests passing mappings
         admin.import_virtual_graph(
