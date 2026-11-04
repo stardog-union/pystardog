@@ -1408,7 +1408,10 @@ class User:
         """
         self.username = name
         self.client = client
-        self.path = "/admin/users/{}".format(name)
+        # Stardog decodes a literal "+" in a path segment as a space, so the
+        # name has to be percent-encoded with quote(), never quote_plus().
+        self._encoded_name = urllib.parse.quote(name, safe="")
+        self.path = "/admin/users/{}".format(self._encoded_name)
         # this checks for existence by throwing an exception if the resource does not exist
         self.client.get(self.path)
 
@@ -1500,7 +1503,9 @@ class User:
             >>> user.remove_role('reader')
             >>> user.remove_role(admin.role('reader'))
         """
-        self.client.delete(self.path + "/roles/" + role)
+        self.client.delete(
+            self.path + "/roles/" + urllib.parse.quote(self.__rolename(role), safe="")
+        )
 
     def delete(self) -> None:
         """Deletes the user."""
@@ -1514,7 +1519,7 @@ class User:
 
         :return: user permissions
         """
-        r = self.client.get("/admin/permissions/user/{}".format(self.name))
+        r = self.client.get("/admin/permissions/user/{}".format(self._encoded_name))
         return r.json()["permissions"]
 
     def add_permission(self, action: str, resource_type: str, resource: str) -> None:
@@ -1538,7 +1543,9 @@ class User:
             "resource_type": resource_type,
             "resource": [resource],
         }
-        self.client.put("/admin/permissions/user/{}".format(self.name), json=meta)
+        self.client.put(
+            "/admin/permissions/user/{}".format(self._encoded_name), json=meta
+        )
 
     def remove_permission(self, action: str, resource_type: str, resource: str):
         """Removes a permission from the user.
@@ -1562,7 +1569,8 @@ class User:
         }
 
         self.client.post(
-            "/admin/permissions/user/{}/delete".format(self.name), json=meta
+            "/admin/permissions/user/{}/delete".format(self._encoded_name),
+            json=meta,
         )
 
     def effective_permissions(self) -> dict:
@@ -1570,7 +1578,7 @@ class User:
 
         :return: User's effective permissions
         """
-        r = self.client.get("/admin/permissions/effective/user/" + self.name)
+        r = self.client.get("/admin/permissions/effective/user/" + self._encoded_name)
         return r.json()["permissions"]
 
     def __rolename(self, role):
@@ -1597,7 +1605,9 @@ class Role:
         """
         self.role_name = name
         self.client = client
-        self.path = "/admin/roles/{}".format(name)
+        # See User.__init__: quote(), not quote_plus(), so "+" survives.
+        self._encoded_name = urllib.parse.quote(name, safe="")
+        self.path = "/admin/roles/{}".format(self._encoded_name)
         # this checks for existence by throwing an exception if the resource does not exist
         self.client.get(f"{self.path}/users")
 
@@ -1633,7 +1643,7 @@ class Role:
         Returns:
           dict: Role permissions
         """
-        r = self.client.get("/admin/permissions/role/{}".format(self.name))
+        r = self.client.get("/admin/permissions/role/{}".format(self._encoded_name))
         return r.json()["permissions"]
 
     def add_permission(self, action, resource_type, resource):
@@ -1659,7 +1669,9 @@ class Role:
             "resource": [resource],
         }
 
-        self.client.put("/admin/permissions/role/{}".format(self.name), json=meta)
+        self.client.put(
+            "/admin/permissions/role/{}".format(self._encoded_name), json=meta
+        )
 
     def remove_permission(self, action, resource_type, resource):
         """Removes a permission from the role.
@@ -1683,7 +1695,8 @@ class Role:
         }
 
         self.client.post(
-            "/admin/permissions/role/{}/delete".format(self.name), json=meta
+            "/admin/permissions/role/{}/delete".format(self._encoded_name),
+            json=meta,
         )
 
     def __repr__(self):
