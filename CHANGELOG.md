@@ -67,6 +67,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Role.name` are unchanged and still return the raw, unencoded name
   (VET-7683, [#214](https://github.com/stardog-union/pystardog/pull/214)).
 
+  This is a behaviour change for code that worked around the bug by passing an
+  already-encoded name, such as `admin.user("a%2Bb%40x.com")`. The name is now
+  encoded again and the request returns 404; pass the plain name instead.
+  `User.path` and `Role.path` now hold the encoded path.
+
 - **`User.add_role()` and `User.remove_role()` accept a `Role` object.** Both
   are typed `Union[str, Role]` and their docstrings show
   `user.add_role(admin.role('reader'))`, but `add_role` sent the object into
