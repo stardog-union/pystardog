@@ -854,6 +854,26 @@ class TestUserAndRoleNamesArePercentEncoded:
             "/admin/users/" + self.ENCODED + "/roles/" + self.ENCODED
         )
 
+    def test_add_role_and_remove_role_accept_a_role_object(self):
+        """Both are typed Union[str, Role] and the docstrings show
+        user.add_role(admin.role('reader')), but add_role sent the object
+        straight into the JSON body and remove_role concatenated it onto
+        the path, so each raised TypeError for a Role."""
+        with requests_mock.Mocker() as m:
+            user = self._user(m)
+            role = self._role(m)
+            m.post(self.BASE + "/admin/users/" + self.ENCODED + "/roles", text="")
+            m.delete(
+                self.BASE + "/admin/users/" + self.ENCODED + "/roles/" + self.ENCODED,
+                text="",
+            )
+            user.add_role(role)
+            assert m.last_request.json() == {"rolename": self.NAME}
+            user.remove_role(role)
+            assert m.last_request.path_url == (
+                "/admin/users/" + self.ENCODED + "/roles/" + self.ENCODED
+            )
+
     def test_user_permission_paths_are_encoded(self):
         with requests_mock.Mocker() as m:
             user = self._user(m)

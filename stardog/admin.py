@@ -1481,7 +1481,7 @@ class User:
             >>> user.add_role('reader')
             >>> user.add_role(admin.role('reader'))
         """
-        self.client.post(self.path + "/roles", json={"rolename": role})
+        self.client.post(self.path + "/roles", json={"rolename": self.__rolename(role)})
 
     def set_roles(self, *roles: Union[str, "Role"]) -> None:
         """Sets the roles of the user.
