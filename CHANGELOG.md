@@ -54,6 +54,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   accepted from any other HTTP client, so it does not close the underlying
   server-side gap.
 
+### Fixed
+
+- **User and role names are now percent-encoded in URL paths.** Every path
+  that embeds a user or role name — `/admin/users/{name}`,
+  `/admin/roles/{name}`, `/admin/users/{name}/roles/{role}` and the
+  `/admin/permissions/user|role/{name}` family — now encodes the name with
+  `urllib.parse.quote(name, safe="")`. Stardog decodes a literal `+` in a path
+  segment as a space, so a user such as `a+b@x.com` was created successfully by
+  `Admin.new_user()` but every later `Admin.user()`, `User.delete()`,
+  `User.permissions()` and similar call on it returned 404. `User.name` and
+  `Role.name` are unchanged and still return the raw, unencoded name
+  (VET-7683).
+
 ## [0.21.0] - 2026-08-31
 
 ### Added

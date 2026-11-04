@@ -795,3 +795,127 @@ class TestGraphUriValidationReachesTheAPI:
     def test_validation_error_names_the_parameter(self):
         with pytest.raises(ValueError, match="insert_graph_uri"):
             self._conn().update("INSERT DATA {}", insert_graph_uri="not an iri")
+
+
+class TestUserAndRoleNamesArePercentEncoded:
+    """Stardog decodes a literal "+" in a path segment as a space, so a user
+    created as a+b@x.com by POST /admin/users was unreachable by every later
+    GET/PUT/DELETE on /admin/users/a+b@x.com (VET-7683). The name is now
+    percent-encoded with quote(name, safe="") in every path; .name stays raw."""
+
+    NAME = "a+b@x.com"
+    ENCODED = "a%2Bb%40x.com"
+    BASE = "http://localhost:5820"
+
+    def _admin(self, m):
+        m.get(self.BASE + "/admin/alive", text="")
+        return admin.Admin(self.BASE, "admin", "admin")
+
+    def _user(self, m):
+        m.get(self.BASE + "/admin/users/" + self.ENCODED, json={})
+        return self._admin(m).user(self.NAME)
+
+    def _role(self, m):
+        m.get(self.BASE + "/admin/roles/" + self.ENCODED + "/users", json={})
+        return self._admin(m).role(self.NAME)
+
+    def test_user_path_is_encoded_and_name_is_raw(self):
+        with requests_mock.Mocker() as m:
+            user = self._user(m)
+
+        assert user.name == self.NAME
+        assert user.path == "/admin/users/" + self.ENCODED
+        assert m.last_request.url == self.BASE + "/admin/users/" + self.ENCODED
+
+    def test_user_methods_hit_the_encoded_path(self):
+        with requests_mock.Mocker() as m:
+            user = self._user(m)
+            m.delete(self.BASE + "/admin/users/" + self.ENCODED, text="")
+            user.delete()
+            assert m.last_request.url == self.BASE + "/admin/users/" + self.ENCODED
+            assert m.last_request.method == "DELETE"
+
+            m.put(self.BASE + "/admin/users/" + self.ENCODED + "/enabled", text="")
+            user.set_enabled(False)
+            assert m.last_request.path_url == (
+                "/admin/users/" + self.ENCODED + "/enabled"
+            )
+
+    def test_user_remove_role_encodes_the_role_name(self):
+        with requests_mock.Mocker() as m:
+            user = self._user(m)
+            m.delete(
+                self.BASE + "/admin/users/" + self.ENCODED + "/roles/" + self.ENCODED,
+                text="",
+            )
+            user.remove_role(self.NAME)
+
+        assert m.last_request.path_url == (
+            "/admin/users/" + self.ENCODED + "/roles/" + self.ENCODED
+        )
+
+    def test_user_permission_paths_are_encoded(self):
+        with requests_mock.Mocker() as m:
+            user = self._user(m)
+            prefix = self.BASE + "/admin/permissions/user/" + self.ENCODED
+            m.get(prefix, json={"permissions": []})
+            m.put(prefix, text="")
+            m.post(prefix + "/delete", text="")
+            m.get(
+                self.BASE + "/admin/permissions/effective/user/" + self.ENCODED,
+                json={"permissions": []},
+            )
+
+            assert user.permissions() == []
+            assert m.last_request.url == prefix
+
+            user.add_permission("read", "db", "mydb")
+            assert m.last_request.url == prefix
+            assert m.last_request.method == "PUT"
+
+            user.remove_permission("read", "db", "mydb")
+            assert m.last_request.url == prefix + "/delete"
+
+            assert user.effective_permissions() == []
+            assert m.last_request.path_url == (
+                "/admin/permissions/effective/user/" + self.ENCODED
+            )
+
+    def test_role_path_is_encoded_and_name_is_raw(self):
+        with requests_mock.Mocker() as m:
+            role = self._role(m)
+
+        assert role.name == self.NAME
+        assert role.path == "/admin/roles/" + self.ENCODED
+        assert m.last_request.url == (
+            self.BASE + "/admin/roles/" + self.ENCODED + "/users"
+        )
+
+    def test_role_permission_paths_are_encoded(self):
+        with requests_mock.Mocker() as m:
+            role = self._role(m)
+            prefix = self.BASE + "/admin/permissions/role/" + self.ENCODED
+            m.get(prefix, json={"permissions": []})
+            m.put(prefix, text="")
+            m.post(prefix + "/delete", text="")
+            m.delete(self.BASE + "/admin/roles/" + self.ENCODED, text="")
+
+            assert role.permissions() == []
+            assert m.last_request.url == prefix
+
+            role.add_permission("read", "db", "mydb")
+            assert m.last_request.url == prefix
+            assert m.last_request.method == "PUT"
+
+            role.remove_permission("read", "db", "mydb")
+            assert m.last_request.url == prefix + "/delete"
+
+            role.delete()
+            assert m.last_request.path_url == "/admin/roles/" + self.ENCODED
+
+    def test_plain_names_are_unchanged(self):
+        with requests_mock.Mocker() as m:
+            m.get(self.BASE + "/admin/users/reader", json={})
+            user = self._admin(m).user("reader")
+
+        assert user.path == "/admin/users/reader"
