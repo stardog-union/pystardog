@@ -78,6 +78,17 @@ run_test_supported_python_versions: &run_test_supported_python_versions
       set -x
       tox
 
+dump_container_logs: &dump_container_logs
+  run:
+    name: Dump container logs (only on failure)
+    when: on_fail
+    command: |
+      docker ps -a
+      for c in $(docker ps -aq); do
+        echo "===== $(docker inspect -f '{{.Name}} ({{.State.Status}}, exit {{.State.ExitCode}})' $c)"
+        docker logs --tail 200 $c 2>&1 || true
+      done
+
 setup_pytest: &setup_pytest
   run:
     name: Set up local env
@@ -143,6 +154,7 @@ jobs:
             source test/utils/wait.sh
             wait_for_start_single_node localhost 5820
 
+      - <<: *dump_container_logs
       - <<: *setup_pytest
       - <<: *run_test_imports
       - <<: *run_basic_admin_suite
@@ -191,6 +203,7 @@ jobs:
             source test/utils/wait.sh
             wait_for_start_cluster localhost 5820
 
+      - <<: *dump_container_logs
       - <<: *run_basic_admin_suite
       - <<: *run_connection_suite
       - <<: *run_test_server_admin_suite
