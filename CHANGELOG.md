@@ -67,6 +67,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Role.name` are unchanged and still return the raw, unencoded name
   (VET-7683, [#214](https://github.com/stardog-union/pystardog/pull/214)).
 
+- **`User.add_role()` and `User.remove_role()` accept a `Role` object.** Both
+  are typed `Union[str, Role]` and their docstrings show
+  `user.add_role(admin.role('reader'))`, but `add_role` sent the object into
+  the JSON body and `remove_role` concatenated it onto the URL, so each raised
+  `TypeError` unless given a plain string
+  ([#214](https://github.com/stardog-union/pystardog/pull/214)).
+
 ## [0.21.0] - 2026-08-31
 
 ### Added
