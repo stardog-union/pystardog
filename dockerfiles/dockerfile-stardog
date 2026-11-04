@@ -4,7 +4,12 @@ FROM ${STARDOG_REPO}:${STARDOG_TAG}
 
 USER root
 RUN yes $SSH_PASS | passwd $SSH_USER
-RUN apk add --no-cache openssh-server openssh-sftp-server vim unzip wget
+# --force-overwrite: the stardog/stardog:12.1.2 image ships a single openssl
+# package, but its package index has since split OpenSSL into openssl-4.0-*
+# packages that also own /etc/ssl/openssl.cnf. Without the flag apk refuses to
+# install anything that depends on libcrypto ("trying to overwrite
+# etc/ssl/openssl.cnf owned by openssl-3.6.3-r3").
+RUN apk add --no-cache --force-overwrite openssh-server openssh-sftp-server vim unzip wget
 
 ARG CONNECTOR_VERSION=8.0.21
 
