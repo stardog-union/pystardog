@@ -65,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Admin.new_user()` but every later `Admin.user()`, `User.delete()`,
   `User.permissions()` and similar call on it returned 404. `User.name` and
   `Role.name` are unchanged and still return the raw, unencoded name
-  (VET-7683).
+  (VET-7683, [#214](https://github.com/stardog-union/pystardog/pull/214)).
 
 ## [0.21.0] - 2026-08-31
 
