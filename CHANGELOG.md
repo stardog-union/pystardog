@@ -65,7 +65,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `Admin.new_user()` but every later `Admin.user()`, `User.delete()`,
   `User.permissions()` and similar call on it returned 404. `User.name` and
   `Role.name` are unchanged and still return the raw, unencoded name
-  (VET-7683, [#214](https://github.com/stardog-union/pystardog/pull/214)).
+  (VET-7683, [#217](https://github.com/stardog-union/pystardog/pull/217)).
 
   This is a behaviour change for code that worked around the bug by passing an
   already-encoded name, such as `admin.user("a%2Bb%40x.com")`. The name is now
@@ -77,7 +77,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   `user.add_role(admin.role('reader'))`, but `add_role` sent the object into
   the JSON body and `remove_role` concatenated it onto the URL, so each raised
   `TypeError` unless given a plain string
-  ([#214](https://github.com/stardog-union/pystardog/pull/214)).
+  ([#217](https://github.com/stardog-union/pystardog/pull/217)).
 
 ## [0.21.0] - 2026-08-31
 
