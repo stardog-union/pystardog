@@ -4,7 +4,7 @@ FROM ${STARDOG_REPO}:${STARDOG_TAG}
 
 USER root
 RUN yes $SSH_PASS | passwd $SSH_USER
-RUN apk add --no-cache openssh-server openssh-sftp-server vim unzip wget
+RUN apk upgrade --no-cache openssl && apk add --no-cache openssh-server openssh-sftp-server vim unzip wget
 
 ARG CONNECTOR_VERSION=8.0.21
 
