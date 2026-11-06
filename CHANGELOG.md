@@ -54,6 +54,31 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   accepted from any other HTTP client, so it does not close the underlying
   server-side gap.
 
+### Fixed
+
+- **User and role names are now percent-encoded in URL paths.** Every path
+  that embeds a user or role name — `/admin/users/{name}`,
+  `/admin/roles/{name}`, `/admin/users/{name}/roles/{role}` and the
+  `/admin/permissions/user|role/{name}` family — now encodes the name with
+  `urllib.parse.quote(name, safe="")`. Stardog decodes a literal `+` in a path
+  segment as a space, so a user such as `a+b@x.com` was created successfully by
+  `Admin.new_user()` but every later `Admin.user()`, `User.delete()`,
+  `User.permissions()` and similar call on it returned 404. `User.name` and
+  `Role.name` are unchanged and still return the raw, unencoded name
+  (VET-7683, [#217](https://github.com/stardog-union/pystardog/pull/217)).
+
+  This is a behaviour change for code that worked around the bug by passing an
+  already-encoded name, such as `admin.user("a%2Bb%40x.com")`. The name is now
+  encoded again and the request returns 404; pass the plain name instead.
+  `User.path` and `Role.path` now hold the encoded path.
+
+- **`User.add_role()` and `User.remove_role()` accept a `Role` object.** Both
+  are typed `Union[str, Role]` and their docstrings show
+  `user.add_role(admin.role('reader'))`, but `add_role` sent the object into
+  the JSON body and `remove_role` concatenated it onto the URL, so each raised
+  `TypeError` unless given a plain string
+  ([#217](https://github.com/stardog-union/pystardog/pull/217)).
+
 ## [0.21.0] - 2026-08-31
 
 ### Added
