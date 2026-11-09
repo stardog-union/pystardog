@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.22.0] - 2026-11-09
+
 ### Changed
 
 - **Graph URIs are now validated before a request is sent.** Every `Connection`,
@@ -150,7 +152,8 @@ Released before this changelog was introduced. See the
 Released before this changelog was introduced. See the
 [commit history](https://github.com/stardog-union/pystardog/compare/0.18.1...0.19.0).
 
-[Unreleased]: https://github.com/stardog-union/pystardog/compare/0.21.0...HEAD
+[Unreleased]: https://github.com/stardog-union/pystardog/compare/0.22.0...HEAD
+[0.22.0]: https://github.com/stardog-union/pystardog/compare/0.21.0...0.22.0
 [0.21.0]: https://github.com/stardog-union/pystardog/compare/0.20.0...0.21.0
 [0.20.0]: https://github.com/stardog-union/pystardog/compare/0.19.0...0.20.0
 [0.19.0]: https://github.com/stardog-union/pystardog/compare/0.18.1...0.19.0
